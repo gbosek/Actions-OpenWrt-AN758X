@@ -50,6 +50,7 @@ SKIP_BUILD="${SKIP_BUILD:-0}"
 TEMPLATE="${TEMPLATE:-$REPO_DIR/packages/npu-clanker-template/Makefile.in}"
 
 BUILD_SCRIPT="$SCRIPT_DIR/build-npu-fw.sh"
+PKG_VERSION="$(TZ=Asia/Shanghai date +%Y%m%d)"
 
 # ------------------------------------------------------------------
 # 1) SoC -> 驱动默认固件前缀 / 包名里的 SoC 段 / 支持的 WiFi 变体
@@ -159,7 +160,7 @@ for i in "${!PKG_WIFIS[@]}"; do
 
   sed \
     -e "s|@PKG_NAME@|$NAME|g" \
-    -e "s|@PKG_VERSION@|$GITREV|g" \
+    -e "s|@PKG_VERSION@|$PKG_VERSION|g" \
     -e "s|@SOC@|$SOC|g" \
     -e "s|@WIFI@|$v|g" \
     -e "s|@GITREV@|$GITREV|g" \

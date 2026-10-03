@@ -12,6 +12,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=@PKG_NAME@
+# APK package versions must start with a digit; the generator uses YYYYMMDD.
 PKG_VERSION:=@PKG_VERSION@
 PKG_RELEASE:=1
 
