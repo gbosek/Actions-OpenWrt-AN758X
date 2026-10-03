@@ -16,6 +16,9 @@ env:
   TZ: Asia/Shanghai
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REPO_BRANCH: ${{ github.event.inputs.branch || 'master' }}
+  # airoha-xpon PON driver R68; newer R69+ releases are avoided per device testing.
+  PON_DRIVERS_REF: e5194d2dfd169eef8f4a944fdc3f929e0287b680
+  PON_DRIVER_EXPECTED_RELEASE: '68'
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
   PROFILE: ${{ github.event.inputs.profile || 'fiberhome_hg5585f-ct' }}
   BUILD_SCOPE: ${{ github.event.inputs.scope || 'firmware' }}
@@ -342,6 +345,22 @@ jobs:
           cp "$GITHUB_WORKSPACE/${FEEDS_CONF}" feeds.conf.default
         fi
         ./scripts/feeds update -a
+        git -C feeds/pon_drivers fetch --depth=1 origin "$PON_DRIVERS_REF"
+        git -C feeds/pon_drivers checkout --detach "$PON_DRIVERS_REF"
+        PON_DRIVER_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' feeds/pon_drivers/airoha-xpon/Makefile | tr -d '\r')
+        if [ "$PON_DRIVER_RELEASE" != "$PON_DRIVER_EXPECTED_RELEASE" ]; then
+          echo "::error::Expected airoha-xpon R${PON_DRIVER_EXPECTED_RELEASE}, got R${PON_DRIVER_RELEASE:-unknown}"
+          exit 1
+        fi
+        PON_DRIVER_COMMIT=$(git -C feeds/pon_drivers rev-parse --short HEAD)
+        echo "PON_DRIVER_RELEASE=$PON_DRIVER_RELEASE" >> "$GITHUB_ENV"
+        echo "PON_DRIVER_COMMIT=$PON_DRIVER_COMMIT" >> "$GITHUB_ENV"
+        {
+          echo "### PON driver"
+          echo "- Package: \`airoha-xpon R${PON_DRIVER_RELEASE}\`"
+          echo "- Source commit: \`${PON_DRIVER_COMMIT}\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+        echo "Pinned airoha-xpon R${PON_DRIVER_RELEASE} at ${PON_DRIVER_COMMIT}"
         ./scripts/feeds install -a
 
     # =========================================================
@@ -1111,6 +1130,7 @@ jobs:
           echo "| 源码 | ${REPO_URL} |"
           echo "| 分支 | \`${REPO_BRANCH}\` |"
           echo "| 提交 | \`$(cd "$BUILD_ROOT"/openwrt && git rev-parse --short HEAD)\` |"
+          echo "| PON 驱动 | \`airoha-xpon R${PON_DRIVER_RELEASE} (${PON_DRIVER_COMMIT})\` |"
           echo "| 编译时间 | $(date '+%Y-%m-%d %H:%M:%S') (Shanghai) |"
           echo "| NPU 固件 | \`${NPU_FW}\`$( [ "$NPU_FW" = "clanker" ] && echo " (${NPU_WIFI}, ClankerNPU; PonWrt 其余组件不变)" ) |"
           [ -n "${NPU_FW_SYMBOL:-}" ] && echo "| NPU 固件包 | \`${NPU_FW_SYMBOL}\` (CONFIG_PACKAGE_...=y) |"
