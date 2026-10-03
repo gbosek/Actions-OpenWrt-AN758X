@@ -56,11 +56,12 @@ DATA_MAX=$((0x10000))
 valid=0
 for v in AN7552_MT7916 AN7552_MT7991 AN7552_MT7993 \
          AN7581_MT7916 AN7581_MT7992 AN7581_MT7996 \
+         AN7581_NOWIFI \
          AN7583_MT7916 AN7583_MT7992 AN7583_MT7993 AN7583_MT7996 AN7583_NOWIFI; do
   [ "${SOC}_${WIFI}" = "$v" ] && valid=1
 done
 if [ "$valid" -ne 1 ]; then
-  echo "::error::$SOC + $WIFI 不是 ClankerNPU 支持的变体（共 11 个：AN7552/AN7581/AN7583 × MT7916/MT7991/MT7992/MT7993/MT7996/NOWIFI）"
+  echo "::error::$SOC + $WIFI 不是 ClankerNPU 支持的变体；请核对 scripts/build-npu-fw.sh 中的有效 SoC/WiFi 组合"
   exit 1
 fi
 
