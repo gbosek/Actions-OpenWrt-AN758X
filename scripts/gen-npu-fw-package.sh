@@ -140,6 +140,9 @@ for i in "${!PKG_WIFIS[@]}"; do
 
   # 该变体的 gitrev / 体积：重新读一次对应变体的构建记录
   GITREV="$(git -C "$WORK/ClankerNPU" rev-parse --short HEAD 2>/dev/null || echo "${NPU_GITREV:-unknown}")"
+  # APK version strings must start with a digit. Keep the source revision in
+  # Alpine's supported ~hash suffix instead of using a bare Git SHA.
+  PKGVER="1.0.0~${GITREV}"
   RS="$(stat -c%s "$RV32")"
   DS="$(stat -c%s "$DATA")"
 
@@ -159,7 +162,7 @@ for i in "${!PKG_WIFIS[@]}"; do
 
   sed \
     -e "s|@PKG_NAME@|$NAME|g" \
-    -e "s|@PKG_VERSION@|$GITREV|g" \
+    -e "s|@PKG_VERSION@|$PKGVER|g" \
     -e "s|@SOC@|$SOC|g" \
     -e "s|@WIFI@|$v|g" \
     -e "s|@GITREV@|$GITREV|g" \
