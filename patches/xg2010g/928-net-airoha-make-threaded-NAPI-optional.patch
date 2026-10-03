@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: WorkBuddy AI <noreply@workbuddy.local>
+Date: Wed, 23 Sep 2026 00:10:00 +0800
+Subject: [PATCH] net: airoha: make threaded NAPI opt-in
+
+The driver forces threaded NAPI on for every QDMA RX queue. On AN7581 the
+QDMA exposes a large number of queues, so this spawns a kthread per queue
+and costs a scheduler wakeup on every NAPI poll.
+
+Measured on Gemtek XG2010G (AN7581PT, 4x A53 @1200MHz): the qdma_eth NAPI
+kthreads consume 102.9% of one core while forwarding ~2 Gbps, i.e. roughly
+7357 cycles/packet, about an order of magnitude above the usual budget.
+That single term dominates the CPU forwarding path and is the reason the
+device cannot approach 10G without hardware offload.
+
+Expose the knob instead of hardcoding it, so a single image can A/B test
+both modes:
+
+  - default (off): NAPI runs in softirq context, the classic path
+  - airoha_eth.threaded_napi=1 on the kernel cmdline, or
+    echo 1 > /sys/module/airoha_eth/parameters/threaded_napi (needs reboot)
+
+Signed-off-by: WorkBuddy AI <noreply@workbuddy.local>
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/airoha/airoha_eth.c b/drivers/net/ethernet/airoha/airoha_eth.c
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -23,8 +23,18 @@
+ #include "airoha_regs.h"
+ #include "airoha_eth.h"
+ 
+ static const struct net_device_ops airoha_netdev_ops;
+ 
++/*
++ * Threaded NAPI spawns a kthread per RX queue. On AN7581 the QDMA exposes
++ * many queues, so this costs a scheduler wakeup on every NAPI poll:
++ * ~7357 cycles/packet measured on XG2010G, ~10x the usual budget, which
++ * caps the CPU forwarding path at ~2 Gbps. Keep it opt-in for A/B tests.
++ */
++static bool threaded_napi;
++module_param(threaded_napi, bool, 0644);
++MODULE_PARM_DESC(threaded_napi, "Use kthreads for RX NAPI (default: off)");
++
+ u32 airoha_rr(void __iomem *base, u32 offset)
+ {
+ 	return readl(base + offset);
+@@ -4760,8 +4770,8 @@
+ 	if (!eth->napi_dev)
+ 		return -ENOMEM;
+ 
+-	/* Enable threaded NAPI by default */
+-	eth->napi_dev->threaded = true;
++	/* Threaded NAPI is opt-in, see threaded_napi above */
++	eth->napi_dev->threaded = threaded_napi;
+ 	strscpy(eth->napi_dev->name, "qdma_eth", sizeof(eth->napi_dev->name));
+ 	platform_set_drvdata(pdev, eth);
+ 

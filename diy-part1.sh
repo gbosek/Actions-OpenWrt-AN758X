@@ -22,6 +22,7 @@ mkdir -p "$PKG_DIR"
 # 见 files/sbin/tempinfo（概览页「温度」行：CPU / WiFi / PON 温度 + 光功率）
 # ---------------------------------------------------------
 ADD_AIROHA_NPU=true    # luci-app-airoha-npu：Airoha SoC 状态页（NPU/CPU/Frame Engine/PPE）
+ADD_MWAN3=true         # nftables 版 MWAN3（与 PonWrt R68 的 fw4/nftables 对齐）
 
 ADD_PASSWALL=false     # luci-app-passwall（含依赖源）
 ADD_OPENCLASH=false    # luci-app-openclash ⚠ 依赖 Ruby/Rust，编译极慢
@@ -51,6 +52,77 @@ clone() {  # clone <url> <dir> [branch]
   echo "::error::克隆失败: $url"
   return 1
 }
+
+clone_commit() {  # clone_commit <url> <commit> <dir>
+  local url="$1" commit="$2" dir="$3" tmp
+  tmp="$(mktemp -d)"
+  echo "--- 获取固定源码 $url @ $commit ---"
+  if ! git -C "$tmp" init -q || ! git -C "$tmp" remote add origin "$url" || \
+     ! git -C "$tmp" fetch -q --depth=1 origin "$commit" || \
+     ! git -C "$tmp" checkout -q --detach FETCH_HEAD; then
+    rm -rf "$tmp"
+    echo "::error::固定源码获取失败: $url @ $commit"
+    return 1
+  fi
+  mkdir -p "$dir"
+  if ! git -C "$tmp" archive -o "$tmp/archive.tar" HEAD || \
+     ! tar -xf "$tmp/archive.tar" -C "$dir"; then
+    rm -rf "$tmp" "$dir"
+    echo "::error::固定源码解包失败: $url @ $commit"
+    return 1
+  fi
+  rm -rf "$tmp"
+  echo "✅ 固定源码已展开: $dir"
+}
+
+# --- XG2010G 有线 NAPI 调度修正（flowstats 保持关闭，不在本次改动范围）---
+NAPI_PATCH="$GITHUB_WORKSPACE/patches/xg2010g/928-net-airoha-make-threaded-NAPI-optional.patch"
+NAPI_PATCH_DIR="target/linux/airoha/patches-6.18"
+if [ -f "$NAPI_PATCH" ]; then
+  mkdir -p "$NAPI_PATCH_DIR"
+  install -m 0644 "$NAPI_PATCH" "$NAPI_PATCH_DIR/928-net-airoha-make-threaded-NAPI-optional.patch"
+  echo "✅ 已加入 XG2010G threaded NAPI 可选开关补丁（默认关闭线程化 NAPI）"
+else
+  echo "::error::缺少 NAPI 补丁: $NAPI_PATCH"
+  exit 1
+fi
+
+# --- MWAN3：锁定 dl12345 的 nftables 版本，替换旧 iptables 版 ---
+if [ "$ADD_MWAN3" = "true" ]; then
+  MWAN3_SRC="$PKG_DIR/mwan3"
+  LUCI_MWAN3_SRC="$PKG_DIR/luci-app-mwan3"
+  # feeds install -a 已安装的旧版链接会和 package/custom 下同名包冲突。
+  for link in package/feeds/packages/mwan3 package/feeds/luci/luci-app-mwan3; do
+    if [ -L "$link" ]; then
+      rm -f "$link"
+    elif [ -e "$link" ]; then
+      echo "::error::$link 不是 feed 符号链接，拒绝覆盖"
+      exit 1
+    fi
+  done
+  rm -rf "$MWAN3_SRC" "$LUCI_MWAN3_SRC"
+  clone_commit https://github.com/dl12345/mwan3.git \
+    cdd4fc56f4de9ccf56d40d6dc04a5b6a4e5a0ae6 "$MWAN3_SRC" || exit 1
+  clone_commit https://github.com/dl12345/luci-app-mwan3.git \
+    1e8513a69cff32da3dd82c342151cdb4a991c2b7 "$LUCI_MWAN3_SRC" || exit 1
+
+  # LuCI feed 内源文件的相对 include 在 package/custom 下会失效，改成 TOPDIR 绝对路径。
+  sed -i 's|^include ../../luci.mk$|include $(TOPDIR)/feeds/luci/luci.mk|' "$LUCI_MWAN3_SRC/Makefile"
+  if ! grep -q '^include $(TOPDIR)/feeds/luci/luci.mk$' "$LUCI_MWAN3_SRC/Makefile"; then
+    echo "::error::luci-app-mwan3 Makefile 的 luci.mk 路径无法改写"
+    exit 1
+  fi
+  if ! grep -q '^PKG_VERSION:=3.6.12$' "$MWAN3_SRC/Makefile" || \
+     ! grep -q '+kmod-nft-core' "$MWAN3_SRC/Makefile"; then
+    echo "::error::MWAN3 源码不是预期的 nftables 3.6.12 包"
+    exit 1
+  fi
+  if [ ! -s "$LUCI_MWAN3_SRC/po/zh_Hans/mwan3.po" ]; then
+    echo "::error::MWAN3 简体中文翻译缺失"
+    exit 1
+  fi
+  echo "✅ MWAN3 固定为 nftables 3.6.12，含 zh_Hans 翻译"
+fi
 
 # =========================================================
 # qwe3017/luci-app —— 两个 LuCI 插件的来源
@@ -285,6 +357,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   # 必装插件（config 里是 =y 的那几个）必须进索引，否则 defconfig 会静默剔除
   REQUIRED=""
   [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
+  [ "$ADD_MWAN3" = "true" ] && REQUIRED="$REQUIRED mwan3 luci-app-mwan3"
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
@@ -296,6 +369,12 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     echo "::error::以下必装插件未进入 tmp/.packageinfo，defconfig 会把 .config 里的 =y 静默剔除:$HARD_MISS"
     echo "  已索引缺失清单:$INDEX_MISS"
     exit 1
+  fi
+  if [ "$ADD_MWAN3" = "true" ]; then
+    if ! grep -qE '^CONFIG_PACKAGE_luci-i18n-mwan3-zh-cn=y([[:space:]]|$)' "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config"; then
+      echo "::error::XG2010G 配置未启用 MWAN3 简体中文包"
+      exit 1
+    fi
   fi
   [ -n "$INDEX_MISS" ] && echo "::warning::部分可选包未进入索引（不影响必装插件）:$INDEX_MISS"
 else

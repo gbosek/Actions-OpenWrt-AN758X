@@ -30,7 +30,7 @@ WIFI="${WIFI:-MT7916}"
 # 0 = 适配 ponwrt / mainline 自带的 airoha_npu 驱动（推荐）
 # 1 = 适配 Clanker 自己改过的 host driver（换固件的同时必须换驱动）
 CLANKER="${CLANKER:-0}"
-REPO="${CLANKER_REPO:-https://github.com/ClankerConstruction/ClankerNPU}"
+REPO="${CLANKER_REPO:-https://github.com/gbosek/ClankerNPU.git}"
 # 源码 ref：默认跟 main 最新；也可以填 commit sha / tag / 分支名钉死版本
 CLANKER_REF="${CLANKER_REF:-main}"
 XPACK_VER="${XPACK_VER:-14.2.0-3}"
@@ -55,7 +55,7 @@ DATA_MAX=$((0x10000))
 # ------------------------------------------------------------------
 valid=0
 for v in AN7552_MT7916 AN7552_MT7991 AN7552_MT7993 \
-         AN7581_MT7916 AN7581_MT7992 AN7581_MT7996 \
+         AN7581_MT7916 AN7581_MT7992 AN7581_MT7996 AN7581_NOWIFI \
          AN7583_MT7916 AN7583_MT7992 AN7583_MT7993 AN7583_MT7996 AN7583_NOWIFI; do
   [ "${SOC}_${WIFI}" = "$v" ] && valid=1
 done

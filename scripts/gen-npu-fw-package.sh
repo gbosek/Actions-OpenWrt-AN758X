@@ -21,6 +21,7 @@
 #   NPU_DEFAULT_WIFI WIFI=all 时，默认勾选哪个变体（默认 MT7916）
 #   CLANKER          0=配 ponwrt/mainline 驱动  1=配 Clanker 自改 host driver
 #   CLANKER_REF      ClankerNPU 源码 ref（main / tag / commit sha）
+#   CLANKER_REPO     ClankerNPU 仓库 URL（默认 gbosek fork）
 #   FW_PREFIX        固件文件名前缀（空 = 驱动默认名 en7581 / an7583）
 #   WORK             工作目录，默认 ./.clanker-build
 #   PKG_OUT_DIR      包输出目录，默认 ./package/custom
@@ -38,6 +39,7 @@ WIFI="$(echo "${WIFI:-MT7916}" | tr 'a-z' 'A-Z')"
 NPU_DEFAULT_WIFI="$(echo "${NPU_DEFAULT_WIFI:-MT7916}" | tr 'a-z' 'A-Z')"
 CLANKER="${CLANKER:-0}"
 CLANKER_REF="${CLANKER_REF:-main}"
+CLANKER_REPO="${CLANKER_REPO:-https://github.com/gbosek/ClankerNPU.git}"
 FW_PREFIX="${FW_PREFIX:-}"
 
 WORK="${WORK:-$REPO_DIR/.clanker-build}"
@@ -53,7 +55,7 @@ BUILD_SCRIPT="$SCRIPT_DIR/build-npu-fw.sh"
 # 1) SoC -> 驱动默认固件前缀 / 包名里的 SoC 段 / 支持的 WiFi 变体
 # ------------------------------------------------------------------
 case "$SOC" in
-  AN7581) DEF_PREFIX="en7581"; SOC_PKG="en7581"; VARIANTS="MT7916 MT7992 MT7996" ;;
+  AN7581) DEF_PREFIX="en7581"; SOC_PKG="en7581"; VARIANTS="MT7916 MT7992 MT7996 NOWIFI" ;;
   AN7583) DEF_PREFIX="an7583"; SOC_PKG="an7583"; VARIANTS="MT7916 MT7992 MT7993 MT7996 NOWIFI" ;;
   AN7552) DEF_PREFIX="en7581"; SOC_PKG="an7552"; VARIANTS="MT7916 MT7991 MT7993" ;;
   *) echo "::error::未知 SoC: $SOC（支持 AN7552 / AN7581 / AN7583）"; exit 1 ;;
@@ -102,7 +104,7 @@ for v in $BUILD_LIST; do
     echo "=================================================="
     echo ">>> 编译变体 ${SOC}_${v}"
     echo "=================================================="
-    SOC="$SOC" WIFI="$v" CLANKER="$CLANKER" CLANKER_REF="$CLANKER_REF" \
+    SOC="$SOC" WIFI="$v" CLANKER="$CLANKER" CLANKER_REF="$CLANKER_REF" CLANKER_REPO="$CLANKER_REPO" \
     FW_PREFIX="$FW_PREFIX" OUT_DIR="$OUT" WORK="$WORK" \
       bash "$BUILD_SCRIPT"
   else

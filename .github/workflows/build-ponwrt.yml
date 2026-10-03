@@ -3,33 +3,34 @@ name: Build PonWrt (Airoha AN758x PON)
 env:
   
   BUILD_ROOT: /workdir
-  SOURCE: ${{ github.event.inputs.source || 'fork' }}
-  REPO_URL: ${{ github.event.inputs.source == 'pbs05/ponwrt' && 'https://github.com/pbs05/ponwrt' || 'https://github.com/qwe3017/ponwrt' }}
-  FEEDS_CONF: ''
+  SOURCE: ${{ github.event.inputs.source || 'pbs05/ponwrt' }}
+  REPO_URL: ${{ (github.event.inputs.source || 'pbs05/ponwrt') == 'pbs05/ponwrt' && 'https://github.com/pbs05/ponwrt' || 'https://github.com/qwe3017/ponwrt' }}
+  FEEDS_CONF: feeds-r68.conf
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
-  UPLOAD_RELEASE: ${{ github.event.inputs.upload_release || 'true' }}
+  UPLOAD_RELEASE: ${{ github.event.inputs.upload_release || 'false' }}
   USE_DL_CACHE: true                
   USE_CCACHE: false                    
   TZ: Asia/Shanghai
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  REPO_BRANCH: ${{ github.event.inputs.branch || 'master' }}
+  REPO_BRANCH: ${{ github.event.inputs.branch || 'c3b518baec8ed0cc5a353327fa154f38bde1e6c0' }}
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
-  PROFILE: ${{ github.event.inputs.profile || 'fiberhome_hg5585f-ct' }}
-  BUILD_SCOPE: ${{ github.event.inputs.scope || 'firmware' }}
+  PROFILE: ${{ github.event.inputs.profile || 'gemtek_xg2010g' }}
+  BUILD_SCOPE: ${{ github.event.inputs.scope || 'toolchain-only' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   # ---- NPU 固件（RISC-V 裸机固件，由工作流按机型现编或沿用仓库自带）----
-  NPU_FW: ${{ github.event.inputs.npu_fw || 'stock' }}
-  NPU_WIFI: ${{ github.event.inputs.npu_wifi || 'auto' }}
+  NPU_FW: ${{ github.event.inputs.npu_fw || 'clanker' }}
+  NPU_WIFI: ${{ github.event.inputs.npu_wifi || 'NOWIFI' }}
   NPU_CLANKER: ${{ github.event.inputs.npu_clanker || '0' }}
   NPU_FW_PREFIX: ${{ github.event.inputs.npu_fw_prefix || '' }}
-  NPU_WLAN_MEM: ${{ github.event.inputs.npu_wlan_mem || 'true' }}
-  NPU_SRC_REF: ${{ github.event.inputs.npu_src_ref || 'main' }}
+  NPU_WLAN_MEM: ${{ github.event.inputs.npu_wlan_mem || 'false' }}
+  NPU_SRC_REF: ${{ github.event.inputs.npu_src_ref || 'a19ce0946f9f1a8237bb2ecb786facfa61e27f78' }}
+  NPU_REPO: https://github.com/gbosek/ClankerNPU.git
   # NPU 固件改成「可选插件包」：包名 airoha-<soc>-<wifi>-npu-firmware
   #   CONFIG_PACKAGE_airoha-en7581-mt7916-npu-firmware=y
-  NPU_DEFAULT_WIFI: ${{ github.event.inputs.npu_default_wifi || 'MT7916' }}
+  NPU_DEFAULT_WIFI: ${{ github.event.inputs.npu_default_wifi || 'NOWIFI' }}
   NPU_FILES_FALLBACK: ${{ github.event.inputs.npu_fw_files_fallback || 'false' }}
 
 on:
@@ -47,7 +48,7 @@ on:
       branch:
         description: 'ponwrt 源码分支'
         required: true
-        default: 'master'
+        default: 'c3b518baec8ed0cc5a353327fa154f38bde1e6c0'
       soc:
         description: 'SoC 平台'
         required: true
@@ -59,7 +60,7 @@ on:
       profile:
         description: '机型 profile (all=全机型编译)'
         required: true
-        default: 'fiberhome_hg5585f-ct'
+        default: 'gemtek_xg2010g'
         type: choice
         options:
           - fiberhome_hg5585f-cu
@@ -78,7 +79,7 @@ on:
       scope:
         description: '构建范围 (toolchain-only 仅预热工具链缓存)'
         required: true
-        default: 'firmware'
+        default: 'toolchain-only'
         type: choice
         options:
           - firmware
@@ -94,7 +95,7 @@ on:
       npu_fw:
         description: 'NPU 固件来源 (stock=仓库自带 linux-firmware；clanker=用 ClankerNPU 现编)'
         required: true
-        default: 'stock'
+        default: 'clanker'
         type: choice
         options:
           - stock
@@ -103,7 +104,7 @@ on:
       npu_wifi:
         description: 'NPU 固件变体: WiFi 芯片 (auto=按机型推断；MT7916/MT7996=kite，其余=eagle)'
         required: true
-        default: 'auto'
+        default: 'NOWIFI'
         type: choice
         options:
           - auto
@@ -117,7 +118,7 @@ on:
       npu_default_wifi:
         description: 'npu_wifi=all 时默认勾选哪个变体（其余变体也会编成可选包，但不自动勾选）'
         required: false
-        default: 'MT7916'
+        default: 'NOWIFI'
         type: choice
         options:
           - MT7916
@@ -135,7 +136,7 @@ on:
           - 'false'
           - 'true'
       npu_clanker:
-        description: 'CLANKER=1 适配 Clanker 自改 host driver (换固件需同时换驱动，一般保持 0)'
+        description: 'ClankerNPU 固件兼容模式：0=PonWrt 现有 Linux 主机驱动；1=配套 Clanker 修改版主机驱动'
         required: false
         default: '0'
         type: choice
@@ -149,19 +150,19 @@ on:
       npu_wlan_mem:
         description: '给机型 DTS 补 WiFi 卸载所需的 NPU 保留内存区 (pkt/tx-pkt/tx-bufid/ba)'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
           - 'false'
       npu_src_ref:
-        description: 'ClankerNPU 源码 ref (默认 main=跟上游最新；也可填 commit sha / tag 钉死版本)'
+        description: 'ClankerNPU 源码提交（XG2010G 已验证的 NOWIFI 构建）'
         required: false
-        default: 'main'
+        default: 'a19ce0946f9f1a8237bb2ecb786facfa61e27f78'
       upload_release:
         description: '固件发布到 Release（false 则只传 Artifact）'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
@@ -305,9 +306,13 @@ jobs:
       run: |
         cd "$BUILD_ROOT"
         df -hT "$PWD"
-        git clone "$REPO_URL" -b "$REPO_BRANCH" --single-branch --depth=1 openwrt
+        mkdir openwrt
+        git -C openwrt init -q
+        git -C openwrt remote add origin "$REPO_URL"
+        git -C openwrt fetch -q --depth=1 origin "$REPO_BRANCH"
+        git -C openwrt checkout -q --detach FETCH_HEAD
         ln -sf "$BUILD_ROOT/openwrt" "$GITHUB_WORKSPACE/openwrt"
-        cd openwrt && echo "commit: $(git rev-parse --short HEAD)"
+        cd openwrt && echo "commit: $(git rev-parse HEAD)"
 
     # =========================================================
     # 3. dl 下载缓存
@@ -321,9 +326,9 @@ jobs:
         # 按分支 + 周号：同一周内复用同一条目。
         # 原先用 github.run_number → 每次运行都 save 一份新副本，
         # 10GB 配额会被迅速刷满并淘汰掉有用的旧缓存。
-        key: ponwrt-dl-${{ env.SOURCE }}-${{ github.event.inputs.branch || 'master' }}-${{ steps.resolve.outputs.week }}
+        key: ponwrt-dl-${{ env.SOURCE }}-${{ env.REPO_BRANCH }}-${{ steps.resolve.outputs.week }}
         restore-keys: |
-          ponwrt-dl-${{ env.SOURCE }}-${{ github.event.inputs.branch || 'master' }}-
+          ponwrt-dl-${{ env.SOURCE }}-${{ env.REPO_BRANCH }}-
         # 关键：即使后面编译失败也要保住已下载的源码包
         save-always: true
 
@@ -388,7 +393,7 @@ jobs:
         chmod +x "$REPO_DIR"/scripts/*.sh
 
         SOC="$SOC_UP" WIFI="$NPU_WIFI" NPU_DEFAULT_WIFI="$NPU_DEFAULT_WIFI" \
-        CLANKER="$NPU_CLANKER" CLANKER_REF="$NPU_SRC_REF" FW_PREFIX="$NPU_FW_PREFIX" \
+        CLANKER="$NPU_CLANKER" CLANKER_REF="$NPU_SRC_REF" CLANKER_REPO="$NPU_REPO" FW_PREFIX="$NPU_FW_PREFIX" \
         WORK="$REPO_DIR/.clanker-build" PKG_OUT_DIR="package/custom" PONWRT_DIR=. \
         FALLBACK_FILES="$NPU_FILES_FALLBACK" \
           bash "$REPO_DIR/scripts/gen-npu-fw-package.sh"
@@ -523,6 +528,7 @@ jobs:
     #     本步骤检测到就会沿用你的选择，不自作主张改回去。
     # =========================================================
     - name: Select NPU firmware package
+      if: env.BUILD_SCOPE != 'toolchain-only'
       run: |
         cd "$BUILD_ROOT/openwrt"
 
@@ -654,6 +660,21 @@ jobs:
         fi
         echo "✅ PON 关键包校验通过"
 
+        # XG2010G 双 WAN / 策略路由 / Web 终端包必须保留在配置中。
+        FEATURE_MISSING=""
+        for p in mwan3 luci-app-mwan3 luci-i18n-mwan3-zh-cn \
+                 pbr luci-app-pbr luci-i18n-pbr-zh-cn \
+                 ttyd luci-app-ttyd luci-i18n-ttyd-zh-cn; do
+          if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
+            FEATURE_MISSING="$FEATURE_MISSING $p"
+          fi
+        done
+        if [ -n "$FEATURE_MISSING" ]; then
+          echo "::error::双 WAN / PBR / 终端组件在 defconfig 后缺失:$FEATURE_MISSING"
+          exit 1
+        fi
+        echo "✅ 双 WAN、PBR 中文包和 Web 终端配置校验通过"
+
         # =========================================================
         # NPU 固件校验（defconfig 之后）
         #   clanker：可选插件包 CONFIG_PACKAGE_airoha-<soc>-<wifi>-npu-firmware 必须 =y
@@ -670,7 +691,9 @@ jobs:
         # 所以这里必须显式确认，并打印排查线索。
         # =========================================================
         SEL="${NPU_FW_SYMBOL:-}"
-        if [ "${NPU_FW}" = "clanker" ] && [ "${BUILD_SCOPE}" != "toolchain-only" ]; then
+        if [ "${BUILD_SCOPE}" = "toolchain-only" ]; then
+          echo "⏭ toolchain-only：跳过 NPU 固件包校验"
+        elif [ "${NPU_FW}" = "clanker" ]; then
           if [ -z "$SEL" ] || ! grep -q "^CONFIG_PACKAGE_${SEL}=y" .config; then
             echo "::error::ClankerNPU 可选包 ${SEL:-<空>} 在 defconfig 后未启用"
             echo "  --- 排查线索 ---"
