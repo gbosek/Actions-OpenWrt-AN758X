@@ -23,10 +23,11 @@ env:
   # ---- NPU 固件（RISC-V 裸机固件，由工作流按机型现编或沿用仓库自带）----
   NPU_FW: ${{ github.event.inputs.npu_fw || 'stock' }}
   NPU_WIFI: ${{ github.event.inputs.npu_wifi || 'auto' }}
-  NPU_CLANKER: ${{ github.event.inputs.npu_clanker || '0' }}
+  NPU_CLANKER: ${{ github.event.inputs.npu_clanker || '1' }}
   NPU_FW_PREFIX: ${{ github.event.inputs.npu_fw_prefix || '' }}
   NPU_WLAN_MEM: ${{ github.event.inputs.npu_wlan_mem || 'true' }}
-  NPU_SRC_REF: ${{ github.event.inputs.npu_src_ref || 'main' }}
+  NPU_SRC_REPO: ${{ github.event.inputs.npu_src_repo || 'https://github.com/gbosek/ClankerNPU.git' }}
+  NPU_SRC_REF: ${{ github.event.inputs.npu_src_ref || 'a19ce0946f9f1a8237bb2ecb786facfa61e27f78' }}
   # NPU 固件改成「可选插件包」：包名 airoha-<soc>-<wifi>-npu-firmware
   #   CONFIG_PACKAGE_airoha-en7581-mt7916-npu-firmware=y
   NPU_DEFAULT_WIFI: ${{ github.event.inputs.npu_default_wifi || 'MT7916' }}
@@ -92,7 +93,7 @@ on:
           - 'false'
           - 'true'
       npu_fw:
-        description: 'NPU 固件来源 (stock=仓库自带 linux-firmware；clanker=用 ClankerNPU 现编)'
+        description: 'NPU 固件来源 (clanker=NOWIFI ClankerNPU；需要保持 ponwrt 主机驱动)'
         required: true
         default: 'stock'
         type: choice
@@ -135,9 +136,9 @@ on:
           - 'false'
           - 'true'
       npu_clanker:
-        description: 'CLANKER=1 适配 Clanker 自改 host driver (换固件需同时换驱动，一般保持 0)'
+        description: 'ClankerNPU 固件编译宏；1 不代表替换 Linux 主机驱动，NOWIFI 下没有 WiFi host 特殊行为'
         required: false
-        default: '0'
+        default: '1'
         type: choice
         options:
           - '0'
@@ -155,9 +156,13 @@ on:
           - 'true'
           - 'false'
       npu_src_ref:
-        description: 'ClankerNPU 源码 ref (默认 main=跟上游最新；也可填 commit sha / tag 钉死版本)'
+        description: 'ClankerNPU 源码 ref (默认固定为 gbosek NOWIFI 分支提交；可填 branch/tag/commit)'
         required: false
-        default: 'main'
+        default: 'a19ce0946f9f1a8237bb2ecb786facfa61e27f78'
+      npu_src_repo:
+        description: 'ClankerNPU 源码仓库'
+        required: false
+        default: 'https://github.com/gbosek/ClankerNPU.git'
       upload_release:
         description: '固件发布到 Release（false 则只传 Artifact）'
         required: false
@@ -388,7 +393,7 @@ jobs:
         chmod +x "$REPO_DIR"/scripts/*.sh
 
         SOC="$SOC_UP" WIFI="$NPU_WIFI" NPU_DEFAULT_WIFI="$NPU_DEFAULT_WIFI" \
-        CLANKER="$NPU_CLANKER" CLANKER_REF="$NPU_SRC_REF" FW_PREFIX="$NPU_FW_PREFIX" \
+        CLANKER="$NPU_CLANKER" CLANKER_REPO="$NPU_SRC_REPO" CLANKER_REF="$NPU_SRC_REF" FW_PREFIX="$NPU_FW_PREFIX" \
         WORK="$REPO_DIR/.clanker-build" PKG_OUT_DIR="package/custom" PONWRT_DIR=. \
         FALLBACK_FILES="$NPU_FILES_FALLBACK" \
           bash "$REPO_DIR/scripts/gen-npu-fw-package.sh"
@@ -1107,7 +1112,7 @@ jobs:
           echo "| 分支 | \`${REPO_BRANCH}\` |"
           echo "| 提交 | \`$(cd "$BUILD_ROOT"/openwrt && git rev-parse --short HEAD)\` |"
           echo "| 编译时间 | $(date '+%Y-%m-%d %H:%M:%S') (Shanghai) |"
-          echo "| NPU 固件 | \`${NPU_FW}\`$( [ "$NPU_FW" = "clanker" ] && echo " (${NPU_WIFI}, ClankerNPU)" ) |"
+          echo "| NPU 固件 | \`${NPU_FW}\`$( [ "$NPU_FW" = "clanker" ] && echo " (${NPU_WIFI}, ClankerNPU; PonWrt 其余组件不变)" ) |"
           [ -n "${NPU_FW_SYMBOL:-}" ] && echo "| NPU 固件包 | \`${NPU_FW_SYMBOL}\` (CONFIG_PACKAGE_...=y) |"
           echo ""
 
@@ -1127,7 +1132,7 @@ jobs:
               echo "| 本次编出的变体 | \`${NPU_VARIANTS:-}\` |"
               echo "| npu_rv32.bin | ${NPU_RV32_SIZE} bytes (上限 2097152) |"
               echo "| npu_data.bin | ${NPU_DATA_SIZE} bytes (上限 65536) |"
-              echo "| CLANKER | \`${NPU_CLANKER}\` |"
+              echo "| CLANKER 宏 | \`${NPU_CLANKER}\` (固件编译宏；不选择 Linux host driver) |"
               echo ""
             } >> release.txt
           fi

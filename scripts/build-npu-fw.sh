@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==================================================================
-# 用 ClankerConstruction/ClankerNPU 编译 Airoha NPU 固件
+# 用可配置的 ClankerNPU fork 编译 Airoha NPU 固件
 #
 # 产物命名按内核驱动 drivers/net/ethernet/airoha/airoha_npu.c 的约定：
 #   rv32 -> airoha/<FW_PREFIX>_npu_rv32.bin  （≤ 0x200000，加载进 npu_binary @0x84000000）
@@ -20,17 +20,17 @@
 #      · 生成包后 re-index custom feed，否则 CONFIG_PACKAGE_xxx 符号不存在
 #
 # 用法（全部走环境变量，便于 GitHub Actions 直接传）：
-#   SOC=AN7581 WIFI=MT7916 ./scripts/build-npu-fw.sh
+#   SOC=AN7581 WIFI=NOWIFI CLANKER=1 ./scripts/build-npu-fw.sh
 #   SOC=AN7583 WIFI=MT7993 CLANKER=1 FW_PREFIX=an7583_mt7993 ./scripts/build-npu-fw.sh
 # ==================================================================
 set -euo pipefail
 
 SOC="${SOC:-AN7581}"
 WIFI="${WIFI:-MT7916}"
-# 0 = 适配 ponwrt / mainline 自带的 airoha_npu 驱动（推荐）
-# 1 = 适配 Clanker 自己改过的 host driver（换固件的同时必须换驱动）
+# USE_CLANKER_DRIVER 编译宏，仅影响 ClankerNPU 固件中的特定行为；
+# 它不会安装或替换 Linux host driver。NOWIFI 配置没有 WiFi host 行为。
 CLANKER="${CLANKER:-0}"
-REPO="${CLANKER_REPO:-https://github.com/ClankerConstruction/ClankerNPU}"
+REPO="${CLANKER_REPO:-https://github.com/gbosek/ClankerNPU.git}"
 # 源码 ref：默认跟 main 最新；也可以填 commit sha / tag / 分支名钉死版本
 CLANKER_REF="${CLANKER_REF:-main}"
 XPACK_VER="${XPACK_VER:-14.2.0-3}"

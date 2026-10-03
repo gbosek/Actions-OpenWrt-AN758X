@@ -53,7 +53,7 @@ BUILD_SCRIPT="$SCRIPT_DIR/build-npu-fw.sh"
 # 1) SoC -> 驱动默认固件前缀 / 包名里的 SoC 段 / 支持的 WiFi 变体
 # ------------------------------------------------------------------
 case "$SOC" in
-  AN7581) DEF_PREFIX="en7581"; SOC_PKG="en7581"; VARIANTS="MT7916 MT7992 MT7996" ;;
+  AN7581) DEF_PREFIX="en7581"; SOC_PKG="en7581"; VARIANTS="MT7916 MT7992 MT7996 NOWIFI" ;;
   AN7583) DEF_PREFIX="an7583"; SOC_PKG="an7583"; VARIANTS="MT7916 MT7992 MT7993 MT7996 NOWIFI" ;;
   AN7552) DEF_PREFIX="en7581"; SOC_PKG="an7552"; VARIANTS="MT7916 MT7991 MT7993" ;;
   *) echo "::error::未知 SoC: $SOC（支持 AN7552 / AN7581 / AN7583）"; exit 1 ;;
@@ -82,6 +82,7 @@ if [ "$WIFI" = "ALL" ]; then
   [ -n "$FW_PREFIX" ] && echo "::warning::WIFI=all 时忽略 FW_PREFIX，各变体都用驱动默认名"
 else
   BUILD_LIST="$WIFI"
+  NPU_DEFAULT_WIFI="$WIFI"
 fi
 
 if [ ! -f "$TEMPLATE" ]; then
@@ -103,6 +104,7 @@ for v in $BUILD_LIST; do
     echo ">>> 编译变体 ${SOC}_${v}"
     echo "=================================================="
     SOC="$SOC" WIFI="$v" CLANKER="$CLANKER" CLANKER_REF="$CLANKER_REF" \
+    CLANKER_REPO="${CLANKER_REPO:-https://github.com/gbosek/ClankerNPU.git}" \
     FW_PREFIX="$FW_PREFIX" OUT_DIR="$OUT" WORK="$WORK" \
       bash "$BUILD_SCRIPT"
   else

@@ -2,8 +2,9 @@
 # ==================================================================
 # 给机型 DTS 补 NPU 节点内容（在 ponwrt 源码根目录执行）
 #
-# 做两件事，都由调用方用环境变量控制：
-#   1. 引入 WiFi 卸载必需的保留内存区（pkt / tx-pkt / tx-bufid / ba）
+# 给 NPU 固件路线启用板级 NPU 节点，并按需配置 WiFi 内存区：
+#   1. 始终启用所选机型的 NPU 节点（NOWIFI 也必须启用）
+#   2. 按需引入 WiFi 卸载必需的保留内存区（pkt / tx-pkt / tx-bufid / ba）
 #      airoha_npu 驱动的 airoha_npu_wlan_init_memory() 按名字查这三块，
 #      缺一个 WiFi 卸载初始化就失败；只做有线 PPE/HWNAT 卸载不需要。
 #   2. 当固件名不是驱动默认名时，写 firmware-name 属性（rv32 在前、data 在后）
@@ -33,16 +34,6 @@ FW_PREFIX="${FW_PREFIX:-$DEF_PREFIX}"
 
 DTS_DIR="$PONWRT_DIR/target/linux/airoha/dts"
 [ -d "$DTS_DIR" ] || { echo "::error::找不到 $DTS_DIR，检查 PONWRT_DIR"; exit 1; }
-
-if [ "$ADD_WLAN_MEM" != "true" ]; then
-  echo ">>> ADD_WLAN_MEM=false，跳过 DTS 修改"
-  exit 0
-fi
-
-if [ "$WIFI" = "NOWIFI" ]; then
-  echo ">>> WIFI=NOWIFI，不需要 WiFi 卸载内存区，跳过"
-  exit 0
-fi
 
 if [ "$SOC_LC" != "an7581" ]; then
   echo "::warning::ponwrt 目前只有 an7581-npu-wlan.dtsi（an7583 的内存区布局不同），跳过 DTS 修改"
@@ -74,23 +65,31 @@ esac
 # 生成 dtsi
 # ------------------------------------------------------------------
 DTSI="$DTS_DIR/an7581-npu-clanker.dtsi"
+USE_WLAN_MEM=true
+if [ "$ADD_WLAN_MEM" != "true" ] || [ "$WIFI" = "NOWIFI" ]; then
+  USE_WLAN_MEM=false
+fi
 {
   echo '// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)'
-  echo '/* 由 apply-npu-dts.sh 生成：NPU WiFi 卸载保留内存区 + 可选固件名 */'
+  echo '/* 由 apply-npu-dts.sh 生成：启用 NPU、可选 WiFi 保留内存区与固件名 */'
   echo ''
-  echo '#include "an7581-npu-wlan.dtsi"'
+  if [ "$USE_WLAN_MEM" = "true" ]; then
+    echo '#include "an7581-npu-wlan.dtsi"'
+  else
+    echo '/* NOWIFI / ADD_WLAN_MEM=false：仅使用 binary 区 */'
+  fi
   echo ''
+  echo '&npu {'
+  echo '	status = "okay";'
   if [ "$FW_PREFIX" != "$DEF_PREFIX" ]; then
-    echo '&npu {'
     echo "	firmware-name = \"airoha/${FW_PREFIX}_npu_rv32.bin\","
     echo "			\"airoha/${FW_PREFIX}_npu_data.bin\";"
-    echo '};'
-  else
-    echo "/* FW_PREFIX=$FW_PREFIX 即驱动默认名，无需 firmware-name */"
   fi
+  echo '};'
 } > "$DTSI"
 echo ">>> 生成 $DTSI"
 sed -n '1,20p' "$DTSI"
+echo ">>> NPU 节点启用，WiFi 保留内存区: $USE_WLAN_MEM"
 
 # ------------------------------------------------------------------
 # 插进机型 dts（放在 #include "an7581.dtsi" 之后）

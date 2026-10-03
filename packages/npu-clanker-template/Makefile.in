@@ -34,8 +34,10 @@ define Package/@PKG_NAME@
 endef
 
 define Package/@PKG_NAME@/description
-  Airoha @SOC@ NPU (RISC-V) firmware built for the @WIFI@ WiFi datapath,
-  cross-built from ClankerConstruction/ClankerNPU @ @GITREV@.
+  Airoha @SOC@ NPU (RISC-V) firmware built for the @WIFI@ profile,
+  cross-built from the selected ClankerNPU source @ @GITREV@.
+  NOWIFI builds use the legacy airoha_npu mailbox ABI and do not replace
+  the Linux host driver.
   Installs /lib/firmware/airoha/$(NPU_FW_PREFIX)_npu_rv32.bin and
   /lib/firmware/airoha/$(NPU_FW_PREFIX)_npu_data.bin - exactly the two file
   names the airoha_npu host driver requests.

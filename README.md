@@ -156,8 +156,11 @@ SHOW_PON_OPTICS=0    # 只显示温度（CPU / WiFi / PON）
 
 ## NPU 固件选择（stock / clanker / none）
 
-NPU 是 Airoha SoC 里那颗 RISC-V 核，**不是** Linux 驱动 —— host 端驱动 `airoha_npu`
-随内核编出，它按固定名字找两个固件镜像：
+PonWrt 仍是完整固件基底。此工作流的 `clanker` 选项只替换 NPU 裸机固件，其他系统组件保持 PonWrt。
+Linux host 端 `airoha_npu` 驱动仍由 PonWrt 内核提供；ClankerNPU NOWIFI 分支保留它所需的 mailbox ABI，
+并保留 AN7581 PPE/HWNAT 初始化。该分支仓库提供的是 NPU 固件源码，不包含一个可直接替换 PonWrt 的 Linux 驱动模块。
+
+NPU 是 Airoha SoC 里那颗 RISC-V 核，host 端驱动按固定名字找两个固件镜像：
 
 | 镜像 | 默认文件名 | 上限 | 加载去向 |
 |---|---|---|---|
@@ -169,7 +172,7 @@ NPU 是 Airoha SoC 里那颗 RISC-V 核，**不是** Linux 驱动 —— host �
 | 选项 | 行为 |
 |---|---|
 | `stock`（默认） | 用 ponwrt 自带包 `airoha-en7581-npu-firmware`（linux-firmware 里的镜像，MT7992 / **eagle** 数据面） |
-| `clanker` | 用 [ClankerNPU](https://github.com/ClankerConstruction/ClankerNPU) 现编，变体由 `npu_wifi` 决定 |
+| `clanker` | 用 [gbosek/ClankerNPU](https://github.com/gbosek/ClankerNPU) 的 AN7581 NOWIFI 分支现编，替换 PonWrt 自带 NPU 固件 |
 | `none` | 不装任何固件（NPU 不起，只剩有线软件转发） |
 
 ### ClankerNPU 固件现在是「可选插件包」
@@ -185,7 +188,7 @@ CONFIG_PACKAGE_airoha-en7581-mt7916-npu-firmware=y
 
 | SoC | 包名 |
 |---|---|
-| AN7581 | `airoha-en7581-mt7916-npu-firmware` / `airoha-en7581-mt7992-npu-firmware` / `airoha-en7581-mt7996-clanker-npu-firmware` |
+| AN7581 | `airoha-en7581-mt7916-npu-firmware` / `airoha-en7581-mt7992-npu-firmware` / `airoha-en7581-mt7996-clanker-npu-firmware` / `airoha-en7581-nowifi-npu-firmware` |
 | AN7583 | `airoha-an7583-mt7916-npu-firmware` / `-mt7992-` / `-mt7993-` / `-mt7996-` / `-nowifi-` |
 | AN7552 | `airoha-an7552-mt7916-npu-firmware` / `-mt7991-` / `-mt7993-` |
 
@@ -210,18 +213,18 @@ ClankerNPU 包同时进 rootfs —— 两个包装的是同一批文件名，谁
 | `npu_fw` | `stock` | `stock` / `clanker` / `none` |
 | `npu_wifi` | `auto` | 变体：`auto` 按机型推断，或手动选 `MT7916` `MT7992` `MT7996` `MT7991` `MT7993` `NOWIFI`；`all` = 该 SoC 所有变体都编成可选包，只默认勾一个 |
 | `npu_default_wifi` | `MT7916` | `npu_wifi=all` 时默认勾选哪个变体 |
-| `npu_clanker` | `0` | `1` = 适配 Clanker 自改的 host driver。**配 ponwrt 自带驱动必须保持 0** |
+| `npu_clanker` | `1` | ClankerNPU 固件编译宏；不是 Linux host driver 选择项。NOWIFI 没有 WiFi host 特殊行为 |
 | `npu_fw_prefix` | 空 | 固件名前缀。空 = 驱动默认名（`en7581` / `an7583`），此时不用改 DTS |
 | `npu_wlan_mem` | `true` | 给机型 DTS 补 WiFi 卸载必需的保留内存区（pkt / tx-pkt / tx-bufid / ba） |
-| `npu_src_ref` | `main` | ClankerNPU 源码 ref（`main`=跟上游最新，也可填 commit sha / tag 钉死版本） |
+| `npu_src_ref` | `a19ce0946f9f1a8237bb2ecb786facfa61e27f78` | 固定 ClankerNPU NOWIFI 源码版本，便于复现 |
 | `npu_fw_files_fallback` | `false` | `true` = 额外把镜像铺进 `files/lib/firmware/airoha` 兜底（**开了以后包置 n 也会生效**，破坏可选语义，仅排查用） |
 
-### 可用变体（ClankerNPU 共 11 个）
+### 可用变体（ClankerNPU 共 12 个）
 
 | SoC | 可选 WiFi 芯片 |
 |---|---|
 | AN7552 | MT7916、MT7991、MT7993 |
-| AN7581 | MT7916、MT7992、MT7996 |
+| AN7581 | MT7916、MT7992、MT7996、NOWIFI |
 | AN7583 | MT7916、MT7992、MT7993、MT7996、NOWIFI |
 
 `MT7916` / `MT7996` 走 **kite** 数据面，`MT7991` / `MT7992` / `MT7993` 走 **eagle**。
@@ -245,6 +248,7 @@ make defconfig + 校验（含 NPU 固件包符号校验）
 
 | 场景 | 输入 |
 |---|---|
+| Gemtek XG2010G（无 WiFi） | `profile=gemtek_xg2010g` + `npu_fw=clanker` + `npu_wifi=NOWIFI` + `npu_clanker=1` |
 | HG5585F-CT / ZN515XG-D 换成 kite 固件 | `npu_fw=clanker`（`npu_wifi` 自动推断为 MT7916）→ 得到 `CONFIG_PACKAGE_airoha-en7581-mt7916-npu-firmware=y` |
 | 把 AN7581 的全部变体都编成可选包 | `npu_wifi=all`，再在 configs 里挑一个写 `=y` |
 | Nokia XG-040G-MF（AN7583） | `profile=nokia_xg-040g-mf` + `npu_fw=clanker` + `npu_wifi=MT7993` |
@@ -254,16 +258,14 @@ make defconfig + 校验（含 NPU 固件包符号校验）
 
 ### 注意事项
 
-1. **`npu_clanker` 保持 0**：`CLANKER=1` 会加 `-DUSE_CLANKER_DRIVER`，是给 Clanker 自己改的
-   host driver 用的，其 Makefile 注释明说配 stock 驱动可能坏；且它只影响 eagle 的 `sta_q`
-   与 SRAM type 41 的 sizing，kite 变体开了也没差别。
+1. **`npu_clanker` 是固件编译宏，不是 Linux host driver 选择项**：`CLANKER=1` 会定义
+   `USE_CLANKER_DRIVER`。XG2010G NOWIFI 构建保留 PonWrt `airoha_npu` 的 mailbox ABI，
+   同时启用 PonWrt NPU 节点；它不会把 PonWrt 的其他网络、PON 或系统组件换掉。
 2. **工具链必须是 elf/newlib**：固件用 `-march=rv32imc_zicsr_zifencei -mabi=ilp32` 编，
    `riscv64-linux-gnu` 编不了；脚本会自动下载 xpack `riscv-none-elf-gcc 14.2.0-3`（约 100 MB）。
 3. **data 段只有 64 KiB 上限**，比 rv32 的 2 MiB 紧得多；脚本编完先自检，超限直接失败，
    不会编出刷上才炸的镜像。
-4. **`npu_src_ref` 默认 `main`（跟上游最新）**：好处是总能吃到 ClankerNPU 的修复，
-   代价是**不同时间跑 CI 编出的固件可能不同** —— 上游一改代码，行为就跟着变（且没法复现）。
-   出问题时建议填 commit sha 钉死，先本地编一次验证再定。
+4. **`npu_src_ref` 默认固定在 NOWIFI 分支提交**：相同源码可复现；确认硬件正常后再考虑升级 ref。
    无论用哪种，Release 说明里都会记下当次的实际 gitrev，可以回溯这台机器刷的是哪版。
 5. **机型 → WiFi 映射表**在 `Resolve device profile` 步骤里，只登记了
    `fiberhome_hg5585f-ct/cu` 与 `znxt_zn515xg-d/znxt_zn504xg-d`；其他机型会打 warning
