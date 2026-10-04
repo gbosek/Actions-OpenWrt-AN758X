@@ -2,7 +2,7 @@ From: OpenAI <noreply@openai.com>
 Subject: [PATCH] net: airoha: decode hardware WAN selectors in PPE debugfs
 
 Expose the decoded WAN0/WAN1 source ports and WAN1 enable state beside the raw
-REG_FE_WAN_PORT value.  Multi-WAN bring-up must verify the actual FE hardware
+REG_FE_WAN_PORT value. Multi-WAN bring-up must verify the actual FE hardware
 selectors rather than infer state from UCI/LuCI configuration.
 
 ---
@@ -11,14 +11,17 @@ selectors rather than infer state from UCI/LuCI configuration.
 
 --- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
 +++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
-@@
- static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+@@ -180,6 +180,7 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
  {
  	struct airoha_ppe *ppe = m->private;
  	struct airoha_eth *eth = ppe->eth;
 +	u32 wan_port;
  	unsigned int i;
-@@
+ 
+ 	/* These registers select the CPU/QDMA path for GDM2 PPE misses.
+@@ -188,8 +189,14 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+ 	seq_printf(m, "gdm2_fwd_cfg: %08x\n",
+ 		   airoha_fe_rr(eth, REG_GDM_FWD_CFG(AIROHA_GDM2_IDX)));
 -	seq_printf(m, "fe_wan_port: %08x\n",
 -		   airoha_fe_rr(eth, REG_FE_WAN_PORT));
 +	wan_port = airoha_fe_rr(eth, REG_FE_WAN_PORT);
@@ -31,3 +34,4 @@ selectors rather than infer state from UCI/LuCI configuration.
 +		   FIELD_GET(WAN1_MASK, wan_port));
  	seq_printf(m, "fe_vip_port_en: %08x\n",
  		   airoha_fe_rr(eth, REG_FE_VIP_PORT_EN));
+ 	seq_printf(m, "fe_ifc_port_en: %08x\n",
