@@ -1,0 +1,183 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: add runtime direct-PPE hardware WAN1 selector
+
+Add an experimental runtime control for the second AN7581 hardware WAN
+selector.  The selected physical net_device is not hard-coded: its FE source
+port is derived from the SoC get_sport(port, nbq) callback.
+
+The first multi-WAN milestone intentionally keeps the selected WAN1 netdev on
+its existing direct-PPE/QDMA path instead of reusing the legacy GDM2 loopback
+WAN path.  This is required for GDM4, where multiple physical SerDes netdevs
+can share one GDM but have independent NBQ/source-port identities.  Migrating
+the whole GDM would disturb a LAN sibling.
+
+Userspace enables the experimental selector with:
+
+  ethtool --set-priv-flags <netdev> hw-uplink on
+
+and disables it with:
+
+  ethtool --set-priv-flags <netdev> hw-uplink off
+
+The interface must be down while changing the hardware role.  WAN0 is left
+untouched.  Only EN7581 external GDM3/GDM4 netdevs are accepted in this first
+implementation.  A later patch can generalize allocation after WAN1 direct-PPE
+offload is validated on hardware.
+
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 111 +++++++++++++++++++++++
+ 1 file changed, 111 insertions(+)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2368,6 +2368,30 @@ static struct airoha_gdm_dev *
+ 	return NULL;
+ }
+ 
++static struct airoha_gdm_dev *
++airoha_get_hw_wan_slot_dev(struct airoha_eth *eth, int slot)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(eth->ports); i++) {
++		struct airoha_gdm_port *port = eth->ports[i];
++		int j;
++
++		if (!port)
++			continue;
++
++		for (j = 0; j < ARRAY_SIZE(port->devs); j++) {
++			struct airoha_gdm_dev *dev = port->devs[j];
++
++			if (dev && dev->hw_wan_slot == slot)
++				return dev;
++		}
++	}
++
++	return NULL;
++}
++
+ static void airoha_dev_set_qdma(struct airoha_gdm_dev *dev)
+ {
+ 	struct net_device *netdev = netdev_from_priv(dev);
+@@ -2838,6 +2862,84 @@ static void airoha_ethtool_get_drvinfo(struct net_device *netdev,
+ 	strscpy(info->bus_info, dev_name(eth->dev), sizeof(info->bus_info));
+ }
+ 
++#define AIROHA_ETHTOOL_PRIV_F_HW_UPLINK	BIT(0)
++
++static const char airoha_priv_flag_names[][ETH_GSTRING_LEN] = {
++	"hw-uplink",
++};
++
++static u32 airoha_ethtool_get_priv_flags(struct net_device *netdev)
++{
++	struct airoha_gdm_dev *dev = netdev_priv(netdev);
++
++	return dev->hw_wan_slot == AIROHA_HW_WAN1 ?
++		AIROHA_ETHTOOL_PRIV_F_HW_UPLINK : 0;
++}
++
++static int airoha_set_direct_hw_wan1(struct net_device *netdev, bool enable)
++{
++	struct airoha_gdm_dev *dev = netdev_priv(netdev);
++	struct airoha_gdm_port *port = dev->port;
++	struct airoha_eth *eth = dev->eth;
++	struct airoha_gdm_dev *owner;
++	int err = 0, src_port;
++
++	if (!airoha_is_7581(eth))
++		return -EOPNOTSUPP;
++	if (dev->flags & AIROHA_PRIV_F_PON)
++		return -EOPNOTSUPP;
++	if (port->id != AIROHA_GDM3_IDX &&
++	    port->id != AIROHA_GDM4_IDX)
++		return -EOPNOTSUPP;
++	if (netif_running(netdev))
++		return -EBUSY;
++
++	mutex_lock(&flow_offload_mutex);
++
++	if (enable) {
++		if (dev->hw_wan_slot == AIROHA_HW_WAN1)
++			goto out;
++		if (dev->hw_wan_slot != AIROHA_HW_WAN_NONE) {
++			err = -EBUSY;
++			goto out;
++		}
++
++		owner = airoha_get_hw_wan_slot_dev(eth, AIROHA_HW_WAN1);
++		if (owner && owner != dev) {
++			err = -EBUSY;
++			goto out;
++		}
++
++		src_port = eth->soc->ops.get_sport(port, dev->nbq);
++		if (src_port < 0) {
++			err = src_port;
++			goto out;
++		}
++		if (src_port > FIELD_MAX(WAN1_MASK)) {
++			err = -ERANGE;
++			goto out;
++		}
++
++		/* Drop stale direct-egress FOEs before changing hardware role. */
++		airoha_ppe_remove_egress_flows(dev);
++		airoha_fe_rmw(eth, REG_FE_WAN_PORT,
++			      WAN1_EN_MASK | WAN1_MASK,
++			      WAN1_EN_MASK |
++			      FIELD_PREP(WAN1_MASK, src_port));
++		dev->hw_wan_slot = AIROHA_HW_WAN1;
++		airoha_dev_set_mtu(netdev);
++	} else {
++		if (dev->hw_wan_slot != AIROHA_HW_WAN1)
++			goto out;
++
++		airoha_ppe_remove_egress_flows(dev);
++		airoha_fe_clear(eth, REG_FE_WAN_PORT,
++				WAN1_EN_MASK | WAN1_MASK);
++		dev->hw_wan_slot = AIROHA_HW_WAN_NONE;
++	}
++
++out:
++	mutex_unlock(&flow_offload_mutex);
++	return err;
++}
++
++static int airoha_ethtool_set_priv_flags(struct net_device *netdev, u32 flags)
++{
++	if (flags & ~AIROHA_ETHTOOL_PRIV_F_HW_UPLINK)
++		return -EINVAL;
++
++	return airoha_set_direct_hw_wan1(
++		netdev, flags & AIROHA_ETHTOOL_PRIV_F_HW_UPLINK);
++}
++
++static int airoha_ethtool_get_sset_count(struct net_device *netdev, int sset)
++{
++	return sset == ETH_SS_PRIV_FLAGS ? ARRAY_SIZE(airoha_priv_flag_names) :
++		-EOPNOTSUPP;
++}
++
++static void airoha_ethtool_get_strings(struct net_device *netdev,
++				       u32 stringset, u8 *data)
++{
++	if (stringset == ETH_SS_PRIV_FLAGS)
++		memcpy(data, airoha_priv_flag_names,
++		       sizeof(airoha_priv_flag_names));
++}
++
+ static void airoha_ethtool_get_mac_stats(struct net_device *netdev,
+ 					 struct ethtool_eth_mac_stats *stats)
+ {
+@@ -3717,6 +3819,10 @@ static const struct ethtool_ops airoha_ethtool_ops = {
+ 	.get_link_ksettings	= phy_ethtool_get_link_ksettings,
+ 	.get_link		= ethtool_op_get_link,
++	.get_priv_flags		= airoha_ethtool_get_priv_flags,
++	.set_priv_flags		= airoha_ethtool_set_priv_flags,
++	.get_sset_count		= airoha_ethtool_get_sset_count,
++	.get_strings		= airoha_ethtool_get_strings,
+ };
+ 
+ static int airoha_metadata_dst_alloc(struct airoha_gdm_port *port)
