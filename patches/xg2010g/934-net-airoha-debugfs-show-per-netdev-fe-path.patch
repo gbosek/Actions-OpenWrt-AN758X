@@ -14,7 +14,7 @@ miss/CPU-path problem while validating the direct-PPE WAN1 experiment.
 
 --- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
 +++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
-@@ -211,6 +211,37 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+@@ -211,6 +211,42 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
  		seq_printf(m, "ppe%u_gdm2_default_cpu_port: %u\n", i,
  			   FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
  	}
