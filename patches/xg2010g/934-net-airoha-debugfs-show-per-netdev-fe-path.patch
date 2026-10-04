@@ -19,12 +19,12 @@ miss/CPU-path problem while validating the direct-PPE WAN1 experiment.
  			   FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
  	}
 +
-+	seq_printf(m, "fe_wan_mac_h: %08x\\n", airoha_fe_rr(eth, REG_FE_WAN_MAC_H));
-+	seq_printf(m, "fe_wan_mac_lmin: %08x\\n", airoha_fe_rr(eth, REG_FE_MAC_LMIN(REG_FE_WAN_MAC_H)));
-+	seq_printf(m, "fe_wan_mac_lmax: %08x\\n", airoha_fe_rr(eth, REG_FE_MAC_LMAX(REG_FE_WAN_MAC_H)));
-+	seq_printf(m, "fe_lan_mac_h: %08x\\n", airoha_fe_rr(eth, REG_FE_LAN_MAC_H));
-+	seq_printf(m, "fe_lan_mac_lmin: %08x\\n", airoha_fe_rr(eth, REG_FE_MAC_LMIN(REG_FE_LAN_MAC_H)));
-+	seq_printf(m, "fe_lan_mac_lmax: %08x\\n", airoha_fe_rr(eth, REG_FE_MAC_LMAX(REG_FE_LAN_MAC_H)));
++	seq_printf(m, "fe_wan_mac_h: %08x\n", airoha_fe_rr(eth, REG_FE_WAN_MAC_H));
++	seq_printf(m, "fe_wan_mac_lmin: %08x\n", airoha_fe_rr(eth, REG_FE_MAC_LMIN(REG_FE_WAN_MAC_H)));
++	seq_printf(m, "fe_wan_mac_lmax: %08x\n", airoha_fe_rr(eth, REG_FE_MAC_LMAX(REG_FE_WAN_MAC_H)));
++	seq_printf(m, "fe_lan_mac_h: %08x\n", airoha_fe_rr(eth, REG_FE_LAN_MAC_H));
++	seq_printf(m, "fe_lan_mac_lmin: %08x\n", airoha_fe_rr(eth, REG_FE_MAC_LMIN(REG_FE_LAN_MAC_H)));
++	seq_printf(m, "fe_lan_mac_lmax: %08x\n", airoha_fe_rr(eth, REG_FE_MAC_LMAX(REG_FE_LAN_MAC_H)));
 +
 +	for (i = 0; i < ARRAY_SIZE(eth->ports); i++) {
 +		struct airoha_gdm_port *port = eth->ports[i];
