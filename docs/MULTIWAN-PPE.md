@@ -58,3 +58,62 @@ Both selected WANs must pass all of the following:
 The experimental patch queue extends `/sys/kernel/debug/ppe/config` with
 decoded WAN selector state so field testing can verify the hardware register,
 not merely LuCI/UCI configuration.
+
+
+## Milestone 1 direct-PPE WAN1 experiment
+
+The first runtime WAN1 experiment intentionally does **not** migrate the
+selected external SerDes netdev to the legacy GDM2-loopback/QDMA1 path.
+
+Reason: EN7581 can expose more than one net_device from a shared GDM using
+NBQ/source-port identities. Changing the whole GDM forwarding domain can
+disturb a LAN sibling. Instead the experiment:
+
+- keeps native PON/current WAN on hardware WAN0;
+- selects one eligible GDM3/GDM4 netdev at runtime as hardware WAN1;
+- derives its source-port from `get_sport(port, nbq)`;
+- programs only `WAN1_EN/WAN1`;
+- keeps PPE egress on the real GDM/NBQ path already supported by the PonWrt
+  external-SerDes PPE metadata patches;
+- keeps the known-stable CPU miss path until hardware testing proves a QDMA1
+  migration is necessary.
+
+Lab control:
+
+```sh
+ip link set dev <port> down
+ethtool --set-priv-flags <port> hw-uplink on
+cat /sys/kernel/debug/ppe/config
+ip link set dev <port> up
+```
+
+Disable:
+
+```sh
+ip link set dev <port> down
+ethtool --set-priv-flags <port> hw-uplink off
+ip link set dev <port> up
+```
+
+This ethtool flag is a bring-up/debug API. UCI/LuCI integration comes only
+after the hardware path is proven.
+
+## Hardware-offload proof checklist
+
+A WAN1 result is accepted only when all of these are true:
+
+1. `/sys/kernel/debug/ppe/config` shows WAN1 enabled and its source-port
+   matches the selected netdev's reported `sport`.
+2. Traffic routed exclusively through WAN1 creates BIND entries in
+   `/sys/kernel/debug/ppe/bind`.
+3. The matching FOE packet/byte statistics increase while traffic is active.
+4. Both LAN->WAN1 and WAN1->LAN/reply traffic remain functional after the flow
+   enters BIND state.
+5. CPU load is materially lower with hardware flow offload enabled than with
+   it disabled at the same throughput.
+6. A sibling netdev sharing the same GDM remains a working LAN port.
+7. VLAN and PPPoE are tested separately after plain DHCP/static-IP validation.
+8. Disabling/reassigning WAN1 does not leave stale traffic blackholes.
+9. Only after the above pass do we enable mwan3 and verify policy selection
+   occurs before hardware flow installation.
+
