@@ -1,5 +1,5 @@
-iteration=003
-purpose=compile-runtime-direct-ppe-wan1-stack-931-934
+iteration=004
+purpose=compile-reviewed-direct-ppe-wan1-stack-with-vlan-mtu-fix
 base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
 profile=gemtek_xg2010g
 npu=clanker-an7581-nowifi
