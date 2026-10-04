@@ -1,0 +1,37 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: select WAN MTU field from hardware WAN slot
+
+AN7581 has independent WAN0 and WAN1 MTU fields in REG_WAN_MTU0.  The
+existing driver always updates WAN_MTU0 because it historically supports a
+single hardware WAN.
+
+Use the per-netdev hardware WAN slot introduced by the multi-WAN preparation
+patch to update WAN_MTU1 for a WAN1 device.  Existing WAN0 behaviour remains
+unchanged.
+
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2109,12 +2109,15 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
+ {
+ 	struct airoha_gdm_dev *dev = netdev_priv(netdev);
++	u32 mask;
+ 
+ 	airoha_ppe_set_mtu(dev);
+-	if (!airoha_is_lan_gdm_dev(dev))
+-		airoha_fe_rmw(dev->eth, REG_WAN_MTU0,
+-			      WAN_MTU0_MASK,
+-			      FIELD_PREP(WAN_MTU0_MASK, netdev->mtu));
++	if (airoha_is_lan_gdm_dev(dev))
++		return;
++
++	mask = dev->hw_wan_slot == AIROHA_HW_WAN1 ?
++		WAN_MTU1_MASK : WAN_MTU0_MASK;
++	airoha_fe_rmw(dev->eth, REG_WAN_MTU0, mask,
++		      __field_prep(mask, netdev->mtu));
+ }
+ 
+ static int airoha_dev_open(struct net_device *netdev)
