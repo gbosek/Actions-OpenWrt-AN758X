@@ -21,7 +21,7 @@ env:
   BUILD_SCOPE: ${{ github.event_name == 'push' && 'firmware' || github.event.inputs.scope || 'toolchain-only' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   # ---- NPU 固件（RISC-V 裸机固件，由工作流按机型现编或沿用仓库自带）----
-  NPU_FW: ${{ github.event.inputs.npu_fw || 'clanker' }}
+  NPU_FW: ${{ github.event.inputs.npu_fw || 'stock' }}
   NPU_WIFI: ${{ github.event.inputs.npu_wifi || 'NOWIFI' }}
   NPU_CLANKER: ${{ github.event.inputs.npu_clanker || '0' }}
   NPU_FW_PREFIX: ${{ github.event.inputs.npu_fw_prefix || '' }}
@@ -36,7 +36,7 @@ env:
 on:
   push:
     branches:
-      - multiwan-ppe-experimental
+      - multiwan-ppe-upstream1456
     paths:
       - '.multiwan-build-trigger'
   repository_dispatch:
@@ -100,7 +100,7 @@ on:
       npu_fw:
         description: 'NPU 固件来源 (stock=仓库自带 linux-firmware；clanker=用 ClankerNPU 现编)'
         required: true
-        default: 'clanker'
+        default: 'stock'
         type: choice
         options:
           - stock
