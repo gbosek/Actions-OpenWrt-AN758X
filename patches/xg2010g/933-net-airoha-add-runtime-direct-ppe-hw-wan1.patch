@@ -30,7 +30,7 @@ offload is validated on hardware.
 
 --- a/drivers/net/ethernet/airoha/airoha_eth.c
 +++ b/drivers/net/ethernet/airoha/airoha_eth.c
-@@ -2368,6 +2368,30 @@ static struct airoha_gdm_dev *
+@@ -2368,6 +2368,29 @@ static struct airoha_gdm_dev *
  	return NULL;
  }
  
@@ -60,7 +60,7 @@ offload is validated on hardware.
  static void airoha_dev_set_qdma(struct airoha_gdm_dev *dev)
  {
  	struct net_device *netdev = netdev_from_priv(dev);
-@@ -2838,6 +2862,84 @@ static void airoha_ethtool_get_drvinfo(struct net_device *netdev,
+@@ -2838,6 +2862,110 @@ static void airoha_ethtool_get_drvinfo(struct net_device *netdev,
  	strscpy(info->bus_info, dev_name(eth->dev), sizeof(info->bus_info));
  }
  
@@ -171,7 +171,7 @@ offload is validated on hardware.
  static void airoha_ethtool_get_mac_stats(struct net_device *netdev,
  					 struct ethtool_eth_mac_stats *stats)
  {
-@@ -3717,6 +3819,10 @@ static const struct ethtool_ops airoha_ethtool_ops = {
+@@ -3717,5 +3819,9 @@ static const struct ethtool_ops airoha_ethtool_ops = {
  	.get_link_ksettings	= phy_ethtool_get_link_ksettings,
  	.get_link		= ethtool_op_get_link,
 +	.get_priv_flags		= airoha_ethtool_get_priv_flags,
