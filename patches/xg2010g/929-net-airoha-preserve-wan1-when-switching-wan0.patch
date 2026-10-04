@@ -1,0 +1,26 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: preserve WAN1 while programming WAN0
+
+AN7581 exposes two hardware WAN selectors in REG_FE_WAN_PORT.  The current
+GDM2-loopback helper updates WAN0 with a mask that also covers WAN1 and its
+enable bit, which clears any independently configured secondary hardware WAN.
+
+Only WAN0 belongs to this helper.  Limit the read/modify/write mask to WAN0 so
+future multi-WAN code can manage WAN1 separately.
+
+This is intentionally behaviour-neutral for existing single-WAN systems where
+WAN1 is disabled.
+
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -1,1 +1,1 @@
+@@
+-	airoha_fe_rmw(eth, REG_FE_WAN_PORT,
+-		      WAN1_EN_MASK | WAN1_MASK | WAN0_MASK,
+-		      FIELD_PREP(WAN0_MASK, src_port));
++	airoha_fe_rmw(eth, REG_FE_WAN_PORT, WAN0_MASK,
++		      FIELD_PREP(WAN0_MASK, src_port));
