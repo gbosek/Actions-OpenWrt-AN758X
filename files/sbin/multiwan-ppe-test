@@ -1,0 +1,93 @@
+#!/bin/sh
+# XG2010G AN7581 Multi-WAN/PPE bring-up helper.
+# Experimental branch only: hardware WAN1 selector + PPE visibility.
+
+set -eu
+
+DBG_DIR=/sys/kernel/debug
+PPE_CFG="$DBG_DIR/ppe/config"
+PPE_BIND="$DBG_DIR/ppe/bind"
+
+ensure_debugfs() {
+	[ -d "$DBG_DIR" ] || mkdir -p "$DBG_DIR"
+	if ! mountpoint -q "$DBG_DIR" 2>/dev/null; then
+		mount -t debugfs debugfs "$DBG_DIR" 2>/dev/null || true
+	fi
+}
+
+show_status() {
+	ensure_debugfs
+	echo "===== AN7581 hardware WAN slots ====="
+	if [ -r "$PPE_CFG" ]; then
+		grep -E '^(fe_wan_|netdev=|ppe[0-9]+_gdm2_default_cpu_port)' "$PPE_CFG" || cat "$PPE_CFG"
+	else
+		echo "ERROR: $PPE_CFG not available"
+	fi
+	echo
+	echo "===== ethtool private flags ====="
+	for d in /sys/class/net/*; do
+		[ -e "$d" ] || continue
+		dev="$(basename "$d")"
+		ethtool --show-priv-flags "$dev" 2>/dev/null | grep -q 'hw-uplink' || continue
+		echo "--- $dev ---"
+		ethtool --show-priv-flags "$dev" 2>/dev/null || true
+	done
+	echo
+	echo "===== PPE BIND ====="
+	if [ -r "$PPE_BIND" ]; then
+		lines="$(wc -l < "$PPE_BIND" 2>/dev/null || echo 0)"
+		echo "bind_lines=$lines"
+		head -20 "$PPE_BIND" 2>/dev/null || true
+	else
+		echo "ERROR: $PPE_BIND not available"
+	fi
+}
+
+require_dev_down() {
+	dev="$1"
+	[ -e "/sys/class/net/$dev" ] || {
+		echo "ERROR: netdev '$dev' does not exist" >&2
+		exit 1
+	}
+	state="$(cat "/sys/class/net/$dev/operstate" 2>/dev/null || echo unknown)"
+	flags="$(ip -o link show dev "$dev" 2>/dev/null || true)"
+	case "$flags" in
+		*"<"*UP*">"*)
+			echo "ERROR: $dev is administratively UP; run: ip link set dev $dev down" >&2
+			exit 1
+			;;
+	esac
+	echo "$dev operstate=$state"
+}
+
+set_hw_uplink() {
+	dev="$1"
+	value="$2"
+	require_dev_down "$dev"
+	echo "Setting $dev hw-uplink $value"
+	ethtool --set-priv-flags "$dev" hw-uplink "$value"
+	echo
+	show_status
+}
+
+case "${1:-status}" in
+	status)
+		show_status
+		;;
+	enable)
+		[ "$#" -eq 2 ] || { echo "usage: $0 enable <netdev>" >&2; exit 2; }
+		set_hw_uplink "$2" on
+		;;
+	disable)
+		[ "$#" -eq 2 ] || { echo "usage: $0 disable <netdev>" >&2; exit 2; }
+		set_hw_uplink "$2" off
+		;;
+	bind)
+		ensure_debugfs
+		cat "$PPE_BIND"
+		;;
+	*)
+		echo "usage: $0 {status|enable <netdev>|disable <netdev>|bind}" >&2
+		exit 2
+		;;
+esac
