@@ -11,7 +11,7 @@ fields in debugfs so GDM3/GDM4 external-SerDes egress can be verified directly.
 
 --- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
 +++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
-@@ -125,10 +125,11 @@ static int airoha_ppe_debugfs_foe_show(struct seq_file *m, void *private,
+@@ -125,8 +125,10 @@ static int airoha_ppe_debugfs_foe_show(struct seq_file *m, void *private,
  		seq_printf(m, " eth=%pM->%pM etype=%04x data=%08x"
  			      " vlan=%d,%d ib1=%08x ib2=%08x"
 -			      " packets=%llu bytes=%llu\n",
