@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Enable and start the bridge accelerator when the package is present.
+# uci-defaults runs during first boot, after the init sequence has enumerated
+# rc.d links, so enable alone would defer the first start until the next reboot.
+[ -x /etc/init.d/bridger ] || exit 0
+/etc/init.d/bridger enable || exit 1
+/etc/init.d/bridger start || exit 1
+exit 0

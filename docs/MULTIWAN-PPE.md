@@ -30,6 +30,59 @@ The current upstream/PonWrt GDM2-loopback code programs WAN0 and historically
 clears WAN1 at the same time. The experimental queue first stops that behaviour
 so later code can own WAN1 independently.
 
+## Original vendor reference and evidence limits
+
+The Airoha SDK snapshot contains `FE_API_SET_WAN_PORT_7516(wan1_en, wan1_port,
+wan0_port)` and `fe_api_set_wan_port_7516()`, which composes both selector values
+and writes `FE_WAN_PORT` in one operation. Treat this as a vendor design
+reference, not proof that the XG2010G stock image calls this API: the SDK header
+selects different WAN1 bit offsets under legacy SoC build macros, and this
+snapshot's exact XG2010G build configuration has not been established. The Linux
+EN7581 register definition independently confirms the WAN0/WAN1 bit fields
+above and is the offset source for the 6.18 driver work.
+
+The vendor HWNAT sources also carry per-interface WAN accounting/meter indices
+(up to eight logical indices). Those indices are accounting metadata and must
+not be confused with the two FE WAN selectors or proof of multiple hardware
+egress paths. The stock boot log proves NPU, HWNAT/FOE, and QDMA initialization,
+but the extracted sample has no WAN1 register snapshot or per-flow BIND/counter
+capture. Record stock dual-WAN PPE use as **plausible, not confirmed**.
+
+The upstream Linux 6.18 NPU driver initializes PPE with the Ethernet WAN mode;
+that selects the WAN transport mode, not a WAN-slot allocator. The upstream FE
+register definition has WAN1 fields, while the current `airoha_eth` driver does
+not use them. The GDM2 loopback setup also used to clear WAN1 as it rewrote
+WAN0. Patches 929/933 address register ownership and add a runtime WAN1 selector,
+but 933 only adds selector ownership/control; it does not itself implement
+mwan3 policy integration. #16 has not yet demonstrated that WAN1-selected
+traffic binds to FOE and uses the intended PPE/PSE/GDM egress and NBQ/queue
+mapping in both directions.
+
+### Reproduction on the 1456.62 baseline
+
+Keep the 1456.62 firmware and its matching Linux NPU/mailbox driver as the
+baseline. Reuse the vendor design idea—two independently selected FE source
+ports—but implement the Linux control and flow paths natively:
+
+1. Keep PON as WAN0 and dynamically assign one eligible GDM3/GDM4 netdev's
+   `get_sport(port, nbq)` identity to WAN1 without clearing WAN0.
+2. Make route/flow offload retain the mwan3-selected output netdev and its
+   GDM/NBQ identity in the FOE entry; ensure the WAN1 path reaches its real
+   physical egress and the return direction is recognized.
+3. Coordinate QDMA queues and source-port forwarding for the chosen WAN, and
+   flush/rebuild flows when mwan3 fails over or the WAN role changes.
+   Explicitly validate simultaneous PON WAN0 plus Ethernet WAN1: the upstream
+   NPU PPE init passes one global `QDMA_WAN_ETHER` mode, not per-slot mode data.
+4. Prove WAN1 using matching FOE BIND entries and increasing hardware packet
+   and byte counters, decoded PSE/GDM/NBQ destination, the relevant QDMA
+   channel/state, and physical-port MIBs in both directions. Do not assume the
+   direct-PPE WAN1 route must use the legacy GDM2/QDMA1 path. A set WAN1 bit
+   alone is only control-plane evidence.
+
+The one shared NPU/PPE firmware does not need to be duplicated per WAN. The
+open issue is whether the host FE/PPE/QDMA programming and flow selection make
+each selected WAN's route expressible and correctly installed in FOE.
+
 ## Milestone 1 acceptance
 
 Both selected WANs must pass all of the following:

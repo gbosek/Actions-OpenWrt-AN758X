@@ -21,7 +21,7 @@ env:
   BUILD_SCOPE: ${{ github.event_name == 'push' && 'firmware' || github.event.inputs.scope || 'toolchain-only' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   # ---- NPU 固件（RISC-V 裸机固件，由工作流按机型现编或沿用仓库自带）----
-  NPU_FW: ${{ github.event.inputs.npu_fw || 'clanker' }}
+  NPU_FW: ${{ github.event.inputs.npu_fw || 'stock' }}
   NPU_WIFI: ${{ github.event.inputs.npu_wifi || 'NOWIFI' }}
   NPU_CLANKER: ${{ github.event.inputs.npu_clanker || '0' }}
   NPU_FW_PREFIX: ${{ github.event.inputs.npu_fw_prefix || '' }}
@@ -100,7 +100,7 @@ on:
       npu_fw:
         description: 'NPU 固件来源 (stock=仓库自带 linux-firmware；clanker=用 ClankerNPU 现编)'
         required: true
-        default: 'clanker'
+        default: 'stock'
         type: choice
         options:
           - stock
@@ -510,10 +510,14 @@ jobs:
         else
           # 清掉所有设备选中项（含 is not set 行），再单独打开目标机型
           sed -i '/CONFIG_TARGET_DEVICE_/d; /^CONFIG_TARGET_MULTI_PROFILE=/d' .config
+          DEVICE_PACKAGES=""
+          if [ "${SOC}" = "an7581" ] && [ "${PROFILE}" = "gemtek_xg2010g" ]; then
+            DEVICE_PACKAGES="bridger"
+          fi
           {
             echo "CONFIG_TARGET_MULTI_PROFILE=y"
             echo "CONFIG_TARGET_DEVICE_airoha_${SOC}_DEVICE_${PROFILE}=y"
-            echo "CONFIG_TARGET_DEVICE_PACKAGES_airoha_${SOC}_DEVICE_${PROFILE}=\"\""
+            echo "CONFIG_TARGET_DEVICE_PACKAGES_airoha_${SOC}_DEVICE_${PROFILE}=\"${DEVICE_PACKAGES}\""
           } >> .config
           echo "已裁剪为: CONFIG_TARGET_DEVICE_airoha_${SOC}_DEVICE_${PROFILE}=y"
         fi
@@ -680,6 +684,35 @@ jobs:
         fi
         echo "✅ 双 WAN、PBR 中文包和 Web 终端配置校验通过"
 
+        # bridger 的 BPF 程序需要 BPF 工具链和 sched BPF/VLAN/flower 模块。
+        # 不把 bridger 包存在或 LAN-LAN 吞吐当成路由 WAN PPE 已验证的证据。
+        if [ "${SOC}" = "an7581" ] && [ "${PROFILE}" = "gemtek_xg2010g" ]; then
+          BRIDGER_MISSING=""
+          for p in bridger kmod-sched-core kmod-sched-bpf \
+                   kmod-sched-act-vlan kmod-sched-flower; do
+            if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
+              BRIDGER_MISSING="${BRIDGER_MISSING} ${p}"
+            fi
+          done
+          if [ -n "${BRIDGER_MISSING}" ]; then
+            echo "::error::bridger 依赖包在 defconfig 后缺失:${BRIDGER_MISSING}"
+            exit 1
+          fi
+          if ! grep -q '^CONFIG_BPF_TOOLCHAIN_HOST=y' .config || \
+             ! grep -q '^CONFIG_USE_LLVM_HOST=y' .config || \
+             ! grep -q '^CONFIG_HAS_BPF_TOOLCHAIN=y' .config || \
+             ! grep -q '^CONFIG_NEED_BPF_TOOLCHAIN=y' .config; then
+            echo "::error::bridger 所需 host LLVM/BPF 工具链配置未满足；需要 BPF_TOOLCHAIN_HOST、USE_LLVM_HOST、HAS_BPF_TOOLCHAIN 和 NEED_BPF_TOOLCHAIN"
+            exit 1
+          fi
+          if ! grep -q '^CONFIG_KERNEL_BPF=y' .config || \
+             ! grep -q '^CONFIG_KERNEL_BPF_SYSCALL=y' .config; then
+            echo "::error::bridger 所需内核 BPF/BPF syscall 配置未启用"
+            exit 1
+          fi
+          echo "✅ bridger/BPF 工具链及 sched 模块配置通过"
+        fi
+
         # =========================================================
         # NPU 固件校验（defconfig 之后）
         #   clanker：可选插件包 CONFIG_PACKAGE_airoha-<soc>-<wifi>-npu-firmware 必须 =y
@@ -762,9 +795,10 @@ jobs:
         fi
         echo "✅ 状态插件校验通过"
 
-        # 中文包（po 注入后才存在，缺失只警告不阻断）
+        # 中文包在 diy-part1.sh 中按 LuCI basename 准备；包缺失必须阻断构建。
         if ! grep -q "^CONFIG_PACKAGE_luci-i18n-airoha-npu-zh-cn=y" .config; then
-          echo "::warning::luci-i18n-airoha-npu-zh-cn 未启用（po/zh_Hans 未注入？界面将为英文）"
+          echo "::error::luci-i18n-airoha-npu-zh-cn 未启用；检查上游 PO basename 与包索引"
+          exit 1
         fi
 
         # 机型校验: 机型名写错时直接失败，避免静默全编译
@@ -1063,6 +1097,30 @@ jobs:
         df -hT /
         echo "status=success" >> "$GITHUB_OUTPUT"
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
+
+    - name: Verify XG2010G bridger packages
+      if: env.BUILD_SCOPE != 'toolchain-only' && env.SOC == 'an7581' && env.PROFILE == 'gemtek_xg2010g'
+      run: |
+        cd "$BUILD_ROOT/openwrt"
+        manifest="$(find bin/targets -type f -name '*gemtek_xg2010g.manifest' -print -quit)"
+        if [ -z "$manifest" ]; then
+          echo "::error::未找到 XG2010G manifest"
+          exit 1
+        fi
+        MISSING=""
+        for p in bridger kmod-sched-core kmod-sched-bpf \
+                 kmod-sched-act-vlan kmod-sched-flower \
+                 kmod-br-netfilter luci-app-airoha-npu \
+                 luci-i18n-airoha-npu-zh-cn; do
+          if ! grep -q "^${p} - " "$manifest"; then
+            MISSING="${MISSING} ${p}"
+          fi
+        done
+        if [ -n "$MISSING" ]; then
+          echo "::error::固件 manifest 缺少 bridger/BPF 包:${MISSING}"
+          exit 1
+        fi
+        echo "✅ XG2010G bridger/TC-BPF 模块及 Airoha LuCI 应用、依赖已进入固件: $manifest"
 
     # =========================================================
     # 19. 空间检查

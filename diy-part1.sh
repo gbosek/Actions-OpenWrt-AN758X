@@ -183,50 +183,66 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   rm -rf "$LUCI_APP_TMP"
 fi
 
-# --- Airoha SoC 状态页（NPU 卸载 / CPU 频率 / Frame Engine / PPE 流表）---
-# 包名由目录名决定（luci.mk: PKG_NAME ?= $(notdir ${CURDIR})），
-# 目录必须是 luci-app-airoha-npu，否则 config 里的符号对不上。
-#
-# 源用 luanmuc/luci-app-airoha-npu（rchen14b 的 fork 改进版）：
-#   - 自带 po/zh_Hans 完整中文翻译（48 条）
-#   - 无 rchen14b 那种「根目录 + 同名子目录」重复结构，feed 索引不会中断
-#   - 修了 luci.mk 的 include 路径、加了独立 CPU 温度与 PLL 备用频率
+# --- Airoha SoC 状态页（NPU / PPE / CPU / Frame Engine）---
+# 从 naoki66 的多包 feed 固定版本取出 luci-app-airoha-npu 子包。
+# 只复制子包目录，避免把 feed 根目录误扫成一个额外 package。
+# 上游 Makefile 使用 LUCI_NAME 固定包名，因此现有 CONFIG_PACKAGE_* 符号不变。
 if [ "$ADD_AIROHA_NPU" = "true" ]; then
-  if ! clone https://github.com/luanmuc/luci-app-airoha-npu "$PKG_DIR/luci-app-airoha-npu" main; then
-    echo "::error::luci-app-airoha-npu 拉取失败，后续 defconfig 会静默剔除该包"
+  AIROHA_NPU_REPO="https://github.com/naoki66/luci-app-airoha.git"
+  AIROHA_NPU_REF="b87d08f8a0140ae98d25ec95350773b7baa7edbb"
+  AIROHA_NPU_TMP="$PKG_DIR/.luci-app-airoha-feed"
+  AIROHA_NPU_DIR="$PKG_DIR/luci-app-airoha-npu"
+
+  rm -rf "$AIROHA_NPU_TMP"
+  mkdir -p "$AIROHA_NPU_TMP"
+  if ! git init -q "$AIROHA_NPU_TMP" || \
+     ! git -C "$AIROHA_NPU_TMP" remote add origin "$AIROHA_NPU_REPO" || \
+     ! git -C "$AIROHA_NPU_TMP" fetch --depth=1 origin "$AIROHA_NPU_REF" || \
+     ! git -C "$AIROHA_NPU_TMP" checkout -q --detach FETCH_HEAD; then
+    echo "::error::naoki66/luci-app-airoha 拉取失败，固定版本 $AIROHA_NPU_REF"
+    rm -rf "$AIROHA_NPU_TMP"
     exit 1
   fi
 
-  # 包名校验：Makefile 必须存在，否则 buildroot 扫不到这个包
-  if [ ! -f "$PKG_DIR/luci-app-airoha-npu/Makefile" ]; then
-    echo "::error::$PKG_DIR/luci-app-airoha-npu/Makefile 不存在，包无法被索引"
+  if [ "$(git -C "$AIROHA_NPU_TMP" rev-parse HEAD)" != "$AIROHA_NPU_REF" ]; then
+    echo "::error::Airoha LuCI feed commit 与固定版本不一致"
+    rm -rf "$AIROHA_NPU_TMP"
     exit 1
   fi
-  echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/luci-app-airoha-npu/Makefile" 2>/dev/null)"
 
-  # =========================================================
-  # 关键：po 文件名必须改成 airoha-npu.po
-  #
-  # luci.mk 的 i18n install 规则：
-  #   po2lmo $(po) → $(LUCI_LIBRARYDIR)/i18n/$(basename $(notdir $(po))).$(lang).lmo
-  # 即 lmo 名取自 po 文件主名。而运行时按
-  #   LUCI_BASENAME = $(patsubst luci-app-%,%,luci-app-airoha-npu) = airoha-npu
-  # 查找 lmo。上游两份 po 都叫 luci-app-airoha-npu.po，
-  # 会生成 luci-app-airoha-npu.zh-cn.lmo，前端找不到 → 中文不生效。
-  # 官方 app 都是 basename 命名（firewall.po / package-manager.po / pon.po）。
-  # =========================================================
+  if [ ! -f "$AIROHA_NPU_TMP/luci-app-airoha-npu/Makefile" ] || \
+     ! grep -q '^LUCI_NAME:=luci-app-airoha-npu$' "$AIROHA_NPU_TMP/luci-app-airoha-npu/Makefile"; then
+    echo "::error::上游 feed 中未找到预期的 luci-app-airoha-npu 包 Makefile"
+    rm -rf "$AIROHA_NPU_TMP"
+    exit 1
+  fi
+
+  rm -rf "$AIROHA_NPU_DIR"
+  if ! cp -a "$AIROHA_NPU_TMP/luci-app-airoha-npu" "$AIROHA_NPU_DIR"; then
+    echo "::error::复制 luci-app-airoha-npu 子包失败"
+    rm -rf "$AIROHA_NPU_TMP"
+    exit 1
+  fi
+  rm -rf "$AIROHA_NPU_TMP"
+  AIROHA_NPU_VERSION=$(sed -n 's/^PKG_VERSION:=//p' "$AIROHA_NPU_DIR/Makefile" | head -1)
+  AIROHA_NPU_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' "$AIROHA_NPU_DIR/Makefile" | head -1)
+  echo "   上游版本: ${AIROHA_NPU_VERSION}-r${AIROHA_NPU_RELEASE} ($AIROHA_NPU_REF)"
+
   PODIR="$PKG_DIR/luci-app-airoha-npu/po"
-  if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ]; then
-    # 确保 Language 头是 zh_Hans（上游头部缺该字段时 po2lmo 可能识别异常）
-    grep -q '^"Language:' "$PODIR/zh_Hans/luci-app-airoha-npu.po" || \
-      sed -i 's/^msgstr ""$/msgstr ""\n"Language: zh_Hans\\n"/' "$PODIR/zh_Hans/luci-app-airoha-npu.po"
+  if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ] && \
+     [ ! -e "$PODIR/zh_Hans/airoha-npu.po" ]; then
     mv "$PODIR/zh_Hans/luci-app-airoha-npu.po" "$PODIR/zh_Hans/airoha-npu.po"
-    echo "✅ po 改名: luci-app-airoha-npu.po -> airoha-npu.po（luci.mk 按 LUCI_BASENAME 查找）"
   fi
-  if [ -f "$PODIR/es/luci-app-airoha-npu.po" ]; then
-    mv "$PODIR/es/luci-app-airoha-npu.po" "$PODIR/es/airoha-npu.po"
+
+  if [ ! -f "$PODIR/zh_Hans/airoha-npu.po" ]; then
+    echo "::error::缺少 LuCI basename 对应的中文翻译: $PODIR/zh_Hans/airoha-npu.po"
+    exit 1
   fi
-  echo "   po/zh_Hans: $(ls -1 "$PODIR/zh_Hans/" 2>/dev/null | tr '\n' ' ')"
+  if ! grep -q '^"Language: zh_Hans' "$PODIR/zh_Hans/airoha-npu.po"; then
+    echo "::error::中文 PO 缺少 Language: zh_Hans 头；拒绝用文本替换破坏 PO 条目"
+    exit 1
+  fi
+  echo "✅ LuCI 中文 PO 已按 basename 安装，Language 头有效"
 fi
 
 # --- passwall ---
@@ -289,13 +305,8 @@ for p in luci-app-natmode luci-app-pon-status; do
 done
 
 # ---------------------------------------------------------
-# 清理重复嵌套目录
-# rchen14b/luci-app-airoha-npu 这个仓库有问题：包在根目录放了一份，
-# 又在同名子目录 luci-app-airoha-npu/ 里放了完整一份（含 Makefile）。
-# feeds 扫描会把两层都当成独立包，内层 dump 失败（报
-# "feeds/custom/luci-app-airoha-npu/luci-app-airoha-npu"）会中断整个
-# custom feed 的索引，导致 package/feeds/custom 压根不生成，
-# 所有包符号都不存在。
+# 清理误复制的「包目录/同名子目录」嵌套结构，避免 Buildroot 扫描时把
+# 同一包当成两个 package。
 # ---------------------------------------------------------
 echo "--- 检查重复嵌套目录 ---"
 for d in "$PKG_DIR"/*; do
@@ -374,7 +385,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
 
   # 必装插件（config 里是 =y 的那几个）必须进索引，否则 defconfig 会静默剔除
   REQUIRED=""
-  [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
+  [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu luci-i18n-airoha-npu-zh-cn"
   [ "$ADD_MWAN3" = "true" ] && REQUIRED="$REQUIRED mwan3 luci-app-mwan3"
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
