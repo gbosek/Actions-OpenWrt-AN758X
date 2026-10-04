@@ -105,6 +105,78 @@ if [ "$patch_count" -eq 0 ]; then
   exit 1
 fi
 
+# ---------------------------------------------------------
+# bridger 注入（桥接硬件卸载必需件）
+#
+# 背景：上游 pbs05/ponwrt master（c3b518b）的
+#   target/linux/airoha/image/an7581.mk 里，gemtek_xg2010g 的
+#   DEVICE_PACKAGES **不含 bridger**，因此直接编译出来的固件
+#   缺少桥接卸载所需的用户态 daemon + 4 个 TC/eBPF 内核模块。
+#
+#   bridger 包本身存在于源码树（package/network/services/bridger/），
+#   依赖：libbpf libubox libubus libudebug libnl-tiny
+#         kmod-sched-core kmod-sched-flower kmod-sched-bpf kmod-sched-act-vlan
+#
+# 本段做两件事（在此处执行 = feeds 后、.config 加载前，是正确时机）：
+#   ① 把 bridger 追加进 gemtek_xg2010g 的 DEVICE_PACKAGES
+#   ② 幂等改写：重复运行不会重复追加
+#
+# 说明：只对 gemtek_xg2010g 生效，不影响其他机型。
+# ---------------------------------------------------------
+BRIDGER_MK="target/linux/airoha/image/an7581.mk"
+if [ ! -f "$BRIDGER_MK" ]; then
+  echo "::error::找不到 $BRIDGER_MK，无法注入 bridger"
+  exit 1
+fi
+
+if grep -qE '^\s*DEVICE_PACKAGES.*\bbridger\b' "$BRIDGER_MK" \
+   || sed -n '/define Device\/gemtek_xg2010g/,/^endef/p' "$BRIDGER_MK" | grep -qw 'bridger'; then
+  echo "✅ bridger 已在 gemtek_xg2010g 的 DEVICE_PACKAGES 中，跳过注入"
+else
+  # 在 gemtek_xg2010g 段内，把 "fitblk nand-utils ubi-utils" 这一行
+  # 追加 bridger（该行是 gemtek 段内 DEVICE_PACKAGES 的末行）
+  python3 - "$BRIDGER_MK" <<'PYEOF'
+import re, sys
+path = sys.argv[1]
+src = open(path, encoding='utf-8').read()
+
+# 定位 define Device/gemtek_xg2010g ... endef
+m = re.search(r'(define Device/gemtek_xg2010g\b.*?\nendef\n)', src, re.S)
+if not m:
+    print('::error::未找到 Device/gemtek_xg2010g 定义', file=sys.stderr)
+    sys.exit(1)
+
+seg = m.group(1)
+if re.search(r'\bbridger\b', seg):
+    print('bridger 已存在，跳过')
+    sys.exit(0)
+
+# 在段内 "fitblk nand-utils ubi-utils" 行尾追加 bridger
+new_seg, n = re.subn(
+    r'(\n\s*fitblk nand-utils ubi-utils)\s*(\n)',
+    r'\1 bridger\2',
+    seg, count=1)
+if n != 1:
+    print('::error::gemtek 段内未找到 "fitblk nand-utils ubi-utils" 行', file=sys.stderr)
+    sys.exit(1)
+
+src = src.replace(seg, new_seg, 1)
+open(path, 'w', encoding='utf-8', newline='\n').write(src)
+print('✅ 已注入 bridger 到 gemtek_xg2010g DEVICE_PACKAGES')
+PYEOF
+  if [ $? -ne 0 ]; then
+    echo "::error::bridger 注入失败"
+    exit 1
+  fi
+fi
+
+# 校验：注入后必须能查到
+if ! sed -n '/define Device\/gemtek_xg2010g/,/^endef/p' "$BRIDGER_MK" | grep -qw 'bridger'; then
+  echo "::error::bridger 注入校验失败：gemtek_xg2010g 段内仍无 bridger"
+  exit 1
+fi
+echo "✅ bridger 注入校验通过"
+
 # --- MWAN3：锁定 dl12345 的 nftables 版本，替换旧 iptables 版 ---
 if [ "$ADD_MWAN3" = "true" ]; then
   MWAN3_SRC="$PKG_DIR/mwan3"
