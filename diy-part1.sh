@@ -75,15 +75,25 @@ clone_commit() {  # clone_commit <url> <commit> <dir>
   echo "✅ 固定源码已展开: $dir"
 }
 
-# --- XG2010G 有线 NAPI 调度修正（flowstats 保持关闭，不在本次改动范围）---
-NAPI_PATCH="$GITHUB_WORKSPACE/patches/xg2010g/928-net-airoha-make-threaded-NAPI-optional.patch"
-NAPI_PATCH_DIR="target/linux/airoha/patches-6.18"
-if [ -f "$NAPI_PATCH" ]; then
-  mkdir -p "$NAPI_PATCH_DIR"
-  install -m 0644 "$NAPI_PATCH" "$NAPI_PATCH_DIR/928-net-airoha-make-threaded-NAPI-optional.patch"
-  echo "✅ 已加入 XG2010G threaded NAPI 可选开关补丁（默认关闭线程化 NAPI）"
-else
-  echo "::error::缺少 NAPI 补丁: $NAPI_PATCH"
+# --- XG2010G 本地内核补丁队列 ---
+# 实验分支会继续追加 929+ Multi-WAN/PPE 补丁。统一按文件名排序安装，
+# 避免每新增一个补丁都修改本脚本；主线已有 928 NAPI 补丁也走同一队列。
+XG2010G_PATCH_SRC="$GITHUB_WORKSPACE/patches/xg2010g"
+XG2010G_PATCH_DST="target/linux/airoha/patches-6.18"
+if [ ! -d "$XG2010G_PATCH_SRC" ]; then
+  echo "::error::缺少 XG2010G 补丁目录: $XG2010G_PATCH_SRC"
+  exit 1
+fi
+mkdir -p "$XG2010G_PATCH_DST"
+patch_count=0
+while IFS= read -r -d '' patch; do
+  name="$(basename "$patch")"
+  install -m 0644 "$patch" "$XG2010G_PATCH_DST/$name"
+  echo "✅ 已加入 XG2010G 补丁: $name"
+  patch_count=$((patch_count + 1))
+done < <(find "$XG2010G_PATCH_SRC" -maxdepth 1 -type f -name '*.patch' -print0 | sort -z)
+if [ "$patch_count" -eq 0 ]; then
+  echo "::error::XG2010G 补丁目录中没有 .patch 文件"
   exit 1
 fi
 
