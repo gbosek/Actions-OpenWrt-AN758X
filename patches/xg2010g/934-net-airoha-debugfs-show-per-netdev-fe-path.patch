@@ -1,0 +1,45 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: expose per-netdev FE path in PPE debugfs
+
+Extend the multi-WAN debug line with the current QDMA, source-port default CPU
+port and raw GDM forward configuration.  These values are needed to distinguish
+a WAN selector problem from a PPE miss/CPU-path problem while validating the
+direct-PPE WAN1 experiment.
+
+---
+ drivers/net/ethernet/airoha/airoha_ppe_debugfs.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -232,15 +232,26 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+ 		for (j = 0; j < ARRAY_SIZE(port->devs); j++) {
+ 			struct airoha_gdm_dev *dev = port->devs[j];
+-			int sport;
++			struct airoha_qdma *qdma;
++			u32 cport = 0, cport_mask, cport_reg;
++			int qdma_id = -1, sport;
+ 
+ 			if (!dev)
+ 				continue;
+ 			sport = eth->soc->ops.get_sport(port, dev->nbq);
+-			seq_printf(m, "netdev=%s role=%s hw_wan_slot=%d gdm=%d nbq=%d sport=%d\n",
++			if (sport >= 0) {
++				cport_mask = SP_CPORT_MASK(sport & SP_CPORT_DFT_MASK);
++				cport_reg = airoha_fe_rr(eth,
++					REG_SP_DFT_CPORT(sport >> fls(SP_CPORT_DFT_MASK)));
++				cport = (cport_reg & cport_mask) >> __ffs(cport_mask);
++			}
++			qdma = rcu_access_pointer(dev->qdma);
++			if (qdma)
++				qdma_id = qdma - &eth->qdma[0];
++			seq_printf(m, "netdev=%s role=%s hw_wan_slot=%d gdm=%d nbq=%d sport=%d qdma=%d sp_cport=%u gdm_fwd=%08x\n",
+ 				   netdev_from_priv(dev)->name,
+ 				   airoha_is_lan_gdm_dev(dev) ? "lan" : "wan",
+-				   dev->hw_wan_slot, port->id, dev->nbq, sport);
++				   dev->hw_wan_slot, port->id, dev->nbq, sport,
++				   qdma_id, cport,
++				   airoha_fe_rr(eth, REG_GDM_FWD_CFG(port->id)));
+ 		}
+ 	}
+ 
