@@ -14,12 +14,12 @@ to the legacy loopback/QDMA1 path.
 Existing WAN0 behaviour remains unchanged.
 
 ---
- drivers/net/ethernet/airoha/airoha_eth.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/airoha/airoha_eth.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 --- a/drivers/net/ethernet/airoha/airoha_eth.c
 +++ b/drivers/net/ethernet/airoha/airoha_eth.c
-@@ -2112,12 +2112,15 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
+@@ -2112,11 +2112,13 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
  {
  	struct airoha_gdm_dev *dev = netdev_priv(netdev);
 +	u32 mask;
@@ -28,8 +28,7 @@ Existing WAN0 behaviour remains unchanged.
 -	if (!airoha_is_lan_gdm_dev(dev))
 -		airoha_fe_rmw(dev->eth, REG_WAN_MTU0,
 -			      WAN_MTU0_MASK,
--			      FIELD_PREP(WAN_MTU0_MASK,
--					 netdev->mtu + VLAN_ETH_HLEN));
+-			      FIELD_PREP(WAN_MTU0_MASK, netdev->mtu + VLAN_ETH_HLEN));
 +	if (dev->hw_wan_slot == AIROHA_HW_WAN_NONE)
 +		return;
 +
