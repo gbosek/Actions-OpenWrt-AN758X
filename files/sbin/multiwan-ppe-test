@@ -37,6 +37,24 @@ show_status() {
 	if [ -r "$PPE_BIND" ]; then
 		lines="$(wc -l < "$PPE_BIND" 2>/dev/null || echo 0)"
 		echo "bind_lines=$lines"
+		ppe0=0
+		ppe1=0
+		dram=0
+		while read -r idx rest; do
+			[ -n "$idx" ] || continue
+			case "$idx" in
+				*[!0-9a-fA-F]*) continue ;;
+			esac
+			val=$((0x$idx))
+			if [ "$val" -lt 8192 ]; then
+				ppe0=$((ppe0 + 1))
+			elif [ "$val" -lt 16384 ]; then
+				ppe1=$((ppe1 + 1))
+			else
+				dram=$((dram + 1))
+			fi
+		done < "$PPE_BIND"
+		echo "bind_ppe0_sram=$ppe0 bind_ppe1_sram=$ppe1 bind_dram=$dram"
 		head -20 "$PPE_BIND" 2>/dev/null || true
 	else
 		echo "ERROR: $PPE_BIND not available"
