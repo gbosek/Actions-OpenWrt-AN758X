@@ -467,6 +467,21 @@ jobs:
         cd "$BUILD_ROOT/openwrt"
         [ -e "$GITHUB_WORKSPACE/files" ] && cp -r "$GITHUB_WORKSPACE/files" files
 
+        # BPF core options belong to the Linux target config fragment, not
+        # PonWrt's top-level CONFIG_KERNEL_* wrappers (these symbols are not
+        # exposed there on the AN7581 6.18 branch).
+        if [ "${SOC}" = "an7581" ] && [ "${PROFILE}" = "gemtek_xg2010g" ]; then
+          kernel_config="target/linux/airoha/an7581/config-6.18"
+          if [ ! -f "$kernel_config" ]; then
+            echo "::error::AN7581 kernel config fragment is missing: $kernel_config"
+            exit 1
+          fi
+          for option in CONFIG_BPF=y CONFIG_BPF_SYSCALL=y CONFIG_BPF_JIT=y; do
+            grep -qxF "$option" "$kernel_config" || echo "$option" >> "$kernel_config"
+          done
+          echo "✅ eBPF core/JIT options added to $kernel_config"
+        fi
+
         # git 可能在 checkout 时丢掉 exec bit，rpcd 就执行不了 tempinfo
         [ -d files/sbin ] && chmod +x files/sbin/* 2>/dev/null
         [ -d files/etc/uci-defaults ] && chmod +x files/etc/uci-defaults/* 2>/dev/null
@@ -705,12 +720,14 @@ jobs:
             echo "::error::bridger 所需 host LLVM/BPF 工具链配置未满足；需要 BPF_TOOLCHAIN_HOST、USE_LLVM_HOST、HAS_BPF_TOOLCHAIN 和 NEED_BPF_TOOLCHAIN"
             exit 1
           fi
-          if ! grep -q '^CONFIG_KERNEL_BPF=y' .config || \
-             ! grep -q '^CONFIG_KERNEL_BPF_SYSCALL=y' .config; then
-            echo "::error::bridger 所需内核 BPF/BPF syscall 配置未启用"
-            exit 1
-          fi
-          echo "✅ bridger/BPF 工具链及 sched 模块配置通过"
+          KERNEL_CONFIG="target/linux/airoha/an7581/config-6.18"
+          for option in CONFIG_BPF=y CONFIG_BPF_SYSCALL=y CONFIG_BPF_JIT=y; do
+            if ! grep -qxF "$option" "$KERNEL_CONFIG"; then
+              echo "::error::bridger 所需内核配置缺失: $option in $KERNEL_CONFIG"
+              exit 1
+            fi
+          done
+          echo "✅ bridger/BPF 工具链、内核 BPF/JIT 和 sched 模块配置通过"
         fi
 
         # =========================================================

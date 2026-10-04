@@ -1,1 +1,1 @@
-2026-10-05: XG2010G Airoha LuCI, bridger TC-BPF and toolchain fixes
+2026-10-05: move AN7581 eBPF kernel flags into config-6.18 after run 19 validation
