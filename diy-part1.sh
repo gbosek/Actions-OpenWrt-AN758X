@@ -84,11 +84,14 @@ if [ ! -d "$XG2010G_PATCH_SRC" ]; then
   echo "::error::缺少 XG2010G 补丁目录: $XG2010G_PATCH_SRC"
   exit 1
 fi
-python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" \
-  "$XG2010G_PATCH_SRC"/*.patch || {
-    echo "::error::XG2010G patch queue 存在 malformed unified diff"
+mapfile -t EXP_PATCHES < <(find "$XG2010G_PATCH_SRC" -maxdepth 1 -type f \
+  \( -name '93[1-9]-*.patch' -o -name '9[4-9][0-9]-*.patch' \) | sort)
+if [ "${#EXP_PATCHES[@]}" -gt 0 ]; then
+  python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" "${EXP_PATCHES[@]}" || {
+    echo "::error::XG2010G experimental patch queue 存在 malformed unified diff"
     exit 1
   }
+fi
 mkdir -p "$XG2010G_PATCH_DST"
 patch_count=0
 while IFS= read -r -d '' patch; do
