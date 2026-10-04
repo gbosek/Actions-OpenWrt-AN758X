@@ -19,7 +19,7 @@ Existing WAN0 behaviour remains unchanged.
 
 --- a/drivers/net/ethernet/airoha/airoha_eth.c
 +++ b/drivers/net/ethernet/airoha/airoha_eth.c
-@@ -2109,12 +2109,15 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
+@@ -2109,11 +2109,15 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
  {
  	struct airoha_gdm_dev *dev = netdev_priv(netdev);
 +	u32 mask;
