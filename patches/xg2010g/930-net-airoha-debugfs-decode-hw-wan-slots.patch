@@ -1,0 +1,33 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: decode hardware WAN selectors in PPE debugfs
+
+Expose the decoded WAN0/WAN1 source ports and WAN1 enable state beside the raw
+REG_FE_WAN_PORT value.  Multi-WAN bring-up must verify the actual FE hardware
+selectors rather than infer state from UCI/LuCI configuration.
+
+---
+ drivers/net/ethernet/airoha/airoha_ppe_debugfs.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@
+ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+ {
+ 	struct airoha_ppe *ppe = m->private;
+ 	struct airoha_eth *eth = ppe->eth;
++	u32 wan_port;
+ 	unsigned int i;
+@@
+-	seq_printf(m, "fe_wan_port: %08x\n",
+-		   airoha_fe_rr(eth, REG_FE_WAN_PORT));
++	wan_port = airoha_fe_rr(eth, REG_FE_WAN_PORT);
++	seq_printf(m, "fe_wan_port: %08x\n", wan_port);
++	seq_printf(m, "fe_wan0_src: %u\n",
++		   FIELD_GET(WAN0_MASK, wan_port));
++	seq_printf(m, "fe_wan1_enabled: %u\n",
++		   !!(wan_port & WAN1_EN_MASK));
++	seq_printf(m, "fe_wan1_src: %u\n",
++		   FIELD_GET(WAN1_MASK, wan_port));
+ 	seq_printf(m, "fe_vip_port_en: %08x\n",
+ 		   airoha_fe_rr(eth, REG_FE_VIP_PORT_EN));
