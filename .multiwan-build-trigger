@@ -1,5 +1,6 @@
-iteration=006
-purpose=compile-wan1-direct-ppe-without-blocking-mtu-patch
+iteration=upstream1456-001
+purpose=build-multiwan-ppe-with-upstream-linux-firmware-1456.62
 base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
 profile=gemtek_xg2010g
-npu=clanker-an7581-nowifi
+npu=stock-linux-firmware-20260910-1456.62
+multiwan=931,933,934,935
