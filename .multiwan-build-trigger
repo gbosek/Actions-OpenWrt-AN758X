@@ -1,5 +1,5 @@
-iteration=002
-purpose=validate-931-hw-wan-slot-state-and-debugfs
+iteration=003
+purpose=validate-931-934-direct-ppe-wan1-foundation
 base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
 profile=gemtek_xg2010g
 npu=clanker-an7581-nowifi
