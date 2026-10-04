@@ -84,6 +84,11 @@ if [ ! -d "$XG2010G_PATCH_SRC" ]; then
   echo "::error::缺少 XG2010G 补丁目录: $XG2010G_PATCH_SRC"
   exit 1
 fi
+python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" \
+  "$XG2010G_PATCH_SRC"/*.patch || {
+    echo "::error::XG2010G patch queue 存在 malformed unified diff"
+    exit 1
+  }
 mkdir -p "$XG2010G_PATCH_DST"
 patch_count=0
 while IFS= read -r -d '' patch; do
