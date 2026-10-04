@@ -1,0 +1,25 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: decode PPE egress port and NBQ in debugfs
+
+A BIND entry alone does not prove that a hardware-offloaded flow targets the
+physical WAN selected by multi-WAN policy. Decode the FOE IB2 PSE port and NBQ
+fields in debugfs so GDM3/GDM4 external-SerDes egress can be verified directly.
+
+---
+ drivers/net/ethernet/airoha/airoha_ppe_debugfs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -125,10 +125,11 @@ static int airoha_ppe_debugfs_foe_show(struct seq_file *m, void *private,
+ 		seq_printf(m, " eth=%pM->%pM etype=%04x data=%08x"
+ 			      " vlan=%d,%d ib1=%08x ib2=%08x"
+-			      " packets=%llu bytes=%llu\n",
++			      " pse=%u nbq=%u packets=%llu bytes=%llu\n",
+ 			   h_source, h_dest, l2->etype, data,
+ 			   l2->vlan1, l2->vlan2, hwe->ib1, ib2,
++			   FIELD_GET(AIROHA_FOE_IB2_PSE_PORT, ib2),
++			   FIELD_GET(AIROHA_FOE_IB2_NBQ, ib2),
+ 			   stats.packets, stats.bytes);
+ 	}
+ 
