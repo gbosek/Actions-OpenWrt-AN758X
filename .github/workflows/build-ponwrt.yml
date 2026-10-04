@@ -18,7 +18,7 @@ env:
   REPO_BRANCH: ${{ github.event.inputs.branch || 'c3b518baec8ed0cc5a353327fa154f38bde1e6c0' }}
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
   PROFILE: ${{ github.event.inputs.profile || 'gemtek_xg2010g' }}
-  BUILD_SCOPE: ${{ github.event.inputs.scope || 'toolchain-only' }}
+  BUILD_SCOPE: ${{ github.event_name == 'push' && 'firmware' || github.event.inputs.scope || 'toolchain-only' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   # ---- NPU 固件（RISC-V 裸机固件，由工作流按机型现编或沿用仓库自带）----
   NPU_FW: ${{ github.event.inputs.npu_fw || 'clanker' }}
@@ -34,6 +34,11 @@ env:
   NPU_FILES_FALLBACK: ${{ github.event.inputs.npu_fw_files_fallback || 'false' }}
 
 on:
+  push:
+    branches:
+      - multiwan-ppe-experimental
+    paths:
+      - '.multiwan-build-trigger'
   repository_dispatch:
   workflow_dispatch:
     inputs:
