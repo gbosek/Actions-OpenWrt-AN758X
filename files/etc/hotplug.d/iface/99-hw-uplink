@@ -1,0 +1,4 @@
+#!/bin/sh
+case "$ACTION" in
+	ifup|ifupdate) /usr/sbin/xg2010g-hw-uplink >/dev/null 2>&1 & ;;
+esac

@@ -532,4 +532,7 @@ else
   echo "未启用任何第三方插件"
 fi
 
+# Keep the optics card maintained with this firmware instead of a floating clone.
+cp -a "$GITHUB_WORKSPACE/packages/luci-app-pon-status/." "$PKG_DIR/luci-app-pon-status/"
+python3 "$GITHUB_WORKSPACE/scripts/integrate-xg2010g-ui.py" .
 echo "🎉 diy-part1.sh 执行完毕"

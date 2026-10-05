@@ -1,0 +1,4 @@
+#!/bin/sh
+/etc/init.d/hw-uplink enable
+/usr/sbin/xg2010g-hw-uplink >/dev/null 2>&1 &
+exit 0

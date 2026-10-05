@@ -1,0 +1,96 @@
+#!/bin/sh
+# Promote one configured external WAN to EN7581 WAN1. PON keeps WAN0.
+. /lib/functions.sh
+log() { logger -t hw-uplink "$*"; }
+flag() { ethtool --show-priv-flags "$1" 2>/dev/null | awk '$1=="hw-uplink:" {print $2}'; }
+supported() {
+	[ -d "/sys/class/net/$1" ] || return 1
+	[ -n "$(flag "$1")" ] || return 1
+	grep -Eq "netdev=$1 .*gdm=(3|4) " /sys/kernel/debug/ppe/config
+}
+resolve() {
+	local dev="$1" parent n=0
+	while [ "$n" -lt 8 ]; do
+		case "$dev" in ''|*[!a-zA-Z0-9_.:-]*) return 1;; esac
+		supported "$dev" && { echo "$dev"; return 0; }
+		parent="$(uci -q get "network.$dev.ifname")"
+		[ -n "$parent" ] || parent="${dev%.*}"
+		[ "$parent" != "$dev" ] || return 1
+		dev="$parent"; n=$((n + 1))
+	done
+	return 1
+}
+candidate() {
+	local iface="$1" dev proto disabled preference
+	case " $seen " in *" $iface "*) return;; esac
+	seen="$seen $iface"
+	config_get disabled "$iface" disabled 0
+	config_get proto "$iface" proto
+	config_get preference "$iface" hw_uplink auto
+	[ "$disabled" = 1 ] && return
+	[ "$preference" = 0 ] && return
+	case "$proto" in ''|none) return;; esac
+	config_get dev "$iface" device
+	[ -n "$dev" ] || config_get dev "$iface" ifname
+	dev="$(resolve "$dev")" || return
+	[ -d "/sys/class/net/$dev/brport" ] && return
+	case " $devices " in *" $dev "*) return;; esac
+	devices="$devices $dev"; pairs="$pairs $iface:$dev"
+	[ "$preference" = 1 ] && explicit="$explicit $iface:$dev"
+}
+zone() {
+	local s="$1" name masq networks
+	config_get name "$s" name
+	config_get masq "$s" masq 0
+	[ "$name" = wan ] || [ "$masq" = 1 ] || return
+	config_get networks "$s" network
+	wanifs="$wanifs $networks"
+}
+change() {
+	local iface="$1" dev="$2" value="$3" up=0 rc=0 active=0
+	[ "$(flag "$dev")" = "$value" ] && return 0
+	# Only restart an already running logical interface, then always restore it.
+	if [ -n "$iface" ] && ubus call "network.interface.$iface" status 2>/dev/null | jsonfilter -e '@.up' | grep -qx true; then
+		active=1; ifdown "$iface" >/dev/null 2>&1; sleep 1
+	fi
+	[ $(( $(cat "/sys/class/net/$dev/flags") & 1 )) -ne 0 ] && up=1
+	ip link set dev "$dev" down || rc=1
+	if [ "$rc" = 0 ]; then
+		ethtool --set-priv-flags "$dev" hw-uplink "$value" || rc=1
+		[ "$(flag "$dev")" = "$value" ] || rc=1
+	fi
+	[ "$up" = 1 ] && ip link set dev "$dev" up
+	[ "$active" = 1 ] && ifup "$iface" >/dev/null 2>&1
+	log "$dev hw-uplink=$value result=$rc"
+	return "$rc"
+}
+reconcile() {
+	local wanifs="" seen="" devices="" pairs="" explicit="" selected="" iface dev old
+	[ -r /sys/kernel/debug/ppe/config ] || mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null
+	[ -r /sys/kernel/debug/ppe/config ] || { log "PPE configuration unavailable"; return 1; }
+	config_load firewall; config_foreach zone zone
+	config_load network
+	for iface in $wanifs; do candidate "$iface"; done
+	# More than one external WAN requires an explicit network.<iface>.hw_uplink=1.
+	set -- $explicit
+	if [ "$#" = 1 ]; then selected="$1"
+	elif [ "$#" -gt 1 ]; then log "Multiple explicit WAN1 owners; refusing reassignment"; return 1
+	else
+		set -- $pairs
+		[ "$#" = 1 ] && selected="$1"
+		[ "$#" -gt 1 ] && { log "Multiple external WANs: select one with network.<iface>.hw_uplink=1"; return 1; }
+	fi
+	dev="${selected#*:}"
+	for old in /sys/class/net/*; do
+		old="${old##*/}"
+		[ "$old" = "$dev" ] && continue
+		[ "$(flag "$old")" = on ] && change "" "$old" off
+	done
+	[ -n "$selected" ] || return 0
+	iface="${selected%%:*}"
+	change "$iface" "$dev" on
+}
+# Atomic lock prevents recursive hotplug events during interface restoration.
+mkdir /var/run/hw-uplink.lock 2>/dev/null || exit 0
+trap 'rmdir /var/run/hw-uplink.lock' EXIT HUP INT TERM
+reconcile

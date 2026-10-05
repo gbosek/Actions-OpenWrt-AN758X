@@ -485,6 +485,9 @@ jobs:
         # git 可能在 checkout 时丢掉 exec bit，rpcd 就执行不了 tempinfo
         [ -d files/sbin ] && chmod +x files/sbin/* 2>/dev/null
         [ -d files/etc/uci-defaults ] && chmod +x files/etc/uci-defaults/* 2>/dev/null
+        chmod +x files/etc/init.d/hw-uplink files/usr/sbin/xg2010g-hw-uplink files/etc/hotplug.d/iface/99-hw-uplink
+        mkdir -p files/etc/rc.d
+        ln -sf ../init.d/hw-uplink files/etc/rc.d/S19hw-uplink
 
         # =========================================================
         # 关键：先用源码自带的 configs/<soc>.config 基座打底
@@ -800,6 +803,9 @@ jobs:
         # defconfig 会把 .config 里的 =y 当无效符号静默删除，
         # 编完发现界面里没这个菜单时才察觉就晚了
         # =========================================================
+        for p in block-mount luci-app-diskman luci-app-filemanager luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
+          grep -qx "CONFIG_PACKAGE_${p}=y" .config || { echo "::error::Required UI package missing: $p"; exit 1; }
+        done
         OPT_MISS=""
         for p in luci-app-airoha-npu luci-app-pon-status luci-app-natmode; do
           if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
@@ -1139,7 +1145,9 @@ jobs:
                  kmod-br-netfilter luci-app-airoha-npu \
                  luci-i18n-airoha-npu-zh-cn cpufreq \
                  airoha-pond airoha-ponctl airoha-pon-debug \
-                 luci-app-onu luci-i18n-onu-zh-cn; do
+                 luci-app-onu luci-i18n-onu-zh-cn \
+                 block-mount luci-app-diskman luci-app-filemanager \
+                 luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
           if ! grep -q "^${p} - " "$manifest"; then
             MISSING="${MISSING} ${p}"
           fi
