@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Sat, 26 Sep 2026 00:00:00 +0800
+Subject: [PATCH] pmdomain: airoha: allow board opt-in to direct CPU PLL
+
+The existing fallback only uses direct PLL programming if BL31 does not
+respond. XG2010G has a working but 1.2 GHz-limited AVS service. Let its
+board DTS explicitly choose the direct PLL path while other boards retain
+their original SMC behavior. Reject out-of-range performance states before
+calculating a PLL setting.
+
+This is an experimental overclocking path and requires board validation.
+---
+--- a/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c
++++ b/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c
+@@ -127,6 +127,9 @@ static int airoha_cpu_pll_set_freq(struct
+ 	unsigned long flags;
+ 	u32 val, old_chg, cleared;
+ 
++	if (state > 22)
++		return -EINVAL;
++
+ 	if (freq_mhz < 1000) {
+ 		posdiv = 1;
+ 		pcw_int = freq_mhz / 25;
+@@ -229,7 +232,8 @@ static int airoha_cpu_pmdomain_probe(str
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	if (airoha_cpu_smc_available()) {
++	if (!of_property_read_bool(dev->of_node, "airoha,force-direct-pll") &&
++	    airoha_cpu_smc_available()) {
+ 		priv->use_smc = true;
+ 		dev_info(dev, "using ATF SMC for CPU frequency control\n");
+ 	} else {
+@@ -245,7 +249,7 @@ static int airoha_cpu_pmdomain_probe(str
+ 			return dev_err_probe(dev, PTR_ERR(priv->mcucfg),
+ 					     "ATF SMC not available and no mcucfg reg in DT\n");
+ 
+-		dev_info(dev, "ATF SMC not available, using direct PLL programming\n");
++		dev_info(dev, "using direct PLL programming for CPU frequency control\n");
+ 	}
+ 
+ 	priv->hw.init = &init;

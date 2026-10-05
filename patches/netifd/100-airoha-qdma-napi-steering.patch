@@ -1,0 +1,40 @@
+diff --git a/package/network/config/netifd/files/usr/libexec/network/packet-steering.uc b/package/network/config/netifd/files/usr/libexec/network/packet-steering.uc
+index b429b7c6ef..92e73ead88 100755
+--- a/package/network/config/netifd/files/usr/libexec/network/packet-steering.uc
++++ b/package/network/config/netifd/files/usr/libexec/network/packet-steering.uc
+@@ -97,6 +97,11 @@ function task_device_match(name, device)
+ 	if (device.driver == "mtk_soc_eth" && match(name, /napi\/mtk_eth-/))
+ 		return true;
+ 
++	/* Airoha QDMA NAPI task names do not include a netdev name. */
++	if ((device.driver == "airoha_eth" || device.driver == "airoha-eth") &&
++	    match(name, /napi\/qdma_eth-\d+/))
++		return true;
++
+ 	return false;
+ }
+ 
+@@ -230,6 +235,23 @@ function assign_dev_queues_cpu(dev) {
+ }
+ 
+ function assign_dev_cpu(dev) {
++	/*
++	 * AN7581 can expose many QDMA NAPI tasks all named qdma_eth-0.
++	 * Balance their PIDs across CPUs instead of pinning every task to the
++	 * one CPU selected for the physical device.
++	 */
++	if ((dev.driver == "airoha_eth" || dev.driver == "airoha-eth") &&
++	    length(dev.tasks) > 1) {
++		for (let task in dev.tasks)
++			set_task_cpu(task, get_next_cpu(napi_weight));
++
++		let cpu = all_cpus ? -1 : get_next_cpu(rx_weight);
++		for (let netdev in dev.netdev)
++			set_netdev_cpu(netdev, cpu);
++
++		return;
++	}
++
+ 	if (length(dev.rx_queues) > 1 &&
+ 		length(dev.rx_tasks) > 1)
+ 		return assign_dev_queues_cpu(dev);

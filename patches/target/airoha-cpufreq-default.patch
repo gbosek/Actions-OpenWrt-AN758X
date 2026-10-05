@@ -1,0 +1,27 @@
+diff --git a/package/emortal/cpufreq/Makefile b/package/emortal/cpufreq/Makefile
+index c71f1f36f2..a251b6c5aa 100644
+--- a/package/emortal/cpufreq/Makefile
++++ b/package/emortal/cpufreq/Makefile
+@@ -5,7 +5,7 @@
+ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=cpufreq
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ 
+ include $(INCLUDE_DIR)/package.mk
+ 
+diff --git a/package/emortal/cpufreq/files/cpufreq.uci b/package/emortal/cpufreq/files/cpufreq.uci
+index 7d839d8299..5050c021aa 100644
+--- a/package/emortal/cpufreq/files/cpufreq.uci
++++ b/package/emortal/cpufreq/files/cpufreq.uci
+@@ -19,6 +19,9 @@ SOC="$(strings '/proc/device-tree/compatible' | tail -n1)"
+ 
+ source "/etc/openwrt_release"
+ case "$DISTRIB_TARGET" in
++	"airoha/an7581")
++		uci_write_config 0 ondemand 500000 1400000 10 50
++		;;
+ 	"bcm27xx/bcm2710")
+ 		uci_write_config 0 ondemand 600000 "$CPU_MAX_FREQ" 10 50
+ 		;;

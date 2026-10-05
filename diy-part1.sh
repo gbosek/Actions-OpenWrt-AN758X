@@ -23,6 +23,7 @@ mkdir -p "$PKG_DIR"
 # ---------------------------------------------------------
 ADD_AIROHA_NPU=true    # luci-app-airoha-npu：Airoha SoC 状态页（NPU/CPU/Frame Engine/PPE）
 ADD_MWAN3=true         # nftables 版 MWAN3（与 PonWrt R68 的 fw4/nftables 对齐）
+ADD_ONU_CONFIG=true    # naoki66/OpenWrt_ONU_CONFIG：替换旧 PON/IPTV LuCI 用户态
 
 ADD_PASSWALL=false     # luci-app-passwall（含依赖源）
 ADD_OPENCLASH=false    # luci-app-openclash ⚠ 依赖 Ruby/Rust，编译极慢
@@ -103,6 +104,32 @@ done < <(find "$XG2010G_PATCH_SRC" -maxdepth 1 -type f -name '*.patch' -print0 |
 if [ "$patch_count" -eq 0 ]; then
   echo "::error::XG2010G 补丁目录中没有 .patch 文件"
   exit 1
+fi
+
+# --- 对 OpenWrt 源码/feeds 应用本仓库维护的目标补丁 ---
+# apply_source_patch_once 同时支持干净源码和已准备过的本地构建树；
+# 正向/反向都不能匹配时立即失败，避免补丁悄悄漏进固件。
+apply_source_patch_once() {
+  local patch_file="$1" patch_dir="${2:-.}"
+  if patch --batch --forward --fuzz=0 -p1 -d "$patch_dir" --dry-run < "$patch_file" >/dev/null 2>&1; then
+    patch --batch --forward --fuzz=0 -p1 -d "$patch_dir" < "$patch_file"
+    echo "✅ 已应用源码补丁: $(basename "$patch_file")"
+  elif patch --batch --forward --fuzz=0 -R -p1 -d "$patch_dir" --dry-run < "$patch_file" >/dev/null 2>&1; then
+    echo "✅ 源码补丁已存在: $(basename "$patch_file")"
+  else
+    echo "::error::源码补丁与当前源码不匹配: $patch_file"
+    exit 1
+  fi
+}
+
+for patch_file in "$GITHUB_WORKSPACE"/patches/target/*.patch; do
+  [ -f "$patch_file" ] || continue
+  apply_source_patch_once "$patch_file" .
+done
+
+NETIFD_STEERING_PATCH="$GITHUB_WORKSPACE/patches/netifd/100-airoha-qdma-napi-steering.patch"
+if [ -f "$NETIFD_STEERING_PATCH" ]; then
+  apply_source_patch_once "$NETIFD_STEERING_PATCH" .
 fi
 
 # --- MWAN3：锁定 dl12345 的 nftables 版本，替换旧 iptables 版 ---
@@ -228,6 +255,23 @@ if [ "$ADD_AIROHA_NPU" = "true" ]; then
   AIROHA_NPU_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' "$AIROHA_NPU_DIR/Makefile" | head -1)
   echo "   上游版本: ${AIROHA_NPU_VERSION}-r${AIROHA_NPU_RELEASE} ($AIROHA_NPU_REF)"
 
+  CPU_STATUS_JS="$AIROHA_NPU_DIR/htdocs/luci-static/resources/view/airoha_npu/status.js"
+  if [ ! -f "$CPU_STATUS_JS" ]; then
+    echo "::error::Airoha NPU LuCI CPU 状态页不存在: $CPU_STATUS_JS"
+    exit 1
+  fi
+  if grep -q '^var CPU_MAX_FREQ_KHZ = 1400000;$' "$CPU_STATUS_JS"; then
+    sed -i 's/^var CPU_MAX_FREQ_KHZ = 1400000;$/var CPU_MAX_FREQ_KHZ = 1600000;/' "$CPU_STATUS_JS"
+  elif ! grep -q '^var CPU_MAX_FREQ_KHZ = 1600000;$' "$CPU_STATUS_JS"; then
+    echo "::error::Airoha CPU 上限常量与预期不符，拒绝静默修改"
+    exit 1
+  fi
+  [ "$(grep -c '^var CPU_MAX_FREQ_KHZ = 1600000;$' "$CPU_STATUS_JS")" -eq 1 ] || {
+    echo "::error::Airoha CPU 上限 1600 MHz 校验失败"
+    exit 1
+  }
+  echo "✅ Airoha CPU LuCI 可选上限设为 1600 MHz；默认 governor/max 由 cpufreq 配置设为 ondemand/1400 MHz"
+
   PODIR="$PKG_DIR/luci-app-airoha-npu/po"
   if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ] && \
      [ ! -e "$PODIR/zh_Hans/airoha-npu.po" ]; then
@@ -243,6 +287,69 @@ if [ "$ADD_AIROHA_NPU" = "true" ]; then
     exit 1
   fi
   echo "✅ LuCI 中文 PO 已按 basename 安装，Language 头有效"
+fi
+
+# --- 替换旧 luci-app-pon + luci-app-iptv 为统一 ONU 用户态栈 ---
+if [ "$ADD_ONU_CONFIG" = "true" ]; then
+  ONU_REPO="https://github.com/naoki66/OpenWrt_ONU_CONFIG.git"
+  ONU_REF="00cd0c2186683484360950007040c1309bcb27fa"
+  ONU_TMP="$PKG_DIR/.openwrt-onu-config-src"
+  rm -rf "$ONU_TMP"
+  clone_commit "$ONU_REPO" "$ONU_REF" "$ONU_TMP" || exit 1
+
+  # feeds install -a 已生成的同名旧包链接会与新实现冲突；只移除 feed 符号链接。
+  for link in \
+    package/feeds/pon_userspace/airoha-pon-daemons \
+    package/feeds/pon_userspace/airoha-ponctl \
+    package/feeds/pon_userspace/airoha-pon-debug \
+    package/feeds/pon_userspace/luci-app-pon \
+    package/feeds/pon_userspace/luci-app-iptv \
+    package/feeds/luci/luci-app-iptv; do
+    if [ -L "$link" ]; then
+      rm -f "$link"
+    elif [ -e "$link" ]; then
+      echo "::error::$link 不是 feed 符号链接，拒绝覆盖"
+      rm -rf "$ONU_TMP"
+      exit 1
+    fi
+  done
+
+  for p in airoha-pon-daemons airoha-ponctl airoha-pon-debug luci-app-onu; do
+    if [ ! -f "$ONU_TMP/$p/Makefile" ]; then
+      echo "::error::ONU 上游包缺少 Makefile: $p"
+      rm -rf "$ONU_TMP"
+      exit 1
+    fi
+    rm -rf "$PKG_DIR/$p"
+    cp -a "$ONU_TMP/$p" "$PKG_DIR/$p"
+    echo "✅ 已接入 ONU 上游包: $p"
+  done
+
+  FIREWALL4_PATCH="$ONU_TMP/patches/firewall4/010-fw4-zone-device-flowtable.patch"
+  FIREWALL4_PATCH_DIR="package/network/config/firewall4/patches"
+  FIREWALL4_PATCH_DST="$FIREWALL4_PATCH_DIR/010-fw4-zone-device-flowtable.patch"
+  if [ ! -d "$FIREWALL4_PATCH_DIR" ] || [ ! -f "$FIREWALL4_PATCH" ]; then
+    echo "::error::缺少 firewall4 包补丁目录或 ONU flowtable 补丁"
+    rm -rf "$ONU_TMP"
+    exit 1
+  fi
+  if [ -e "$FIREWALL4_PATCH_DST" ]; then
+    if ! cmp -s <(tr -d '\r' < "$FIREWALL4_PATCH") <(tr -d '\r' < "$FIREWALL4_PATCH_DST"); then
+      echo "::error::已有 firewall4 补丁与 ONU 上游补丁内容不同，拒绝覆盖"
+      rm -rf "$ONU_TMP"
+      exit 1
+    fi
+  else
+    if ! tr -d '\r' < "$FIREWALL4_PATCH" > "$FIREWALL4_PATCH_DST" || \
+       ! chmod 0644 "$FIREWALL4_PATCH_DST"; then
+      echo "::error::无法安装 firewall4 zone.device flowtable 补丁"
+      rm -rf "$ONU_TMP"
+      exit 1
+    fi
+  fi
+  echo "✅ 已加入 firewall4 zone.device → PPE flowtable 补丁"
+  rm -rf "$ONU_TMP"
+  echo "✅ ONU 栈固定版本: $ONU_REF；旧 PON/IPTV 界面已从 XG2010G 配置中替换"
 fi
 
 # --- passwall ---
@@ -366,14 +473,16 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
       echo "  -  $n（无根 Makefile，视为源仓库/子包容器，跳过）"
       continue
     fi
-    # 目录名即包名：buildroot 约定 PKG_NAME ?= $(notdir ${CURDIR})
-    if grep -qx "Package: $n" tmp/.packageinfo 2>/dev/null; then
+    # airoha-pon-daemons 是容器目录，Makefile 实际输出 airoha-pond。
+    package_name="$n"
+    [ "$n" = "airoha-pon-daemons" ] && package_name="airoha-pond"
+    if grep -qx "Package: $package_name" tmp/.packageinfo 2>/dev/null; then
       echo "  ✅ $n"
     else
       echo "  ❌ $n —— tmp/.packageinfo 里查不到"
-      INDEX_MISS="$INDEX_MISS $n"
+      INDEX_MISS="$INDEX_MISS $package_name"
       # 真实错误在这里（scan.mk 落盘路径 logs/<SCAN_DIR>/<相对目录>/dump.txt）
-      for f in "logs/package/$n/dump.txt" "logs/package/custom/$n/dump.txt"; do
+      for f in "logs/package/$package_name/dump.txt" "logs/package/custom/$n/dump.txt"; do
         [ -f "$f" ] && { echo "===== $f ====="; tail -25 "$f"; }
       done
     fi
@@ -387,6 +496,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   REQUIRED=""
   [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu luci-i18n-airoha-npu-zh-cn"
   [ "$ADD_MWAN3" = "true" ] && REQUIRED="$REQUIRED mwan3 luci-app-mwan3"
+  [ "$ADD_ONU_CONFIG" = "true" ] && REQUIRED="$REQUIRED airoha-pond airoha-ponctl airoha-pon-debug luci-app-onu luci-i18n-onu-zh-cn"
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
@@ -398,6 +508,18 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     echo "::error::以下必装插件未进入 tmp/.packageinfo，defconfig 会把 .config 里的 =y 静默剔除:$HARD_MISS"
     echo "  已索引缺失清单:$INDEX_MISS"
     exit 1
+  fi
+  if [ "$ADD_ONU_CONFIG" = "true" ]; then
+    if grep -qE '^CONFIG_PACKAGE_(luci-app-pon|luci-app-iptv|luci-i18n-pon-zh-cn|luci-i18n-iptv-zh-cn)=y([[:space:]]|$)' \
+      "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config"; then
+      echo "::error::XG2010G 配置仍启用了旧 PON/IPTV LuCI 包"
+      exit 1
+    fi
+    if ! grep -q '^CONFIG_PACKAGE_luci-app-onu=y' "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config" || \
+       ! grep -q '^CONFIG_PACKAGE_luci-i18n-onu-zh-cn=y' "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config"; then
+      echo "::error::XG2010G 配置未选择新版 ONU 界面/中文包"
+      exit 1
+    fi
   fi
   if [ "$ADD_MWAN3" = "true" ]; then
     if ! grep -qE '^CONFIG_PACKAGE_luci-i18n-mwan3-zh-cn=y([[:space:]]|$)' "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config"; then

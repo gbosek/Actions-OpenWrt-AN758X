@@ -1,0 +1,28 @@
+From 8e0a754b0836d996802713bbebc87bc1cc17925c Mon Sep 17 00:00:00 2001
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Thu, 13 Nov 2025 18:19:38 +0100
+Subject: [PATCH] net: airoha: avoid GDM2 loopback when GDM2 is present
+
+When GDM2 exists, offloaded traffic targeting another GDM port must use
+that egress directly instead of looping through GDM2 for QoS. Keep the
+XG2010G LAN-role direct-egress behavior as well.
+
+Backport of upstream Linux commit 8e0a754b0836d996802713bbebc87bc1cc17925c.
+---
+ drivers/net/ethernet/airoha/airoha_ppe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/airoha/airoha_ppe.c b/drivers/net/ethernet/airoha/airoha_ppe.c
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -468,7 +468,7 @@ static int airoha_ppe_foe_entry_prepare(struct airoha_eth *eth,
+ 			*egress_dev = dev;
+ 
+ 			port = dev->port;
+-			if (dsa_port >= 0 || airoha_is_lan_gdm_dev(dev))
++			if (dsa_port >= 0 || eth->ports[1] || airoha_is_lan_gdm_dev(dev))
+ 				pse_port = port->id == 4 ? FE_PSE_PORT_GDM4
+ 							 : port->id;
+ 			else
+-- 
+2.43.0

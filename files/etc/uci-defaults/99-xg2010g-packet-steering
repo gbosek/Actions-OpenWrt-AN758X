@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# AN7581 has four Cortex-A53 cores. Use OpenWrt's all-CPU steering mode and
+# keep the value in UCI so the stock service and the board service agree.
+mkdir -p /etc/config
+[ -e /etc/config/network ] || : > /etc/config/network
+if ! uci -q get 'network.@globals[0]' >/dev/null; then
+	uci set 'network.globals=globals' || exit 1
+fi
+uci set 'network.@globals[0].packet_steering=2' || exit 1
+uci set 'network.@globals[0].steering_flows=128' || exit 1
+uci commit network || exit 1
+
+/etc/init.d/xg2010g-packet-steering enable 2>/dev/null
+/usr/libexec/xg2010g-packet-steering apply-runtime
+
+exit 0

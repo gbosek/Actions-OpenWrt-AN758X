@@ -1128,16 +1128,24 @@ jobs:
         for p in bridger kmod-sched-core kmod-sched-bpf \
                  kmod-sched-act-vlan kmod-sched-flower \
                  kmod-br-netfilter luci-app-airoha-npu \
-                 luci-i18n-airoha-npu-zh-cn; do
+                 luci-i18n-airoha-npu-zh-cn cpufreq \
+                 airoha-pond airoha-ponctl airoha-pon-debug \
+                 luci-app-onu luci-i18n-onu-zh-cn; do
           if ! grep -q "^${p} - " "$manifest"; then
             MISSING="${MISSING} ${p}"
           fi
         done
         if [ -n "$MISSING" ]; then
-          echo "::error::固件 manifest 缺少 bridger/BPF 包:${MISSING}"
+          echo "::error::固件 manifest 缺少 bridger/BPF/ONU/CPU 包:${MISSING}"
           exit 1
         fi
-        echo "✅ XG2010G bridger/TC-BPF 模块及 Airoha LuCI 应用、依赖已进入固件: $manifest"
+        for p in luci-app-pon luci-app-iptv; do
+          if grep -q "^${p} - " "$manifest"; then
+            echo "::error::旧 PON/IPTV LuCI 包仍进入固件: $p"
+            exit 1
+          fi
+        done
+        echo "✅ XG2010G bridger/TC-BPF、ONU 新界面、cpufreq 和 Airoha LuCI 已进入固件: $manifest"
 
     # =========================================================
     # 19. 空间检查

@@ -1,0 +1,161 @@
+#!/bin/sh
+
+# XG2010G receive-side packet steering helper. This only changes Linux RPS/RFS
+# policy; it does not touch the Airoha PPE/NPU, PHY, bridge or PON setup.
+
+. /usr/share/libubox/jshn.sh
+
+DEVICES="eth0 lan1 lan2 lan3 lan4 br-lan pon0"
+RPS_SOCK_FLOWS=32768
+QUEUE_FLOWS=128
+
+cpu_count() {
+	local count
+	count=$(grep -c '^processor[[:space:]]*:' /proc/cpuinfo 2>/dev/null)
+	[ "${count:-0}" -gt 0 ] || count=$(find /sys/devices/system/cpu -maxdepth 1 -name 'cpu[0-9]*' 2>/dev/null | wc -l)
+	[ "${count:-0}" -gt 0 ] || count=1
+	# Linux formats cpumasks in comma-separated words above 32 CPUs. AN7581 has
+	# four cores, but cap here so the simple mask remains portable and bounded.
+	[ "$count" -le 32 ] || count=32
+	printf '%s\n' "$count"
+}
+
+cpu_mask() {
+	local count
+	count=$(cpu_count)
+	if [ "$count" -eq 32 ]; then
+		printf '%s\n' ffffffff
+	else
+		printf '%x\n' "$(( (1 << count) - 1 ))"
+	fi
+}
+
+normalise_mask() {
+	local value
+	value=$(printf '%s' "$1" | tr 'A-F' 'a-f' | sed 's/^0*//')
+	[ -n "$value" ] || value=0
+	printf '%s\n' "$value"
+}
+
+ensure_globals() {
+	mkdir -p /etc/config
+	[ -e /etc/config/network ] || : > /etc/config/network
+	if ! uci -q get 'network.@globals[0]' >/dev/null; then
+		uci set 'network.globals=globals' || return 1
+	fi
+}
+
+set_queues() {
+	local mask="$1" flows="$2" dev queue
+	for dev in $DEVICES; do
+		[ -d "/sys/class/net/$dev/queues" ] || continue
+		for queue in /sys/class/net/"$dev"/queues/rx-*/rps_cpus; do
+			[ -w "$queue" ] || continue
+			printf '%s\n' "$mask" > "$queue" 2>/dev/null || true
+		done
+		for queue in /sys/class/net/"$dev"/queues/rx-*/rps_flow_cnt; do
+			[ -w "$queue" ] || continue
+			printf '%s\n' "$flows" > "$queue" 2>/dev/null || true
+		done
+	done
+}
+
+apply_runtime() {
+	local mode mask flows
+	mode=$(uci -q get 'network.@globals[0].packet_steering')
+	if [ "$mode" = 2 ]; then
+		mask=$(cpu_mask)
+		flows=$(uci -q get 'network.@globals[0].steering_flows')
+		case "$flows" in ''|*[!0-9]*) flows=$QUEUE_FLOWS ;; esac
+		[ "$flows" -gt 0 ] || flows=$QUEUE_FLOWS
+		[ -w /proc/sys/net/core/rps_sock_flow_entries ] && \
+			printf '%s\n' "$RPS_SOCK_FLOWS" > /proc/sys/net/core/rps_sock_flow_entries
+	else
+		mask=0
+		flows=0
+		[ -w /proc/sys/net/core/rps_sock_flow_entries ] && \
+			printf '0\n' > /proc/sys/net/core/rps_sock_flow_entries
+	fi
+
+	# Let the stock OpenWrt implementation place NAPI tasks first. Apply the
+	# board-specific all-core queue mask afterwards, including br-lan and pon0,
+	# which are not always covered by the physical-device scan.
+	[ -x /etc/init.d/packet_steering ] && /etc/init.d/packet_steering reload >/dev/null 2>&1
+	set_queues "$mask" "$flows"
+}
+
+status_json() {
+	local mode flows mask count sock total=0 matching=0 seen=0 ready=0
+	local dev queue value
+	mode=$(uci -q get 'network.@globals[0].packet_steering')
+	flows=$(uci -q get 'network.@globals[0].steering_flows')
+	mask=$(cpu_mask)
+	count=$(cpu_count)
+	sock=$(cat /proc/sys/net/core/rps_sock_flow_entries 2>/dev/null)
+	case "$mode" in ''|*[!0-9]*) mode=0 ;; esac
+	case "$flows" in ''|*[!0-9]*) flows=0 ;; esac
+	case "$sock" in ''|*[!0-9]*) sock=0 ;; esac
+
+	json_init
+	json_add_int enabled "$([ "$mode" = 2 ] && echo 1 || echo 0)"
+	json_add_int configured_mode "$mode"
+	json_add_int steering_flows "$flows"
+	json_add_int cpu_count "$count"
+	json_add_string cpu_mask "$mask"
+	json_add_int rps_sock_flow_entries "$sock"
+	json_add_array interfaces
+	for dev in $DEVICES; do
+		[ -d "/sys/class/net/$dev/queues" ] || continue
+		seen=$((seen + 1))
+		json_add_string '' "$dev"
+		for queue in /sys/class/net/"$dev"/queues/rx-*/rps_cpus; do
+			[ -r "$queue" ] || continue
+			total=$((total + 1))
+			value=$(normalise_mask "$(cat "$queue" 2>/dev/null)")
+			[ "$value" = "$mask" ] && matching=$((matching + 1))
+		done
+	done
+	json_close_array
+	[ "$mode" = 2 ] && [ "$sock" = "$RPS_SOCK_FLOWS" ] && \
+		[ "$total" -gt 0 ] && [ "$matching" -eq "$total" ] && ready=1
+	json_add_int interfaces_seen "$seen"
+	json_add_int queues_total "$total"
+	json_add_int queues_matching "$matching"
+	json_add_boolean runtime_ready "$ready"
+	json_add_boolean service_present "$([ -x /etc/init.d/packet_steering ] && echo 1 || echo 0)"
+	json_dump
+}
+
+configure() {
+	local enabled="$1"
+	ensure_globals || return 1
+	if [ "$enabled" = 1 ]; then
+		uci set 'network.@globals[0].packet_steering=2' || return 1
+		uci set "network.@globals[0].steering_flows=$QUEUE_FLOWS" || return 1
+	else
+		uci set 'network.@globals[0].packet_steering=0' || return 1
+		uci -q delete 'network.@globals[0].steering_flows'
+	fi
+	uci commit network || return 1
+	apply_runtime
+	status_json
+}
+
+case "$1" in
+	status)
+		status_json
+		;;
+	apply-runtime)
+		apply_runtime
+		;;
+	enable)
+		configure 1
+		;;
+	disable)
+		configure 0
+		;;
+	*)
+		echo 'Usage: xg2010g-packet-steering {status|apply-runtime|enable|disable}' >&2
+		exit 2
+		;;
+esac
