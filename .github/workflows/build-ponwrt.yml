@@ -673,7 +673,16 @@ jobs:
         # 这里显式确认 PON 核心链路还在，否则编出来光口不通
         # =========================================================
         MISSING=""
-        for p in kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl luci-app-pon; do
+        PON_PACKAGES="kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl"
+        if [ "${SOC}" = "an7581" ] && [ "${PROFILE}" = "gemtek_xg2010g" ]; then
+          # XG2010G uses naoki66's unified ONU UI, which absorbs the old
+          # luci-app-pon and luci-app-iptv configuration pages.
+          PON_PACKAGES="$PON_PACKAGES luci-app-onu luci-i18n-onu-zh-cn"
+        else
+          # Other board profiles still use the legacy PON UI.
+          PON_PACKAGES="$PON_PACKAGES luci-app-pon"
+        fi
+        for p in $PON_PACKAGES; do
           if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
             MISSING="$MISSING $p"
           fi
