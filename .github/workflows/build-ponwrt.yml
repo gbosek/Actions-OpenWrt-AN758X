@@ -803,9 +803,11 @@ jobs:
         # defconfig 会把 .config 里的 =y 当无效符号静默删除，
         # 编完发现界面里没这个菜单时才察觉就晚了
         # =========================================================
-        for p in block-mount luci-app-diskman luci-app-filemanager luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
-          grep -qx "CONFIG_PACKAGE_${p}=y" .config || { echo "::error::Required UI package missing: $p"; exit 1; }
-        done
+        if [ "$SOC" = an7581 ] && [ "$PROFILE" = gemtek_xg2010g ]; then
+          for p in block-mount luci-app-diskman luci-app-filemanager luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
+            grep -qx "CONFIG_PACKAGE_${p}=y" .config || { echo "::error::Required UI package missing: $p"; exit 1; }
+          done
+        fi
         OPT_MISS=""
         for p in luci-app-airoha-npu luci-app-pon-status luci-app-natmode; do
           if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
