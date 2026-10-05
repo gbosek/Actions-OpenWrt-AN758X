@@ -2,6 +2,16 @@ diff --git a/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts b/target/linux/ai
 index e6085d5cd0..7722eab466 100644
 --- a/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts
 +++ b/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts
+@@ -26,6 +26,9 @@
+ 	chosen {
+ 		/* Create fastmap on first attach for boot firmware and Linux reuse. */
+ 		bootargs = "console=ttyS0,115200 earlycon";
++		/* Keep the boot governor at the minimum until userspace sets its limit. */
++		bootargs-append = " ubi.fm_autoconvert=1 cpufreq.default_governor=powersave";
++
+ 		rootdisk = <&ubi_fit>;
+ 		stdout-path = "serial0:115200n8";
+ 	};
 @@ -246,6 +246,59 @@
  	status = "okay";
  };

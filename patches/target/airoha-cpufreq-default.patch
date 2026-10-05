@@ -7,7 +7,7 @@ index c71f1f36f2..a251b6c5aa 100644
  
  PKG_NAME:=cpufreq
 -PKG_RELEASE:=1
-+PKG_RELEASE:=2
++PKG_RELEASE:=3
  
  include $(INCLUDE_DIR)/package.mk
  
@@ -25,3 +25,18 @@ index 7d839d8299..5050c021aa 100644
  	"bcm27xx/bcm2710")
  		uci_write_config 0 ondemand 600000 "$CPU_MAX_FREQ" 10 50
  		;;
+diff --git a/package/emortal/cpufreq/files/cpufreq.init b/package/emortal/cpufreq/files/cpufreq.init
+--- a/package/emortal/cpufreq/files/cpufreq.init
++++ b/package/emortal/cpufreq/files/cpufreq.init
+@@ -43,9 +43,10 @@ start_service() {
+ 	do
+ 		[ -z "$(config_get "$NAME" "governor$i")" ] && return
+ 
+-		write_cpufreq_config "governor$i" "$CPUFREQ_PATH/policy$i/scaling_governor"
++		# Set the limits before a governor can request the highest OPP.
+ 		write_cpufreq_config "minfreq$i" "$CPUFREQ_PATH/policy$i/scaling_min_freq"
+ 		write_cpufreq_config "maxfreq$i" "$CPUFREQ_PATH/policy$i/scaling_max_freq"
++		write_cpufreq_config "governor$i" "$CPUFREQ_PATH/policy$i/scaling_governor"
+ 		if [ "$(config_get "$NAME" "governor$i")" = "ondemand" ]; then
+ 			write_cpufreq_config "sdfactor$i" "$CPUFREQ_PATH/ondemand/sampling_down_factor"
+ 			write_cpufreq_config "upthreshold$i" "$CPUFREQ_PATH/ondemand/up_threshold"

@@ -1,1 +1,1 @@
-rebuild after ONU package validation fix 2026-10-05
+rebuild XG2010G CPU boot powersave guard and apply frequency limits before governor 2026-10-06
