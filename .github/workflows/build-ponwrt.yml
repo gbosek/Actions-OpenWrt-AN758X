@@ -664,6 +664,14 @@ jobs:
         "$GITHUB_WORKSPACE/$DIY_P2_SH"
 
     # =========================================================
+    # 视频/音频菜单与 R68 元数据生成器存在循环；仅排除 XG2010G 未选中的源链接。
+    - name: Limit unused XG2010G media menus
+      if: env.SOC == 'an7581' && env.PROFILE == 'gemtek_xg2010g'
+      run: |
+        cd "$BUILD_ROOT/openwrt"
+        python3 "$GITHUB_WORKSPACE/scripts/prune-xg2010g-media-feed-links.py" . --profile "$PROFILE"
+        make -s prepare-tmpinfo OPENWRT_BUILD=
+
     # 9. defconfig + 生成工具链缓存 Key + 校验机型
     # =========================================================
     - name: Generate toolchain cache key
@@ -674,7 +682,11 @@ jobs:
 
         # diffconfig(精简配置) 必须 defconfig 展开；保留末尾输出便于排查
         echo "===== make defconfig ====="
-        make defconfig 2>&1 | tail -5
+        if [ "$SOC" = an7581 ] && [ "$PROFILE" = gemtek_xg2010g ]; then
+          bash "$GITHUB_WORKSPACE/scripts/defconfig-checked.sh"
+        else
+          make defconfig 2>&1 | tail -5
+        fi
 
         # =========================================================
         # 关键包校验：defconfig 会把 feeds 里不存在的包静默剔除，
