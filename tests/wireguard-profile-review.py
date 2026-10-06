@@ -22,6 +22,8 @@ workflow = (repo / '.github/workflows/build-ponwrt.yml').read_text()
 assert 'STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status"' in workflow
 assert 'STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status luci-app-natmode"' in workflow
 assert 'for p in $STATUS_PLUGINS; do' in workflow
+assert 'timeout 12m apt-get' in workflow and 'timeout 15m apt-get' in workflow
+assert 'curl --connect-timeout 15 --max-time 180 --retry 2' in workflow
 with tempfile.TemporaryDirectory(prefix='xg-wg-profile-') as d:
     path = Path(d) / 'config'
     baseline = ''.join(f'CONFIG_PACKAGE_{package}=y\n' for package in required)

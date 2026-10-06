@@ -268,14 +268,18 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        APT_NET_OPTS=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+
         # --- 删除预装大件 ---
+        echo "清理 runner 预装工具和容器镜像..."
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
           /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/lib/jvm \
           /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
         sudo docker image prune --all --force 2>/dev/null || true
-        sudo -E apt-get -yqq purge firefox snapd 2>/dev/null || true
+        sudo -E timeout 5m apt-get "${APT_NET_OPTS[@]}" -yq purge firefox snapd 2>/dev/null || true
 
         # --- 配置 8G Swap (aarch64 工具链/内核编译需要) ---
+        echo "配置 8G swap..."
         sudo swapoff -a 2>/dev/null || true
         sudo rm -f /swapfile
         sudo fallocate -l 8G /swapfile
@@ -283,17 +287,27 @@ jobs:
         sudo mkswap /swapfile && sudo swapon /swapfile
 
         # --- 安装编译依赖 ---
-        sudo -E apt-get -yqq update
-        sudo -E apt-get -yqq install build-essential clang llvm dwarves \
+        echo "更新 apt 索引（最多 12 分钟，网络超时后自动重试）..."
+        sudo -E timeout 12m apt-get "${APT_NET_OPTS[@]}" -yq update
+        echo "安装构建依赖（最多 15 分钟）..."
+        sudo -E timeout 15m apt-get "${APT_NET_OPTS[@]}" -yq install build-essential clang llvm dwarves \
           libssl-dev libelf-dev bc flex bison python3 python3-distutils \
           xz-utils tar unzip zip zstd dos2unix ccache gettext \
-          rsync file wget curl git subversion 2>/dev/null || true
-        sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)' || true
+          rsync file wget curl git subversion 2>/dev/null || echo "::warning::部分可选构建依赖未安装或安装超时"
+        INIT_SCRIPT=/tmp/ponwrt-init-build-environment.sh
+        if curl --connect-timeout 15 --max-time 180 --retry 2 --retry-all-errors \
+          -fsSL https://build-scripts.immortalwrt.org/init_build_environment.sh -o "$INIT_SCRIPT"; then
+          sudo timeout 5m bash "$INIT_SCRIPT" || echo "::warning::ImmortalWrt 环境补充脚本失败或超时，继续使用已安装依赖"
+        else
+          echo "::warning::无法在限定时间内下载 ImmortalWrt 环境补充脚本，继续使用已安装依赖"
+        fi
+        rm -f "$INIT_SCRIPT"
         # Inspect the CPU OPPs in the actual FIT before uploading an XG2010G image.
-        sudo -E apt-get -yqq install --no-install-recommends u-boot-tools device-tree-compiler
+        echo "安装 FIT 检查工具（最多 8 分钟）..."
+        sudo -E timeout 8m apt-get "${APT_NET_OPTS[@]}" -yq install --no-install-recommends u-boot-tools device-tree-compiler
 
-        sudo -E apt-get -yqq autoremove --purge
-        sudo -E apt-get -yqq clean
+        sudo -E timeout 8m apt-get "${APT_NET_OPTS[@]}" -yq autoremove --purge
+        sudo -E apt-get -yq clean
         sudo -E timedatectl set-timezone "$TZ"
 
         # --- 编译根目录（固定 /workdir，与 workflow 级 env 保持一致）---
