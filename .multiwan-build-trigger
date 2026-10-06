@@ -1,4 +1,4 @@
-2026-10-06: stability build, cap XG2010G CPU OPP and UI at 1400 MHz, retain audited WAN1/GDM2/MTU/telemetry fixes and WOL
+2026-10-06: stable XG2010G image removes unsolicited WireGuard and NAT type UI; preserve 1400 MHz cap and audited WAN1/PPE fixes
 profile=gemtek_xg2010g
 base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
 npu=stock-1456.62

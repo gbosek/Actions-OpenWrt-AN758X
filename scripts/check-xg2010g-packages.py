@@ -25,13 +25,23 @@ def main():
     if len(required) != len(set(required)) or any(not re.fullmatch(r'[A-Za-z0-9+_.-]+', name) for name in required):
         parser.error('invalid or duplicate required package names')
     names = package_names(args.stage, args.path.read_text())
+    forbidden_names = names
     missing = sorted(set(required) - names)
-    forbidden = sorted(names & {'luci-app-pon', 'luci-app-iptv', 'vnstat'}) if args.stage != 'index' else []
+    forbidden_set = set()
+    if args.stage != 'index':
+        forbidden_set.update({'luci-app-pon', 'luci-app-iptv', 'vnstat', 'luci-app-natmode'})
+    if args.stage == 'config':
+        all_configured = set(re.findall(r'^CONFIG_PACKAGE_([A-Za-z0-9+_.-]+)=[ym]\s*$', args.path.read_text(), re.M))
+        forbidden_names = all_configured
+        forbidden_set.update({'luci-proto-wireguard', 'wireguard-tools', 'kmod-wireguard'})
+    elif args.stage != 'index':
+        forbidden_set.update({'luci-proto-wireguard', 'wireguard-tools', 'kmod-wireguard'})
+    forbidden = sorted(forbidden_names & forbidden_set)
     if missing or forbidden:
         if missing:
             print('::error::XG2010G packages missing at ' + args.stage + ': ' + ', '.join(missing))
         if forbidden:
-            print('::error::Conflicting legacy packages selected: ' + ', '.join(forbidden))
+            print('::error::Packages forbidden in this XG2010G image: ' + ', '.join(forbidden))
         return 1
     print(f'PASS: XG2010G {args.stage}, {len(required)} required packages')
     return 0

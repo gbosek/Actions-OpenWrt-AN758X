@@ -55,6 +55,8 @@ scripts/        NPU 固件脚本：
 | `luci-app-pon-status` | PON 光模块卡片：**温度 / 收光 / 发光 / 偏置电流 / 供电电压**，表格形式显示在概览页「系统」下一格 |
 | `luci-app-natmode` | NAT 类型三选一：**全锥形 NAT1 / 受限型 NAT3 / 全对称型 NAT4**，菜单「网络 → NAT 类型」 |
 
+注意：XG2010G 配置不安装 `luci-app-natmode`；该页面对本机型未启用，其他机型原配置不变。
+
 其余默认关闭：`ADD_PASSWALL` / `ADD_OPENCLASH` / `ADD_MOSDNS` / `ADD_LUCKY` /
 `ADD_TAILSCALE` / `ADD_OPENLIST` / `ADD_SMARTDNS`。
 

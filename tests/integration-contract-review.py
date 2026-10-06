@@ -28,6 +28,14 @@ with tempfile.TemporaryDirectory(prefix='xg-integration-') as directory:
         path.write_text(contents + template.format('luci-app-pon'))
         result = subprocess.run([sys.executable, str(checker), stage, str(path)], capture_output=True)
         assert result.returncode == (0 if stage == 'index' else 1)
+        for package in ['luci-proto-wireguard', 'wireguard-tools', 'kmod-wireguard', 'luci-app-natmode']:
+            path.write_text(contents + template.format(package))
+            result = subprocess.run([sys.executable, str(checker), stage, str(path)], capture_output=True)
+            assert result.returncode == (0 if stage == 'index' else 1), (stage, package, result.stdout)
+    config = root / 'config'
+    config.write_text('CONFIG_PACKAGE_luci-proto-wireguard=m\n')
+    result = subprocess.run([sys.executable, str(checker), 'config', str(config)], capture_output=True)
+    assert result.returncode == 1 and b'luci-proto-wireguard' in result.stdout
     for profile in ['gemtek_xg2010g', 'znxt_zn515xg-d']:
         work = root / profile
         (work / 'files/etc/uci-defaults').mkdir(parents=True)

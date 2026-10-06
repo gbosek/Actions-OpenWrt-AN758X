@@ -35,7 +35,10 @@ ADD_TAILSCALE=false    # luci-app-tailscale
 ADD_OPENLIST=false     # luci-app-openlist2（alist/openlist 挂载）
 ADD_SMARTDNS=false     # luci-app-smartdns
 
-ADD_LUCI_APP=true       # 固定版本的 NAT 类型界面
+ADD_LUCI_APP=true       # NAT 类型界面（仅保留在仍启用它的其他机型）
+
+# XG2010G 不需要 NAT 类型切换界面；勿为此机型克隆或纳入该包。
+[ "${PROFILE:-}" != "gemtek_xg2010g" ] || ADD_LUCI_APP=false
 ADD_PON_STATUS=true     # 本仓库维护的 PON 光模块卡片
 
 clone() {  # clone <url> <dir> [branch]

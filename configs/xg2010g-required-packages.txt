@@ -14,7 +14,6 @@ luci-app-mwan3
 luci-i18n-mwan3-zh-cn
 luci-app-airoha-npu
 luci-i18n-airoha-npu-zh-cn
-luci-app-natmode
 airoha-pond
 airoha-ponctl
 airoha-pon-debug
@@ -41,9 +40,6 @@ luci-i18n-vnstat2-zh-cn
 vnstat2
 vnstati2
 mtr-json
-luci-proto-wireguard
-wireguard-tools
-kmod-wireguard
 luci-app-statistics
 luci-i18n-statistics-zh-cn
 collectd
