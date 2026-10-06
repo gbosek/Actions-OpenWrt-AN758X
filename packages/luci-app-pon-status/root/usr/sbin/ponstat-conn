@@ -24,11 +24,13 @@
 CT=/proc/net/nf_conntrack
 
 if [ -r "$CT" ]; then
-	set -- $(awk '
+	counts=$(awk '
 		$3 == "tcp" { t++; if ($0 ~ /\[HW_OFFLOAD\]/) tn++ }
 		$3 == "udp" { u++; if ($0 ~ /\[HW_OFFLOAD\]/) un++ }
 		END { print t + 0, tn + 0, u + 0, un + 0 }
-	' "$CT" 2>/dev/null)
+	' "$CT" 2>/dev/null) || exit 1
+	set -- $counts
+	[ "$#" -eq 4 ] || exit 1
 
 	echo "tcp_total=${1:-0}"
 	echo "tcp_npu=${2:-0}"

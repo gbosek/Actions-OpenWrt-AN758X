@@ -34,7 +34,7 @@
  *   2) sysfs /sys/class/net/<device>/statistics/{rx,tx}_bytes 直读
  *      （本包 ACL 授权）。只有在 ubus 那边拿不到该设备统计时才用它。
  *
- * 第一次成功的来源会被记住（statsSource），之后的轮询不再重复探测。
+ * 来源按端口缓存；临时失败后允许重新探测，避免一个端口影响其他端口。
  *
  * 采样点按 device 分开存。第一次渲染时没有历史采样，就隔 500 ms 再采
  * 一次，让首屏就有读数；之后每次轮询直接用上次的采样。
@@ -44,10 +44,10 @@
  */
 
 /* device -> 上一次 { rx, tx, t(ms) } */
-var prevNet = {};
+var prevNet = Object.create(null);
 
-/* 探测后固定的取数来源：'ubus' 或 'sysfs' */
-var statsSource = null;
+/* 按端口缓存来源；临时读取失败后重新探测：'ubus' 或 'sysfs' */
+var statsSource = Object.create(null);
 
 /* 连接数 helper：数 /proc/net/nf_conntrack 里的 TCP/UDP 条目及 [HW_OFFLOAD]
  * 子集。必须走 helper —— 该文件是 st_size 为 0 的伪文件，rpcd 的 file.read
@@ -120,18 +120,23 @@ function sampleUbus(device) {
 
 /* 一次采样：先 ubus，拿不到该设备统计时退回 sysfs；都不行 -> null */
 function sampleNet(device) {
-	if (statsSource == 'sysfs')
-		return sampleSysfs(device);
+	if (statsSource[device] == 'sysfs')
+		return sampleSysfs(device).then(function(cur) {
+			if (cur != null)
+				return cur;
+			delete statsSource[device];
+			return sampleUbus(device);
+		});
 
 	return sampleUbus(device).then(function(cur) {
 		if (cur != null) {
-			statsSource = 'ubus';
+			statsSource[device] = 'ubus';
 			return cur;
 		}
 
 		return sampleSysfs(device).then(function(cur2) {
 			if (cur2 != null)
-				statsSource = 'sysfs';
+				statsSource[device] = 'sysfs';
 
 			return cur2;
 		});
@@ -222,7 +227,9 @@ function readRate(device) {
 function metric(frontend, field, unit, digits) {
 	if (frontend.error)
 		return frontend.error;
-	if (frontend[field] == null || !isFinite(Number(frontend[field])))
+	if ((typeof frontend[field] != 'number' && typeof frontend[field] != 'string') ||
+		(typeof frontend[field] == 'string' && frontend[field].trim() == '') ||
+		!isFinite(Number(frontend[field])))
 		return _('不支持');
 	return Number(frontend[field]).toFixed(digits) + ' ' + unit;
 }
@@ -334,7 +341,14 @@ return baseclass.extend({
 	load: function() {
 		return L.resolveDefault(uci.load('pon'), null).then(function() {
 			var sections = uci.sections('pon', 'xpon').filter(function(section) {
-				return section.device;
+				return typeof section.device == 'string' && /^[a-zA-Z0-9_.:-]+$/.test(section.device);
+			});
+			var devices = Object.create(null);
+			sections = sections.filter(function(section) {
+				if (devices[section.device])
+					return false;
+				devices[section.device] = true;
+				return true;
 			});
 
 			if (!sections.length)

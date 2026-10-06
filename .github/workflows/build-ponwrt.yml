@@ -429,7 +429,7 @@ jobs:
         rm -f tmp/.config-package.in tmp/.config-target.in
 
         echo ">>> make prepare-tmpinfo（重新扫描 package/ 树）"
-        make -s prepare-tmpinfo OPENWRT_BUILD= 2>&1 | tail -5 || true
+        make -s prepare-tmpinfo OPENWRT_BUILD= 2>&1 | tail -5
 
         if ! grep -qx "Package: $NPU_PKG" tmp/.packageinfo 2>/dev/null; then
           echo "::error::$NPU_PKG 未进入 tmp/.packageinfo，defconfig 会把 .config 里的 =y 静默剔除"
@@ -465,7 +465,8 @@ jobs:
     - name: Load custom configuration
       run: |
         cd "$BUILD_ROOT/openwrt"
-        [ -e "$GITHUB_WORKSPACE/files" ] && cp -r "$GITHUB_WORKSPACE/files" files
+        mkdir -p files
+        cp -a "$GITHUB_WORKSPACE/files/." files/
 
         # BPF core options belong to the Linux target config fragment, not
         # PonWrt's top-level CONFIG_KERNEL_* wrappers (these symbols are not
@@ -486,6 +487,7 @@ jobs:
         [ -d files/sbin ] && chmod +x files/sbin/* 2>/dev/null
         [ -d files/etc/uci-defaults ] && chmod +x files/etc/uci-defaults/* 2>/dev/null
         chmod +x files/etc/init.d/hw-uplink files/usr/sbin/xg2010g-hw-uplink files/etc/hotplug.d/iface/99-hw-uplink
+        chmod +x files/etc/init.d/xg2010g-packet-steering files/usr/libexec/xg2010g-packet-steering
         mkdir -p files/etc/rc.d
         ln -sf ../init.d/hw-uplink files/etc/rc.d/S19hw-uplink
 
@@ -665,6 +667,7 @@ jobs:
     - name: Generate toolchain cache key
       id: cache-key
       run: |
+        set -eo pipefail
         cd "$BUILD_ROOT/openwrt"
 
         # diffconfig(精简配置) 必须 defconfig 展开；保留末尾输出便于排查
@@ -804,9 +807,7 @@ jobs:
         # 编完发现界面里没这个菜单时才察觉就晚了
         # =========================================================
         if [ "$SOC" = an7581 ] && [ "$PROFILE" = gemtek_xg2010g ]; then
-          for p in block-mount luci-app-diskman luci-app-filemanager luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
-            grep -qx "CONFIG_PACKAGE_${p}=y" .config || { echo "::error::Required UI package missing: $p"; exit 1; }
-          done
+          python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" config .config
         fi
         OPT_MISS=""
         for p in luci-app-airoha-npu luci-app-pon-status luci-app-natmode; do
@@ -1132,7 +1133,7 @@ jobs:
         echo "status=success" >> "$GITHUB_OUTPUT"
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
 
-    - name: Verify XG2010G bridger packages
+    - name: Verify XG2010G package contract
       if: env.BUILD_SCOPE != 'toolchain-only' && env.SOC == 'an7581' && env.PROFILE == 'gemtek_xg2010g'
       run: |
         cd "$BUILD_ROOT/openwrt"
@@ -1141,30 +1142,7 @@ jobs:
           echo "::error::未找到 XG2010G manifest"
           exit 1
         fi
-        MISSING=""
-        for p in bridger kmod-sched-core kmod-sched-bpf \
-                 kmod-sched-act-vlan kmod-sched-flower \
-                 kmod-br-netfilter luci-app-airoha-npu \
-                 luci-i18n-airoha-npu-zh-cn cpufreq \
-                 airoha-pond airoha-ponctl airoha-pon-debug \
-                 luci-app-onu luci-i18n-onu-zh-cn \
-                 block-mount luci-app-diskman luci-app-filemanager \
-                 luci-app-autoreboot luci-app-argon-config luci-app-pon-status; do
-          if ! grep -q "^${p} - " "$manifest"; then
-            MISSING="${MISSING} ${p}"
-          fi
-        done
-        if [ -n "$MISSING" ]; then
-          echo "::error::固件 manifest 缺少 bridger/BPF/ONU/CPU 包:${MISSING}"
-          exit 1
-        fi
-        for p in luci-app-pon luci-app-iptv; do
-          if grep -q "^${p} - " "$manifest"; then
-            echo "::error::旧 PON/IPTV LuCI 包仍进入固件: $p"
-            exit 1
-          fi
-        done
-        echo "✅ XG2010G bridger/TC-BPF、ONU 新界面、cpufreq 和 Airoha LuCI 已进入固件: $manifest"
+        python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" manifest "$manifest"
 
     # =========================================================
     # 19. 空间检查

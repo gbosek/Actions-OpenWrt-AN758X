@@ -17,7 +17,7 @@ disabled.
 
 --- a/drivers/net/ethernet/airoha/airoha_eth.c
 +++ b/drivers/net/ethernet/airoha/airoha_eth.c
-@@ -2318,9 +2318,8 @@ static int airoha_enable_gdm2_loopback(struct airoha_gdm_dev *dev)
+@@ -2318,8 +2318,7 @@ static int airoha_enable_gdm2_loopback(struct airoha_gdm_dev *dev)
  	airoha_fe_clear(eth, REG_FE_VIP_PORT_EN, BIT(AIROHA_GDM2_IDX));
  	airoha_fe_clear(eth, REG_FE_IFC_PORT_EN, BIT(AIROHA_GDM2_IDX));
  

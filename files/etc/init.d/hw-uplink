@@ -1,6 +1,9 @@
 #!/bin/sh /etc/rc.common
 START=19
 STOP=89
-boot() { /usr/sbin/xg2010g-hw-uplink; }
-start() { /usr/sbin/xg2010g-hw-uplink; }
-reload() { /usr/sbin/xg2010g-hw-uplink; }
+USE_PROCD=1
+start_service() { /usr/sbin/xg2010g-hw-uplink; }
+reload_service() { /usr/sbin/xg2010g-hw-uplink; }
+service_triggers() {
+	procd_add_reload_trigger network firewall
+}

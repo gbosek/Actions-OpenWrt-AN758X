@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Apply deterministic LuCI fixes after feeds have been installed."""
 from pathlib import Path
-import re
 import sys
 
 root = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
@@ -41,5 +40,11 @@ if '\t\tvar pon = {};' in text:
     finish = text.index('\t\tvar table =', begin)
     text = text[:begin] + text[finish:]
 text = text.replace('cpuusage.cpuusage\n', "cpuusage.cpuusage || _('Unavailable')\n")
+# Removing the rows above must also remove their unused ponctl request.
+# Keep the Promise results at indices 0..8 unchanged for the existing renderer.
+if "L.resolveDefault(uci.load('pon'), null)" in text:
+    begin = text.index("\n\t\t\tL.resolveDefault(uci.load('pon'), null)")
+    finish = text.index('\n\t},\n\n\trender:', begin)
+    text = text[:begin].rstrip().removesuffix(',') + '\n\t\t]);' + text[finish:]
 page.write_text(text)
 print('Applied CPU sampling precision and separate PON overview card fixes')

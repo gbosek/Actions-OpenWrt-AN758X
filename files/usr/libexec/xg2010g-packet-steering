@@ -63,6 +63,10 @@ set_queues() {
 apply_runtime() {
 	local mode mask flows
 	mode=$(uci -q get 'network.@globals[0].packet_steering')
+	# Let netifd place NAPI tasks first. Mode 1 belongs entirely to netifd;
+	# clearing queues afterwards would undo the ordinary "enabled" setting.
+	[ -x /etc/init.d/packet_steering ] && /etc/init.d/packet_steering reload >/dev/null 2>&1
+	[ "$mode" = 1 ] && return 0
 	if [ "$mode" = 2 ]; then
 		mask=$(cpu_mask)
 		flows=$(uci -q get 'network.@globals[0].steering_flows')
@@ -77,15 +81,12 @@ apply_runtime() {
 			printf '0\n' > /proc/sys/net/core/rps_sock_flow_entries
 	fi
 
-	# Let the stock OpenWrt implementation place NAPI tasks first. Apply the
-	# board-specific all-core queue mask afterwards, including br-lan and pon0,
-	# which are not always covered by the physical-device scan.
-	[ -x /etc/init.d/packet_steering ] && /etc/init.d/packet_steering reload >/dev/null 2>&1
+	# Apply all-core RPS (mode 2) or explicitly disable it (mode 0).
 	set_queues "$mask" "$flows"
 }
 
 status_json() {
-	local mode flows mask count sock total=0 matching=0 seen=0 ready=0
+	local mode flows mask count sock total=0 matching=0 active=0 seen=0 ready=0 enabled=0
 	local dev queue value
 	mode=$(uci -q get 'network.@globals[0].packet_steering')
 	flows=$(uci -q get 'network.@globals[0].steering_flows')
@@ -95,9 +96,10 @@ status_json() {
 	case "$mode" in ''|*[!0-9]*) mode=0 ;; esac
 	case "$flows" in ''|*[!0-9]*) flows=0 ;; esac
 	case "$sock" in ''|*[!0-9]*) sock=0 ;; esac
+	case "$mode" in 1|2) enabled=1 ;; esac
 
 	json_init
-	json_add_int enabled "$([ "$mode" = 2 ] && echo 1 || echo 0)"
+	json_add_int enabled "$enabled"
 	json_add_int configured_mode "$mode"
 	json_add_int steering_flows "$flows"
 	json_add_int cpu_count "$count"
@@ -113,14 +115,17 @@ status_json() {
 			total=$((total + 1))
 			value=$(normalise_mask "$(cat "$queue" 2>/dev/null)")
 			[ "$value" = "$mask" ] && matching=$((matching + 1))
+			[ "$value" != 0 ] && active=$((active + 1))
 		done
 	done
 	json_close_array
 	[ "$mode" = 2 ] && [ "$sock" = "$RPS_SOCK_FLOWS" ] && \
 		[ "$total" -gt 0 ] && [ "$matching" -eq "$total" ] && ready=1
+	[ "$mode" = 1 ] && [ "$active" -gt 0 ] && ready=1
 	json_add_int interfaces_seen "$seen"
 	json_add_int queues_total "$total"
 	json_add_int queues_matching "$matching"
+	json_add_int queues_active "$active"
 	json_add_boolean runtime_ready "$ready"
 	json_add_boolean service_present "$([ -x /etc/init.d/packet_steering ] && echo 1 || echo 0)"
 	json_dump

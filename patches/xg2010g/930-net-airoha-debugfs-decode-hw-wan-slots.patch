@@ -19,7 +19,7 @@ selectors rather than infer state from UCI/LuCI configuration.
  	unsigned int i;
  
  	/* These registers select the CPU/QDMA path for GDM2 PPE misses.
-@@ -188,8 +189,14 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+@@ -188,7 +189,13 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
  	seq_printf(m, "gdm2_fwd_cfg: %08x\n",
  		   airoha_fe_rr(eth, REG_GDM_FWD_CFG(AIROHA_GDM2_IDX)));
 -	seq_printf(m, "fe_wan_port: %08x\n",

@@ -1,0 +1,43 @@
+#!/bin/sh
+# Run after 99-timezone-cn; store traffic history with hourly flash writes.
+# Only supply defaults when the installed vnStat config still uses its defaults.
+[ -x /etc/init.d/vnstat ] && [ -f /etc/vnstat.conf ] || exit 0
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = 'gemtek,xg2010g' ] || exit 0
+
+set_default() {
+	grep -q "^$1[[:space:]]" /etc/vnstat.conf && return 0
+	printf '%s %s\n' "$1" "$2" >> /etc/vnstat.conf
+}
+
+if ! grep -q '^DatabaseDir[[:space:]]' /etc/vnstat.conf; then
+	mkdir -p /etc/vnstat2 || exit 1
+	set_default DatabaseDir '"/etc/vnstat2"' || exit 1
+	set_default SaveInterval 60 || exit 1
+	set_default OfflineSaveInterval 60 || exit 1
+	set_default SaveOnStatusChange 0 || exit 1
+	# Virtual/bridge speed may be unknown or lower than the aggregate rate.
+	set_default BandwidthDetection 0 || exit 1
+	set_default MaxBandwidth 0 || exit 1
+fi
+
+# Airoha physical netdev statistics use the hardware MIB. Bridge/PPPoE
+# software counters can miss PPE-forwarded traffic, so discover physical
+# devices from the driver rather than assigning a fixed LAN port to WAN.
+if uci -q get 'vnstat.@vnstat[0]' >/dev/null && \
+   ! uci -q get 'vnstat.@vnstat[0].interface' >/dev/null; then
+	devices=$(awk '
+		/^netdev=/ {
+			dev = $1; sub(/^netdev=/, "", dev)
+			if (dev !~ /[^a-zA-Z0-9_.:-]/ && !seen[dev]++) print dev
+		}
+	' /sys/kernel/debug/ppe/config 2>/dev/null)
+	for dev in $devices; do
+		# OAM/OMCI control devices are not Ethernet traffic interfaces.
+		[ "$(cat "/sys/class/net/$dev/type" 2>/dev/null)" = 1 ] || continue
+		uci -q add_list "vnstat.@vnstat[0].interface=$dev" || exit 1
+	done
+	uci -q commit vnstat || exit 1
+fi
+/etc/init.d/vnstat enable || exit 1
+/etc/init.d/vnstat restart || exit 1
+exit 0

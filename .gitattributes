@@ -1,0 +1,4 @@
+# Keep Linux shell hooks readable after Windows editing/checkouts.
+* text=auto eol=lf
+# Unified-diff context lines intentionally contain a leading space.
+*.patch -whitespace

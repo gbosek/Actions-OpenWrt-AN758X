@@ -1,11 +1,13 @@
 #!/bin/bash
 # ================================================================
-# diy-part1.sh —— 只做一件事：拉取可选插件到 package/custom
+# diy-part1.sh —— 安装补丁、固定插件源码、集成 LuCI，最后生成包索引
 # 运行目录: ponwrt 源码根目录（feeds 安装之后、加载 .config 之前）
 #
 # 用法：把需要的插件开关改成 true，再到 configs/<机型>.config 里
 #       把对应 "# CONFIG_PACKAGE_xxx is not set" 改成 "=y"
 # ================================================================
+
+set -eo pipefail
 
 echo "=========================================="
 echo "拉取可选插件 (diy-part1.sh)"
@@ -19,7 +21,7 @@ mkdir -p "$PKG_DIR"
 # 默认开启：Airoha SoC 状态页（config 里已 =y，必须拉否则 defconfig 会剔除）
 #
 # 温度不再用 luci-app-temp-status —— 由 autocore 的 /sbin/tempinfo 提供，
-# 见 files/sbin/tempinfo（概览页「温度」行：CPU / WiFi / PON 温度 + 光功率）
+# 见 files/sbin/tempinfo；PON 遥测由独立光模块卡片采集。
 # ---------------------------------------------------------
 ADD_AIROHA_NPU=true    # luci-app-airoha-npu：Airoha SoC 状态页（NPU/CPU/Frame Engine/PPE）
 ADD_MWAN3=true         # nftables 版 MWAN3（与 PonWrt R68 的 fw4/nftables 对齐）
@@ -33,18 +35,17 @@ ADD_TAILSCALE=false    # luci-app-tailscale
 ADD_OPENLIST=false     # luci-app-openlist2（alist/openlist 挂载）
 ADD_SMARTDNS=false     # luci-app-smartdns
 
-ADD_LUCI_APP=true       # qwe3017/luci-app 仓库（monorepo）
-                        #   ├─ luci-app-natmode     NAT 类型三选一（网络 → NAT 类型）
-                        #   └─ luci-app-pon-status  PON 光模块卡片（概览页「系统」下一格）
+ADD_LUCI_APP=true       # 固定版本的 NAT 类型界面
+ADD_PON_STATUS=true     # 本仓库维护的 PON 光模块卡片
 
 clone() {  # clone <url> <dir> [branch]
   local url="$1" dir="$2" br="$3"
   [ -d "$dir" ] && { echo "已存在，跳过: $dir"; return 0; }
   echo "--- git clone $url -> $dir ---"
   if [ -n "$br" ]; then
-    git clone --depth 1 -b "$br" "$url" "$dir" 2>&1 | tail -3
+    git clone --depth 1 -b "$br" "$url" "$dir" 2>&1 | tail -3 || return 1
   else
-    git clone --depth 1 "$url" "$dir" 2>&1 | tail -3
+    git clone --depth 1 "$url" "$dir" 2>&1 | tail -3 || return 1
   fi
   if [ -d "$dir" ]; then
     echo "✅ 克隆成功: $dir"
@@ -85,11 +86,10 @@ if [ ! -d "$XG2010G_PATCH_SRC" ]; then
   echo "::error::缺少 XG2010G 补丁目录: $XG2010G_PATCH_SRC"
   exit 1
 fi
-mapfile -t EXP_PATCHES < <(find "$XG2010G_PATCH_SRC" -maxdepth 1 -type f \
-  \( -name '93[1-9]-*.patch' -o -name '9[4-9][0-9]-*.patch' \) | sort)
-if [ "${#EXP_PATCHES[@]}" -gt 0 ]; then
-  python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" "${EXP_PATCHES[@]}" || {
-    echo "::error::XG2010G experimental patch queue 存在 malformed unified diff"
+mapfile -t KERNEL_PATCHES < <(find "$XG2010G_PATCH_SRC" -maxdepth 1 -type f -name '*.patch' | sort)
+if [ "${#KERNEL_PATCHES[@]}" -gt 0 ]; then
+  python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" "${KERNEL_PATCHES[@]}" || {
+    echo "::error::XG2010G 内核补丁队列存在 malformed unified diff"
     exit 1
   }
 fi
@@ -111,6 +111,7 @@ fi
 # 正向/反向都不能匹配时立即失败，避免补丁悄悄漏进固件。
 apply_source_patch_once() {
   local patch_file="$1" patch_dir="${2:-.}"
+  python3 "$GITHUB_WORKSPACE/scripts/validate-unified-diff.py" "$patch_file"
   if patch --batch --forward --fuzz=0 -p1 -d "$patch_dir" --dry-run < "$patch_file" >/dev/null 2>&1; then
     patch --batch --forward --fuzz=0 -p1 -d "$patch_dir" < "$patch_file"
     echo "✅ 已应用源码补丁: $(basename "$patch_file")"
@@ -126,6 +127,13 @@ for patch_file in "$GITHUB_WORKSPACE"/patches/target/*.patch; do
   [ -f "$patch_file" ] || continue
   apply_source_patch_once "$patch_file" .
 done
+
+if [ "${SOC:-an7581}" = an7581 ] && [ "${PROFILE:-gemtek_xg2010g}" = gemtek_xg2010g ]; then
+  for patch_file in "$GITHUB_WORKSPACE"/patches/luci/*.patch; do
+    [ -f "$patch_file" ] || continue
+    apply_source_patch_once "$patch_file" .
+  done
+fi
 
 NETIFD_STEERING_PATCH="$GITHUB_WORKSPACE/patches/netifd/100-airoha-qdma-napi-steering.patch"
 if [ -f "$NETIFD_STEERING_PATCH" ]; then
@@ -170,14 +178,8 @@ if [ "$ADD_MWAN3" = "true" ]; then
 fi
 
 # =========================================================
-# qwe3017/luci-app —— 两个 LuCI 插件的来源
-#
-# 这是一个 monorepo，结构为：
-#   luci-app/
-#   ├── luci-app-natmode/
-#   └── luci-app-pon-status/
-#
-# 所以需要 clone 整个仓库，再把子目录拷到 package/custom/。
+# qwe3017/luci-app —— 固定版本的 NAT 界面
+# 只取 NAT 子包；PON 卡片由本仓库统一维护。
 # 目录名必须等于包名（luci.mk: PKG_NAME ?= $(notdir ${CURDIR})），
 # 否则 config 里的 CONFIG_PACKAGE_xxx 符号对不上。
 #
@@ -192,12 +194,13 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   LUCI_APP_URL="https://github.com/qwe3017/luci-app"
   LUCI_APP_TMP="$(mktemp -d)/luci-app"
 
-  if ! clone "$LUCI_APP_URL" "$LUCI_APP_TMP" main; then
-    echo "::error::qwe3017/luci-app 拉取失败，natmode / pon-status 会被 defconfig 剔除"
+  LUCI_APP_REF="2609164ff608ee4e6ac7e63fd5896176805bd9ed"
+  if ! clone_commit "$LUCI_APP_URL" "$LUCI_APP_REF" "$LUCI_APP_TMP"; then
+    echo "::error::固定版本的 NAT 界面获取失败"
     exit 1
   fi
 
-  for p in luci-app-natmode luci-app-pon-status; do
+  for p in luci-app-natmode; do
     if [ ! -f "$LUCI_APP_TMP/$p/Makefile" ]; then
       echo "::error::$LUCI_APP_TMP/$p/Makefile 不存在，包无法被索引"
       exit 1
@@ -209,6 +212,15 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
 
   rm -rf "$LUCI_APP_TMP"
 fi
+
+# Install the final local package before generating the package index.
+if [ "$ADD_PON_STATUS" = "true" ]; then
+  PON_STATUS_SRC="$GITHUB_WORKSPACE/packages/luci-app-pon-status"
+  [ -f "$PON_STATUS_SRC/Makefile" ] || { echo "::error::本地 PON 卡片包缺失"; exit 1; }
+  rm -rf "$PKG_DIR/luci-app-pon-status"
+  cp -a "$PON_STATUS_SRC" "$PKG_DIR/luci-app-pon-status"
+fi
+python3 "$GITHUB_WORKSPACE/scripts/integrate-xg2010g-ui.py" .
 
 # --- Airoha SoC 状态页（NPU / PPE / CPU / Frame Engine）---
 # 从 naoki66 的多包 feed 固定版本取出 luci-app-airoha-npu 子包。
@@ -403,8 +415,7 @@ if [ "$ADD_AIROHA_NPU" = "true" ] && [ ! -d "$PKG_DIR/luci-app-airoha-npu" ]; th
   exit 1
 fi
 
-# natmode / pon-status 来自 qwe3017/luci-app（config 里也是 =y）
-for p in luci-app-natmode luci-app-pon-status; do
+for p in luci-app-natmode; do
   if [ "$ADD_LUCI_APP" = "true" ] && [ ! -d "$PKG_DIR/$p" ]; then
     echo "::error::$p 未拉到，config 里的 =y 会被 defconfig 剔除"
     exit 1
@@ -459,7 +470,13 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   rm -f tmp/.config-package.in tmp/.config-target.in
 
   echo ">>> make prepare-tmpinfo（重新扫描 package/ 树）"
-  make -s prepare-tmpinfo OPENWRT_BUILD= 2>&1 | tail -5 || true
+  mkdir -p tmp
+  if ! make -s prepare-tmpinfo OPENWRT_BUILD= > tmp/xg2010g-package-index.log 2>&1; then
+    tail -40 tmp/xg2010g-package-index.log
+    echo "::error::包索引生成失败"
+    exit 1
+  fi
+  tail -5 tmp/xg2010g-package-index.log
 
   echo "=========================================="
   echo "包索引校验（判据：tmp/.packageinfo）"
@@ -498,8 +515,9 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   [ "$ADD_MWAN3" = "true" ] && REQUIRED="$REQUIRED mwan3 luci-app-mwan3"
   [ "$ADD_ONU_CONFIG" = "true" ] && REQUIRED="$REQUIRED airoha-pond airoha-ponctl airoha-pon-debug luci-app-onu luci-i18n-onu-zh-cn"
   if [ "$ADD_LUCI_APP" = "true" ]; then
-    REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
+    REQUIRED="$REQUIRED luci-app-natmode"
   fi
+  [ "$ADD_PON_STATUS" != "true" ] || REQUIRED="$REQUIRED luci-app-pon-status"
   HARD_MISS=""
   for r in $REQUIRED; do
     grep -qx "Package: $r" tmp/.packageinfo 2>/dev/null || HARD_MISS="$HARD_MISS $r"
@@ -528,11 +546,11 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     fi
   fi
   [ -n "$INDEX_MISS" ] && echo "::warning::部分可选包未进入索引（不影响必装插件）:$INDEX_MISS"
+  if [ "${SOC:-an7581}" = an7581 ] && [ "${PROFILE:-gemtek_xg2010g}" = gemtek_xg2010g ]; then
+    python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" index tmp/.packageinfo
+  fi
 else
   echo "未启用任何第三方插件"
 fi
 
-# Keep the optics card maintained with this firmware instead of a floating clone.
-cp -a "$GITHUB_WORKSPACE/packages/luci-app-pon-status/." "$PKG_DIR/luci-app-pon-status/"
-python3 "$GITHUB_WORKSPACE/scripts/integrate-xg2010g-ui.py" .
 echo "🎉 diy-part1.sh 执行完毕"

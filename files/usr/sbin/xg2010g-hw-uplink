@@ -5,15 +5,62 @@ log() { logger -t hw-uplink "$*"; }
 flag() { ethtool --show-priv-flags "$1" 2>/dev/null | awk '$1=="hw-uplink:" {print $2}'; }
 supported() {
 	[ -d "/sys/class/net/$1" ] || return 1
-	[ -n "$(flag "$1")" ] || return 1
-	grep -Eq "netdev=$1 .*gdm=(3|4) " /sys/kernel/debug/ppe/config
+	# Match the complete device field; a dot in a VLAN name is not a regex.
+	printf '%s\n' "$ppe_snapshot" | awk -v dev="$1" '
+		$1 == "netdev=" dev { for (i=2; i<=NF; i++)
+			if ($i == "gdm=3" || $i == "gdm=4") found=1 }
+		END { exit !found }' || return 1
+	[ -n "$(flag "$1")" ]
+}
+device_parent() {
+	local section="$1" name type
+	config_get name "$section" name
+	[ "$name" = "$resolve_device" ] || return
+	config_get type "$section" type
+	case "$type" in
+		8021q|8021ad) config_get resolve_parent "$section" ifname ;;
+	esac
+}
+bridge_ports() {
+	local section="$1" type ports port
+	config_get type "$section" type
+	[ "$type" = bridge ] || return
+	config_get ports "$section" ports
+	for port in $ports; do
+		# WAN1 selects a physical source port, including every VLAN on it.
+		port="$(resolve "$port")" || continue
+		[ "$port" = "$bridge_device" ] && bridge_configured=1
+	done
+}
+bridge_member() {
+	local bridge_device="$1" bridge_configured=0 port
+	[ -d "/sys/class/net/$1/brport" ] && return 0
+	# At START=19 the bridge may not exist yet; consult committed UCI as well.
+	config_foreach bridge_ports device
+	# Include bridge members created outside the UCI device list.
+	for port in /sys/class/net/*/brport; do
+		[ -d "$port" ] || continue
+		port="${port%/brport}"
+		port="$(resolve "${port##*/}")" || continue
+		[ "$port" = "$bridge_device" ] && bridge_configured=1
+	done
+	[ "$bridge_configured" = 1 ]
 }
 resolve() {
-	local dev="$1" parent n=0
+	local dev="$1" parent n=0 resolve_device resolve_parent
 	while [ "$n" -lt 8 ]; do
+		case "$dev" in
+			@*)
+				parent="${dev#@}"
+				config_get dev "$parent" device
+				[ -n "$dev" ] || config_get dev "$parent" ifname
+				n=$((n + 1)); continue ;;
+		esac
 		case "$dev" in ''|*[!a-zA-Z0-9_.:-]*) return 1;; esac
 		supported "$dev" && { echo "$dev"; return 0; }
-		parent="$(uci -q get "network.$dev.ifname")"
+		resolve_device="$dev"; resolve_parent=""
+		config_foreach device_parent device
+		parent="$resolve_parent"
 		[ -n "$parent" ] || parent="${dev%.*}"
 		[ "$parent" != "$dev" ] || return 1
 		dev="$parent"; n=$((n + 1))
@@ -21,10 +68,12 @@ resolve() {
 	return 1
 }
 candidate() {
-	local iface="$1" dev proto disabled preference
+	local iface="$1" dev proto disabled preference type
 	case " $seen " in *" $iface "*) return;; esac
 	seen="$seen $iface"
-	config_get disabled "$iface" disabled 0
+	config_get type "$iface" TYPE
+	[ "$type" = interface ] || return
+	config_get_bool disabled "$iface" disabled 0
 	config_get proto "$iface" proto
 	config_get preference "$iface" hw_uplink auto
 	[ "$disabled" = 1 ] && return
@@ -33,64 +82,123 @@ candidate() {
 	config_get dev "$iface" device
 	[ -n "$dev" ] || config_get dev "$iface" ifname
 	dev="$(resolve "$dev")" || return
-	[ -d "/sys/class/net/$dev/brport" ] && return
+	bridge_member "$dev" && { log "Refusing WAN1 for bridge member $dev"; return; }
+	# An IPv6 alias may occur before its explicitly selected IPv4 interface.
+	# Preserve explicit preference before deduplicating physical devices.
+	if [ "$preference" = 1 ]; then
+		case " $explicit_devices " in
+			*" $dev "*) ;;
+			*) explicit="$explicit $iface:$dev"; explicit_devices="$explicit_devices $dev" ;;
+		esac
+	fi
 	case " $devices " in *" $dev "*) return;; esac
 	devices="$devices $dev"; pairs="$pairs $iface:$dev"
-	[ "$preference" = 1 ] && explicit="$explicit $iface:$dev"
 }
 zone() {
-	local s="$1" name masq networks
+	local s="$1" name enabled networks
 	config_get name "$s" name
-	config_get masq "$s" masq 0
-	[ "$name" = wan ] || [ "$masq" = 1 ] || return
+	config_get_bool enabled "$s" hw_uplink 0
+	# Masquerade also occurs on guest/internal zones and does not prove WAN role.
+	[ "$name" = wan ] || [ "$enabled" = 1 ] || return
 	config_get networks "$s" network
 	wanifs="$wanifs $networks"
 }
+explicit_interface() {
+	local section="$1" enabled
+	config_get enabled "$section" hw_uplink auto
+	[ "$enabled" = 1 ] && wanifs="$wanifs $section"
+}
+runtime_user() {
+	local section="$1" device status
+	config_get device "$section" device
+	[ -n "$device" ] || config_get device "$section" ifname
+	device="$(resolve "$device")" || return
+	[ "$device" = "$changing_device" ] || return
+	status="$(ubus call "network.interface.$section" status 2>/dev/null | jsonfilter -e '@.up' -e '@.pending')"
+	case "$status" in *true*) active_users="$active_users $section";; esac
+}
 change() {
-	local iface="$1" dev="$2" value="$3" up=0 rc=0 active=0
+	local iface="$1" dev="$2" value="$3" up=0 rc=0 tries=0 changing_device="$2" active_users="" user
+	local now previous previous_key attempt_key
 	[ "$(flag "$dev")" = "$value" ] && return 0
-	# Only restart an already running logical interface, then always restore it.
-	if [ -n "$iface" ] && ubus call "network.interface.$iface" status 2>/dev/null | jsonfilter -e '@.up' | grep -qx true; then
-		active=1; ifdown "$iface" >/dev/null 2>&1; sleep 1
+	now="$(date +%s)"
+	attempt_key="$dev:$value:$config_signature"
+	if [ -r /var/run/xg2010g-hw-uplink.failed ]; then
+		read -r previous previous_key < /var/run/xg2010g-hw-uplink.failed
+		case "$previous" in ''|*[!0-9]*) previous=0;; esac
+		if [ "$attempt_key" = "$previous_key" ] && [ $((now - previous)) -ge 0 ] && [ $((now - previous)) -lt 30 ]; then
+			return 1
+		fi
 	fi
+	[ -r "/sys/class/net/$dev/flags" ] || return 1
+	# Capture physical admin state before ifdown can clear it.
 	[ $(( $(cat "/sys/class/net/$dev/flags") & 1 )) -ne 0 ] && up=1
-	ip link set dev "$dev" down || rc=1
+	# IPv4 and IPv6 may share the port; restore every previously active user.
+	config_foreach runtime_user interface
+	for user in $active_users; do
+		ifdown "$user" >/dev/null 2>&1 || rc=1
+	done
+	if [ "$rc" = 0 ]; then ip link set dev "$dev" down || rc=1; fi
+	while [ "$rc" = 0 ] && [ $(( $(cat "/sys/class/net/$dev/flags") & 1 )) -ne 0 ]; do
+		tries=$((tries + 1))
+		[ "$tries" -ge 10 ] && { rc=1; break; }
+		sleep 0.1
+	done
 	if [ "$rc" = 0 ]; then
 		ethtool --set-priv-flags "$dev" hw-uplink "$value" || rc=1
 		[ "$(flag "$dev")" = "$value" ] || rc=1
 	fi
-	[ "$up" = 1 ] && ip link set dev "$dev" up
-	[ "$active" = 1 ] && ifup "$iface" >/dev/null 2>&1
+	if [ "$up" = 1 ]; then ip link set dev "$dev" up || rc=1; fi
+	for user in $active_users; do ifup "$user" >/dev/null 2>&1 || rc=1; done
+	if [ "$rc" = 0 ]; then
+		rm -f /var/run/xg2010g-hw-uplink.failed
+	else
+		# A failed ethtool call must not create an endless ifdown/ifup event loop.
+		printf '%s %s\n' "$now" "$attempt_key" > /var/run/xg2010g-hw-uplink.failed
+	fi
 	log "$dev hw-uplink=$value result=$rc"
 	return "$rc"
 }
 reconcile() {
-	local wanifs="" seen="" devices="" pairs="" explicit="" selected="" iface dev old
+	local wanifs="" seen="" devices="" pairs="" explicit="" explicit_devices="" selected="" iface dev old ambiguous=0
 	[ -r /sys/kernel/debug/ppe/config ] || mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null
 	[ -r /sys/kernel/debug/ppe/config ] || { log "PPE configuration unavailable"; return 1; }
-	config_load firewall; config_foreach zone zone
-	config_load network
+	ppe_snapshot="$(cat /sys/kernel/debug/ppe/config)" || return 1
+	config_load firewall || { log "Cannot read firewall configuration; preserving current role"; return 1; }
+	config_foreach zone zone
+	config_load network || { log "Cannot read network configuration; preserving current role"; return 1; }
+	config_foreach explicit_interface interface
+	config_signature="$(sha256sum /etc/config/network /etc/config/firewall | sha256sum | awk '{print $1}')"
 	for iface in $wanifs; do candidate "$iface"; done
 	# More than one external WAN requires an explicit network.<iface>.hw_uplink=1.
 	set -- $explicit
 	if [ "$#" = 1 ]; then selected="$1"
-	elif [ "$#" -gt 1 ]; then log "Multiple explicit WAN1 owners; refusing reassignment"; return 1
+	elif [ "$#" -gt 1 ]; then log "Multiple explicit WAN1 owners; refusing reassignment"; ambiguous=1
 	else
 		set -- $pairs
 		[ "$#" = 1 ] && selected="$1"
-		[ "$#" -gt 1 ] && { log "Multiple external WANs: select one with network.<iface>.hw_uplink=1"; return 1; }
+		[ "$#" -gt 1 ] && { log "Multiple external WANs: select one with network.<iface>.hw_uplink=1"; ambiguous=1; }
 	fi
 	dev="${selected#*:}"
 	for old in /sys/class/net/*; do
 		old="${old##*/}"
 		[ "$old" = "$dev" ] && continue
-		[ "$(flag "$old")" = on ] && change "" "$old" off
+		# During ambiguity preserve a valid WAN owner, but release a port now used as LAN.
+		if [ "$ambiguous" = 1 ]; then
+			case " $devices " in *" $old "*) continue;; esac
+		fi
+		supported "$old" || continue
+		if [ "$(flag "$old")" = on ]; then change "" "$old" off || return 1; fi
 	done
+	[ "$ambiguous" = 1 ] && return 1
 	[ -n "$selected" ] || return 0
 	iface="${selected%%:*}"
 	change "$iface" "$dev" on
 }
-# Atomic lock prevents recursive hotplug events during interface restoration.
-mkdir /var/run/hw-uplink.lock 2>/dev/null || exit 0
-trap 'rmdir /var/run/hw-uplink.lock' EXIT HUP INT TERM
-reconcile
+# Kernel-managed locking survives interrupted helpers and serializes hotplug
+# events instead of discarding a configuration update during a role change.
+command -v flock >/dev/null 2>&1 || { log "flock is required for safe WAN1 changes"; exit 1; }
+(
+	flock -x -w 10 9 || { log "WAN1 reconciliation lock timeout"; exit 1; }
+	reconcile
+) 9>/var/run/xg2010g-hw-uplink.lock

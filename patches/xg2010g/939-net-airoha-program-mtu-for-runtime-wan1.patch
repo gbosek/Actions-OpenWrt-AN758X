@@ -1,0 +1,27 @@
+From: OpenAI <noreply@openai.com>
+Subject: [PATCH] net: airoha: program the MTU field for runtime WAN1
+
+The direct WAN1 role added by patch 933 intentionally retains the logical
+LAN role. Consequently the legacy !airoha_is_lan_gdm_dev() test skips the
+FE WAN MTU register for that device even though the caller updates PPE MTU.
+
+Program WAN_MTU1_MASK when the device owns WAN1. Preserve the existing WAN0
+condition and the VLAN_ETH_HLEN adjustment from the pinned PonWrt stack.
+WAN0 and WAN1 occupy independent fields in REG_WAN_MTU0; a separate WAN1
+register must not be invented. The read-modify-write preserves WAN0.
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2114,7 +2114,11 @@ static void airoha_dev_set_mtu(struct net_device *netdev)
+ 
+ 	airoha_ppe_set_mtu(dev);
+-	if (!airoha_is_lan_gdm_dev(dev))
++	if (dev->hw_wan_slot == AIROHA_HW_WAN1)
++		airoha_fe_rmw(dev->eth, REG_WAN_MTU0,
++			      WAN_MTU1_MASK,
++			      FIELD_PREP(WAN_MTU1_MASK, netdev->mtu + VLAN_ETH_HLEN));
++	else if (!airoha_is_lan_gdm_dev(dev))
+ 		airoha_fe_rmw(dev->eth, REG_WAN_MTU0,
+ 			      WAN_MTU0_MASK,
+ 			      FIELD_PREP(WAN_MTU0_MASK, netdev->mtu + VLAN_ETH_HLEN));
+ }

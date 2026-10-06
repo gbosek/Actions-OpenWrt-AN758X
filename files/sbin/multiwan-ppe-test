@@ -68,13 +68,12 @@ require_dev_down() {
 		exit 1
 	}
 	state="$(cat "/sys/class/net/$dev/operstate" 2>/dev/null || echo unknown)"
-	flags="$(ip -o link show dev "$dev" 2>/dev/null || true)"
-	case "$flags" in
-		*"<"*UP*">"*)
-			echo "ERROR: $dev is administratively UP; run: ip link set dev $dev down" >&2
-			exit 1
-			;;
-	esac
+	flags="$(cat "/sys/class/net/$dev/flags")"
+	# IFF_UP is the admin flag; LOWER_UP only describes the carrier.
+	if [ $((flags & 1)) -ne 0 ]; then
+		echo "ERROR: $dev is administratively UP; run: ip link set dev $dev down" >&2
+		exit 1
+	fi
 	echo "$dev operstate=$state"
 }
 
