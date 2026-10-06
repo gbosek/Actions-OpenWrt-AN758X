@@ -822,9 +822,13 @@ jobs:
         # =========================================================
         if [ "$SOC" = an7581 ] && [ "$PROFILE" = gemtek_xg2010g ]; then
           python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" config .config
+          # XG2010G intentionally excludes the unrequested NAT type UI.
+          STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status"
+        else
+          STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status luci-app-natmode"
         fi
         OPT_MISS=""
-        for p in luci-app-airoha-npu luci-app-pon-status luci-app-natmode; do
+        for p in $STATUS_PLUGINS; do
           if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
             OPT_MISS="$OPT_MISS $p"
             echo "::warning::${p} 在 defconfig 后未启用"

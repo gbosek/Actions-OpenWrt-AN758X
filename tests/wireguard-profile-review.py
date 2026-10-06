@@ -18,6 +18,10 @@ assert not set(packages) & set(required)
 assert 'luci-app-natmode' not in required
 assert not re.search(r'^CONFIG_PACKAGE_luci-app-natmode=y', profile, re.M)
 checker = repo / 'scripts/check-xg2010g-packages.py'
+workflow = (repo / '.github/workflows/build-ponwrt.yml').read_text()
+assert 'STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status"' in workflow
+assert 'STATUS_PLUGINS="luci-app-airoha-npu luci-app-pon-status luci-app-natmode"' in workflow
+assert 'for p in $STATUS_PLUGINS; do' in workflow
 with tempfile.TemporaryDirectory(prefix='xg-wg-profile-') as d:
     path = Path(d) / 'config'
     baseline = ''.join(f'CONFIG_PACKAGE_{package}=y\n' for package in required)

@@ -1,4 +1,4 @@
-2026-10-06: stable XG2010G image removes unsolicited WireGuard and NAT type UI; preserve 1400 MHz cap and audited WAN1/PPE fixes
+2026-10-06: fix XG2010G-only status plugin validation after removing WireGuard and NAT type UI
 profile=gemtek_xg2010g
 base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
 npu=stock-1456.62
