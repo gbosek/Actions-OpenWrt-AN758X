@@ -289,6 +289,8 @@ jobs:
           xz-utils tar unzip zip zstd dos2unix ccache gettext \
           rsync file wget curl git subversion 2>/dev/null || true
         sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)' || true
+        # Inspect the CPU OPPs in the actual FIT before uploading an XG2010G image.
+        sudo -E apt-get -yqq install --no-install-recommends u-boot-tools device-tree-compiler
 
         sudo -E apt-get -yqq autoremove --purge
         sudo -E apt-get -yqq clean
@@ -1137,12 +1139,19 @@ jobs:
       if: env.BUILD_SCOPE != 'toolchain-only' && env.SOC == 'an7581' && env.PROFILE == 'gemtek_xg2010g'
       run: |
         cd "$BUILD_ROOT/openwrt"
-        manifest="$(find bin/targets -type f -name '*gemtek_xg2010g.manifest' -print -quit)"
-        if [ -z "$manifest" ]; then
-          echo "::error::未找到 XG2010G manifest"
+        firmware="$(find bin/targets -type f -name '*gemtek_xg2010g-squashfs-sysupgrade.itb' -print -quit)"
+        if [ -z "$firmware" ]; then
+          echo "::error::未找到 XG2010G sysupgrade 镜像"
           exit 1
         fi
-        python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" manifest "$manifest"
+        mapfile -t manifests < <(find "$(dirname "$firmware")" -maxdepth 1 -type f -name '*.manifest' -print)
+        if [ "${#manifests[@]}" -ne 1 ]; then
+          echo "::error::XG2010G 固件目录应有且只有一份 manifest"
+          exit 1
+        fi
+        python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-packages.py" manifest "${manifests[0]}"
+        python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-cpu-cap.py" "$firmware" \
+          --ui package/custom/luci-app-airoha-npu/htdocs/luci-static/resources/view/airoha_npu/status.js
 
     # =========================================================
     # 19. 空间检查

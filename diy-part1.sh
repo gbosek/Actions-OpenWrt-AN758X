@@ -272,17 +272,11 @@ if [ "$ADD_AIROHA_NPU" = "true" ]; then
     echo "::error::Airoha NPU LuCI CPU 状态页不存在: $CPU_STATUS_JS"
     exit 1
   fi
-  if grep -q '^var CPU_MAX_FREQ_KHZ = 1400000;$' "$CPU_STATUS_JS"; then
-    sed -i 's/^var CPU_MAX_FREQ_KHZ = 1400000;$/var CPU_MAX_FREQ_KHZ = 1600000;/' "$CPU_STATUS_JS"
-  elif ! grep -q '^var CPU_MAX_FREQ_KHZ = 1600000;$' "$CPU_STATUS_JS"; then
-    echo "::error::Airoha CPU 上限常量与预期不符，拒绝静默修改"
-    exit 1
-  fi
-  [ "$(grep -c '^var CPU_MAX_FREQ_KHZ = 1600000;$' "$CPU_STATUS_JS")" -eq 1 ] || {
-    echo "::error::Airoha CPU 上限 1600 MHz 校验失败"
+  [ "$(grep -c '^var CPU_MAX_FREQ_KHZ = 1400000;$' "$CPU_STATUS_JS")" -eq 1 ] || {
+    echo "::error::Airoha CPU 上限必须为 1400 MHz，拒绝未验证的更高档位"
     exit 1
   }
-  echo "✅ Airoha CPU LuCI 可选上限设为 1600 MHz；默认 governor/max 由 cpufreq 配置设为 ondemand/1400 MHz"
+  echo "✅ Airoha CPU LuCI 上限保留 1400 MHz；默认 governor/max 为 ondemand/1400 MHz"
 
   PODIR="$PKG_DIR/luci-app-airoha-npu/po"
   if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ] && \

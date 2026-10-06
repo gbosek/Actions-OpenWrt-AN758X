@@ -51,4 +51,7 @@ with tempfile.TemporaryDirectory(prefix='xg-integration-') as directory:
     assert 'cp -a "$GITHUB_WORKSPACE/files/." files/' in workflow
     assert 'check-xg2010g-packages.py" config' in workflow
     assert 'check-xg2010g-packages.py" manifest' in workflow
+    assert 'check-xg2010g-cpu-cap.py" "$firmware"' in workflow
+    assert '-name \'*gemtek_xg2010g.manifest\'' not in workflow
+    assert '"${#manifests[@]}" -ne 1' in workflow
 print('PASS: package contract at four stages, missing/legacy packages rejected, local PON indexing order, NOWIFI and Wi-Fi profiles, timezone owner and overlay copy')
