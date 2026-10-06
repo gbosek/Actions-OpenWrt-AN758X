@@ -7,7 +7,7 @@ index c71f1f36f2..a251b6c5aa 100644
  
  PKG_NAME:=cpufreq
 -PKG_RELEASE:=1
-+PKG_RELEASE:=3
++PKG_RELEASE:=4
  
  include $(INCLUDE_DIR)/package.mk
  
@@ -20,7 +20,7 @@ index 7d839d8299..5050c021aa 100644
  source "/etc/openwrt_release"
  case "$DISTRIB_TARGET" in
 +	"airoha/an7581")
-+		uci_write_config 0 ondemand 500000 1400000 10 50
++		uci_write_config 0 ondemand 500000 1200000 10 50
 +		;;
  	"bcm27xx/bcm2710")
  		uci_write_config 0 ondemand 600000 "$CPU_MAX_FREQ" 10 50

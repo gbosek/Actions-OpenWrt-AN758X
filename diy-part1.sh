@@ -20,8 +20,8 @@ mkdir -p "$PKG_DIR"
 # 插件开关
 # 默认开启：Airoha SoC 状态页（config 里已 =y，必须拉否则 defconfig 会剔除）
 #
-# 温度不再用 luci-app-temp-status —— 由 autocore 的 /sbin/tempinfo 提供，
-# 见 files/sbin/tempinfo；PON 遥测由独立光模块卡片采集。
+# CPU 温度由 autocore 的 /sbin/tempinfo 提供；PON 温度同时显示在系统概览温度行，
+# 完整光功率/电流/电压遥测仍由独立光模块卡片采集。
 # ---------------------------------------------------------
 ADD_AIROHA_NPU=true    # luci-app-airoha-npu：Airoha SoC 状态页（NPU/CPU/Frame Engine/PPE）
 ADD_MWAN3=true         # nftables 版 MWAN3（与 PonWrt R68 的 fw4/nftables 对齐）
@@ -223,7 +223,7 @@ if [ "$ADD_PON_STATUS" = "true" ]; then
   rm -rf "$PKG_DIR/luci-app-pon-status"
   cp -a "$PON_STATUS_SRC" "$PKG_DIR/luci-app-pon-status"
 fi
-python3 "$GITHUB_WORKSPACE/scripts/integrate-xg2010g-ui.py" .
+PROFILE="$PROFILE" python3 "$GITHUB_WORKSPACE/scripts/integrate-xg2010g-ui.py" .
 
 # --- Airoha SoC 状态页（NPU / PPE / CPU / Frame Engine）---
 # 从 naoki66 的多包 feed 固定版本取出 luci-app-airoha-npu 子包。
@@ -279,7 +279,31 @@ if [ "$ADD_AIROHA_NPU" = "true" ]; then
     echo "::error::Airoha CPU 上限必须为 1400 MHz，拒绝未验证的更高档位"
     exit 1
   }
-  echo "✅ Airoha CPU LuCI 上限保留 1400 MHz；默认 governor/max 为 ondemand/1400 MHz"
+  CPUFREQ_INIT="$AIROHA_NPU_DIR/root/etc/init.d/airoha-npu"
+  CPUFREQ_DEFAULT="$AIROHA_NPU_DIR/root/etc/config/airoha_npu"
+  grep -qx 'CPU_DEFAULT_MAX_FREQ_KHZ=1200000' "$CPUFREQ_INIT" || {
+    echo "::error::Airoha CPU 初始频率必须为 1200 MHz"
+    exit 1
+  }
+  grep -qx "[[:space:]]*option max_freq '1200000'" "$CPUFREQ_DEFAULT" || {
+    echo "::error::Airoha CPU UCI 初始频率必须为 1200 MHz"
+    exit 1
+  }
+  CPU_PERSIST_PATCH="$GITHUB_WORKSPACE/patches/airoha/100-cpu-persist-cpufreq-config.patch"
+  if [ ! -f "$CPU_PERSIST_PATCH" ]; then
+    echo "::error::缺少 CPU 设置持久化补丁"
+    exit 1
+  fi
+  apply_source_patch_once "$CPU_PERSIST_PATCH" "$PKG_DIR"
+  sh -n "$AIROHA_NPU_DIR/root/usr/libexec/rpcd/luci.airoha_npu" || {
+    echo "::error::Airoha CPU RPC 补丁产生了 shell 语法错误"
+    exit 1
+  }
+  grep -q 'uci -q set cpufreq.cpufreq.maxfreq0=' "$AIROHA_NPU_DIR/root/usr/libexec/rpcd/luci.airoha_npu" || {
+    echo "::error::Airoha CPU 保存没有同步到通用 cpufreq 启动配置"
+    exit 1
+  }
+  echo "✅ CPU 初始/恢复默认 1200 MHz；保存值同步到两种开机配置；手动上限保留 1400 MHz"
 
   PODIR="$PKG_DIR/luci-app-airoha-npu/po"
   if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ] && \

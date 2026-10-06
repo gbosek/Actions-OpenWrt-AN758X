@@ -1,0 +1,22 @@
+diff --git a/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu b/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu
+--- a/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu
++++ b/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu
+@@ -331,2 +331,17 @@
+-	uci commit airoha_npu
++	# Keep the generic cpufreq service and Airoha's late boot restore in sync.
++	# cpufreq starts first (START=15), so persist the same values in its UCI
++	# config to avoid it restoring an older ceiling on the next reboot.
++	uci -q get cpufreq.cpufreq >/dev/null 2>&1 || \
++		uci -q set cpufreq.cpufreq=cpufreq || return 1
++	uci -q get cpufreq.global >/dev/null 2>&1 || \
++		uci -q set cpufreq.global=global || return 1
++	if [ -n "$1" ] && ! uci -q set cpufreq.cpufreq.governor0="$1"; then
++		return 1
++	fi
++	if [ -n "$2" ] && ! uci -q set cpufreq.cpufreq.maxfreq0="$2"; then
++		return 1
++	fi
++	uci -q set cpufreq.global.set='1' || return 1
++	uci commit airoha_npu || return 1
++	uci commit cpufreq
+ }

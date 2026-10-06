@@ -16,6 +16,13 @@ assert 'cpufreq.default_governor=powersave' in patch
 part1 = (repo / 'diy-part1.sh').read_text()
 assert "^var CPU_MAX_FREQ_KHZ = 1400000;$" in part1
 assert 'CPU_MAX_FREQ_KHZ = 1600000' not in part1
+freq_patch = (repo / 'patches/target/airoha-cpufreq-default.patch').read_text()
+assert 'uci_write_config 0 ondemand 500000 1200000 10 50' in freq_patch
+assert 'uci_write_config 0 ondemand 500000 1400000 10 50' not in freq_patch
+assert 'PKG_RELEASE:=4' in freq_patch
+assert 'CPU_DEFAULT_MAX_FREQ_KHZ=1200000' in part1
+assert "option max_freq '1200000'" in part1
+assert '手动上限保留 1400 MHz' in part1
 
 with tempfile.TemporaryDirectory(prefix='cpu-cap-review-') as directory:
     root = Path(directory)
