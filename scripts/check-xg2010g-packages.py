@@ -29,7 +29,7 @@ def main():
     missing = sorted(set(required) - names)
     forbidden_set = set()
     if args.stage != 'index':
-        forbidden_set.update({'luci-app-pon', 'luci-app-iptv', 'vnstat', 'luci-app-natmode'})
+        forbidden_set.update({'luci-app-pon', 'luci-app-iptv', 'vnstat', 'luci-app-natmode',\n                              'luci-app-vnstat2', 'luci-i18n-vnstat2-zh-cn',\n                              'vnstat2', 'vnstati2', 'luci-app-statistics',\n                              'luci-i18n-statistics-zh-cn', 'collectd',\n                              'collectd-mod-cpu', 'collectd-mod-memory',\n                              'collectd-mod-interface', 'collectd-mod-load',\n                              'collectd-mod-rrdtool', 'collectd-mod-thermal',\n                              'collectd-mod-cpufreq', 'rrdtool1'})
     if args.stage == 'config':
         all_configured = set(re.findall(r'^CONFIG_PACKAGE_([A-Za-z0-9+_.-]+)=[ym]\s*$', args.path.read_text(), re.M))
         forbidden_names = all_configured

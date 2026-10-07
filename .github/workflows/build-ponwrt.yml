@@ -15,7 +15,7 @@ env:
   USE_CCACHE: false                    
   TZ: Asia/Shanghai
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  REPO_BRANCH: ${{ github.event.inputs.branch || 'c3b518baec8ed0cc5a353327fa154f38bde1e6c0' }}
+  REPO_BRANCH: ${{ github.event.inputs.branch || '69cd3e269fb55a8ebfb3e322a37d15972f90a459' }}
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
   PROFILE: ${{ github.event.inputs.profile || 'gemtek_xg2010g' }}
   BUILD_SCOPE: ${{ github.event_name == 'push' && 'firmware' || github.event.inputs.scope || 'toolchain-only' }}
@@ -53,7 +53,7 @@ on:
       branch:
         description: 'ponwrt 源码分支'
         required: true
-        default: 'c3b518baec8ed0cc5a353327fa154f38bde1e6c0'
+        default: '69cd3e269fb55a8ebfb3e322a37d15972f90a459'
       soc:
         description: 'SoC 平台'
         required: true

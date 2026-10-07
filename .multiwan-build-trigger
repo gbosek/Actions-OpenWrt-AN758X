@@ -1,5 +1,7 @@
-2026-10-06: XG2010G default CPU max 1200 MHz with persistent manual 1400 MHz setting; add PON temperature to system overview
+2026-10-07: XG2010G rebuild with supplied EN8811H timing commit and latest ONU UI; remove vnStat/Statistics; retain stock NPU 1456.62
 profile=gemtek_xg2010g
-base=ponwrt-c3b518baec8ed0cc5a353327fa154f38bde1e6c0
+base=ponwrt-69cd3e269fb55a8ebfb3e322a37d15972f90a459
+onu=77a2c09a3ee8214f03061b1567f8d012733e6e40
 npu=stock-1456.62
 cpu=boot-powersave-hard-cap-1400
+hw-offload=previous-dual-wan-device-test-failed; re-test-required

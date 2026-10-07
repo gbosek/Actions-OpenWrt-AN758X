@@ -1,7 +1,16 @@
 # PonWrt CI — Airoha AN758x PON 云编译
 
-基于 P3TERX `Actions-OpenWrt` 模板重构，源码指向 [pbs05/ponwrt](https://github.com/pbs05/ponwrt)（默认分支 `master`），
+基于 P3TERX `Actions-OpenWrt` 模板重构，默认源码为 [pbs05/ponwrt](https://github.com/pbs05/ponwrt)；XG2010G 构建固定到提交 `69cd3e269fb55a8ebfb3e322a37d15972f90a459`。
 针对 AN7581 / AN7583 PON 光猫做机型选择、磁盘释放与工具链缓存。
+
+## XG2010G 当前构建基线
+
+- 固件配置：`gemtek_xg2010g`，AN7581。
+- PonWrt：`pbs05/ponwrt@69cd3e269fb55a8ebfb3e322a37d15972f90a459`。
+- ONU 栈：`naoki66/OpenWrt_ONU_CONFIG@77a2c09a3ee8214f03061b1567f8d012733e6e40`。
+- NPU 固件：PonWrt stock 1456.62。
+- XG2010G 镜像不安装 vnStat 流量监控、LuCI Statistics 及其 collectd 历史采集组件。
+- 设备上次测试双 WAN 硬件卸载失败；本次固件需要在设备上复测卸载状态，构建完成本身不能证明 PPE 双 WAN 卸载有效。
 
 ## 目录结构
 

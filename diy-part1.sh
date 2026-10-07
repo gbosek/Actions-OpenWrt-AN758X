@@ -325,7 +325,7 @@ fi
 # --- 替换旧 luci-app-pon + luci-app-iptv 为统一 ONU 用户态栈 ---
 if [ "$ADD_ONU_CONFIG" = "true" ]; then
   ONU_REPO="https://github.com/naoki66/OpenWrt_ONU_CONFIG.git"
-  ONU_REF="00cd0c2186683484360950007040c1309bcb27fa"
+  ONU_REF="77a2c09a3ee8214f03061b1567f8d012733e6e40"
   ONU_TMP="$PKG_DIR/.openwrt-onu-config-src"
   rm -rf "$ONU_TMP"
   clone_commit "$ONU_REPO" "$ONU_REF" "$ONU_TMP" || exit 1
