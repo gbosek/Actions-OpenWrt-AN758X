@@ -5,3 +5,4 @@ onu=77a2c09a3ee8214f03061b1567f8d012733e6e40
 npu=stock-1456.62
 cpu=boot-powersave-hard-cap-1400
 hw-offload=previous-dual-wan-device-test-failed; re-test-required
+retry=package-checker-python-syntax-fix
