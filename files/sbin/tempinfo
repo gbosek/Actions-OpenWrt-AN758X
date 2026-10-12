@@ -3,21 +3,25 @@
 #
 
 # 输出示例：
-#   CPU: 58.7°C, WiFi: 46.0°C 48.0°C, PON: 48.5°C ↑2.41 ↓-21.30 dBm 12.50 mA 3.30 V
+#   CPU: 58.7°C, PON: 48.5°C, LAN1: 52.0°C, LAN2: 54.0°C
 
 IEEE_PATH="/sys/class/ieee80211"
 THERMAL_PATH="/sys/class/thermal"
+NET_PATH="/sys/class/net"
 
 # 是否在「温度」行附带 PON 光功率 / 偏置电流 / 电压。
 # 1 = 附带（一行显示全套）；0 = 只显示温度。
 # 注意：本仓库同时启用了 luci-app-pon-status 卡片（表格形式，每指标一行，
 # 还含收发光/电流/电压），两者会重复显示同一组数值。
-# 默认设为 0 —— 温度行只给三个温度，光功率交给卡片看，界面更清爽。
+# 默认设为 0 —— 光功率交给卡片显示。
 SHOW_PON_OPTICS=0
 
 # ---------------------------------------------------------------- 工具
 # 毫摄氏度 → "58.7°C"
-fmt_c() { [ -r "$1" ] && awk '{printf("%.1f°C", $0 / 1000)}' "$1" 2>/dev/null; }
+fmt_c() {
+	[ -r "$1" ] || return 0
+	awk '/^[+-]?[0-9]+$/ && $0 >= -40000 && $0 <= 150000 { printf("%.1f°C", $0 / 1000); exit }' "$1" 2>/dev/null
+}
 
 # 浮点字符串 → 保留 1 位小数（与 CPU/WiFi 的 %.1f 保持一致）
 f1() { [ -n "$1" ] && awk -v v="$1" 'BEGIN { printf("%.1f", v) }' 2>/dev/null; }
@@ -60,6 +64,23 @@ if [ -r "$THERMAL_PATH/thermal_zone0/temp" ]; then
 	cpu_temp="$(fmt_c "$THERMAL_PATH/thermal_zone0/temp")"
 fi
 
+# LAN PHY 温度。通过接口的 phydev 链接定位传感器，不依赖 hwmon 编号。
+lan1_temp="" lan2_temp=""
+for port in lan1 lan2; do
+	phy="$(readlink -f "$NET_PATH/$port/phydev" 2>/dev/null)"
+	[ -n "$phy" ] || continue
+	port_temp=""
+	for p in "$phy"/hwmon/hwmon*/temp1_input; do
+		[ -r "$p" ] || continue
+		port_temp="$(fmt_c "$p")"
+		[ -n "$port_temp" ] && break
+	done
+	case "$port" in
+		lan1) lan1_temp="$port_temp" ;;
+		lan2) lan2_temp="$port_temp" ;;
+	esac
+done
+
 # WiFi 温度（mt76 / MT7916）
 # mt76 的 hwmon 可能挂在 phy*/hwmon* 或 phy*/device/hwmon/hwmon*，两种都试
 wifi_temp=""
@@ -86,7 +107,6 @@ fi
 out=""
 
 [ -n "$cpu_temp" ] && out="CPU: $cpu_temp"
-[ -n "$wifi_temp" ] && out="${out:+$out, }WiFi: $wifi_temp"
 
 if [ -n "$pon_temp" ]; then
 	pon="PON: ${pon_temp}°C"
@@ -96,6 +116,10 @@ if [ -n "$pon_temp" ]; then
 	[ -n "$pon_volt" ] && pon="$pon ${pon_volt}V"
 	out="${out:+$out, }$pon"
 fi
+
+[ -n "$lan1_temp" ] && out="${out:+$out, }LAN1: $lan1_temp"
+[ -n "$lan2_temp" ] && out="${out:+$out, }LAN2: $lan2_temp"
+[ -n "$wifi_temp" ] && out="${out:+$out, }WiFi: $wifi_temp"
 
 [ -n "$out" ] || out="No temperature info"
 

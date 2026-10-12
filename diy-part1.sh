@@ -35,6 +35,10 @@ ADD_LUCI_APP=true       # qwe3017/luci-app 仓库（monorepo）
                         #   ├─ luci-app-natmode     NAT 类型三选一（网络 → NAT 类型）
                         #   └─ luci-app-pon-status  PON 光模块卡片（概览页「系统」下一格）
 
+# 这组扩展与 configs/gemtek_xg2010g.config 对应，只在 XG2010G 构建时拉取。
+ADD_XG2010G_EXTRAS=false
+[ "${PROFILE:-}" = "gemtek_xg2010g" ] && ADD_XG2010G_EXTRAS=true
+
 clone() {  # clone <url> <dir> [branch]
   local url="$1" dir="$2" br="$3"
   [ -d "$dir" ] && { echo "已存在，跳过: $dir"; return 0; }
@@ -51,6 +55,79 @@ clone() {  # clone <url> <dir> [branch]
   echo "::error::克隆失败: $url"
   return 1
 }
+
+clone_at() {  # clone_at <url> <commit> <dir>：固定到可复现的提交
+  local url="$1" sha="$2" dir="$3"
+  if ! clone "$url" "$dir"; then
+    return 1
+  fi
+  echo "--- 固定版本 $sha: $dir ---"
+  if ! git -C "$dir" fetch --depth=1 origin "$sha"; then
+    echo "::error::无法获取提交 $sha: $url"
+    return 1
+  fi
+  if ! git -C "$dir" checkout --detach "$sha" >/dev/null 2>&1; then
+    echo "::error::无法切换到提交 $sha: $url"
+    return 1
+  fi
+  echo "✅ 固定提交: $(git -C "$dir" rev-parse --short HEAD)"
+}
+
+normalize_custom_luci_makefile() {
+  local makefile="$1"
+  # 源仓库通常按 feeds/luci/applications/<app> 的目录深度写相对路径；
+  # 放在 package/custom/<app> 时改为通过 TOPDIR 引用 LuCI 构建规则。
+  if grep -qE '^[[:space:]]*include ../../luci\.mk[[:space:]]*$' "$makefile"; then
+    sed -i 's@^[[:space:]]*include ../../luci\.mk[[:space:]]*$@include $(TOPDIR)/feeds/luci/luci.mk@' "$makefile"
+  fi
+}
+
+# =========================================================
+# XG2010G MWAN4 + 系统菜单扩展
+# =========================================================
+if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
+  clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1
+  for p in mwan4 luci-app-mwan4; do
+    if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
+      echo "::error::$PKG_DIR/$p/Makefile 不存在，包无法被索引"
+      exit 1
+    fi
+  done
+  normalize_custom_luci_makefile "$PKG_DIR/luci-app-mwan4/Makefile"
+
+  clone_at https://github.com/eamonxg/luci-app-aurora-config a5299ce0144859f47683ec3bc40805bf616f534f "$PKG_DIR/luci-app-aurora-config" || exit 1
+  clone_at https://github.com/eamonxg/luci-theme-aurora 84c27b66952e6fc4be60128067a6b88bfd34afb5 "$PKG_DIR/luci-theme-aurora" || exit 1
+  clone_at https://github.com/f8q8/luci-app-autoreboot d211e5681093967015bf87167fd54a09f0727f3e "$PKG_DIR/luci-app-autoreboot" || exit 1
+  for p in luci-app-aurora-config luci-theme-aurora luci-app-autoreboot; do
+    if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
+      echo "::error::$PKG_DIR/$p/Makefile 不存在，包无法被索引"
+      exit 1
+    fi
+    normalize_custom_luci_makefile "$PKG_DIR/$p/Makefile"
+  done
+
+  XG_APP_TMP="$(mktemp -d)"
+  clone_at https://github.com/4IceG/luci-app-mini-diskmanager 4b2b7332896063ef888f34da2187c3cc6f366037 "$XG_APP_TMP/diskmanager" || exit 1
+  clone_at https://github.com/sirpdboy/luci-app-partexp 236187cfe4f1fab7f2dde5279ce378324c3e5f40 "$XG_APP_TMP/partexp" || exit 1
+  for spec in "diskmanager:luci-app-mini-diskmanager" "partexp:luci-app-partexp"; do
+    repo_dir="${spec%%:*}"
+    pkg="${spec#*:}"
+    if [ ! -f "$XG_APP_TMP/$repo_dir/$pkg/Makefile" ]; then
+      echo "::error::$XG_APP_TMP/$repo_dir/$pkg/Makefile 不存在，包无法被索引"
+      exit 1
+    fi
+    rm -rf "$PKG_DIR/$pkg"
+    cp -a "$XG_APP_TMP/$repo_dir/$pkg" "$PKG_DIR/$pkg"
+    normalize_custom_luci_makefile "$PKG_DIR/$pkg/Makefile"
+    if [ "$pkg" = "luci-app-mini-diskmanager" ]; then
+      menu="$PKG_DIR/$pkg/root/usr/share/luci/menu.d/luci-app-mini-diskmanager.json"
+      [ ! -f "$menu" ] || sed -i 's/services/system/g' "$menu"
+    fi
+    echo "✅ 已拷贝: $pkg"
+  done
+  rm -rf "$XG_APP_TMP"
+fi
 
 # =========================================================
 # qwe3017/luci-app —— 两个 LuCI 插件的来源
@@ -198,6 +275,16 @@ for p in luci-app-natmode luci-app-pon-status; do
   fi
 done
 
+if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  for p in mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora \
+           luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp; do
+    if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
+      echo "::error::$p 未拉到，XG2010G 配置中的 =y 会被 defconfig 剔除"
+      exit 1
+    fi
+  done
+fi
+
 # ---------------------------------------------------------
 # 清理重复嵌套目录
 # rchen14b/luci-app-airoha-npu 这个仓库有问题：包在根目录放了一份，
@@ -287,6 +374,9 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
   if [ "$ADD_LUCI_APP" = "true" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
+  fi
+  if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do

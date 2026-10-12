@@ -400,6 +400,24 @@ jobs:
           fi
           echo "✅ 状态插件校验通过"
 
+          # XG2010G 的 MWAN4 与截图中的系统菜单项必须进入最终固件。
+          if [ "${PROFILE}" = "gemtek_xg2010g" ]; then
+            MENU_MISS=""
+            for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn \
+                     luci-app-aurora-config luci-theme-aurora \
+                     luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
+                     block-mount ttyd luci-app-ttyd; do
+              if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
+                MENU_MISS="$MENU_MISS $p"
+              fi
+            done
+            if [ -n "$MENU_MISS" ]; then
+              echo "::error::XG2010G 的 MWAN4/系统菜单插件未进入固件:$MENU_MISS"
+              exit 1
+            fi
+            echo "✅ XG2010G MWAN4 与系统菜单包校验通过"
+          fi
+
           # 中文包（po 注入后才存在，缺失只警告不阻断）
           if ! grep -q "^CONFIG_PACKAGE_luci-i18n-airoha-npu-zh-cn=y" .config; then
             echo "::warning::luci-i18n-airoha-npu-zh-cn 未启用（po/zh_Hans 未注入？界面将为英文）"
