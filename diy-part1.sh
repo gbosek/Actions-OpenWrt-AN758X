@@ -12,6 +12,7 @@ echo "拉取可选插件 (diy-part1.sh)"
 echo "=========================================="
 
 PKG_DIR="package/custom"
+MWAN_STACK="${MWAN_STACK:-mwan4}"
 mkdir -p "$PKG_DIR"
 
 # ---------------------------------------------------------
@@ -83,18 +84,43 @@ normalize_custom_luci_makefile() {
 }
 
 # =========================================================
-# XG2010G MWAN4 + 系统菜单扩展
+# XG2010G MWAN + 系统菜单扩展
 # =========================================================
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
-  clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1
-  for p in mwan4 luci-app-mwan4; do
-    if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
-      echo "::error::$PKG_DIR/$p/Makefile 不存在，包无法被索引"
+  case "$MWAN_STACK" in
+    mwan3-nft)
+      XG_MWAN_TMP="$(mktemp -d)"
+      clone_at https://github.com/Sysrous/mwan3-nft 69db00ebe2e4e8e8fdbf2b1680a0530804ff1896 "$XG_MWAN_TMP/repo" || exit 1
+      for p in mwan3 luci-app-mwan3; do
+        if [ ! -f "$XG_MWAN_TMP/repo/$p/Makefile" ]; then
+          echo "::error::$XG_MWAN_TMP/repo/$p/Makefile 不存在，包无法被索引"
+          exit 1
+        fi
+        rm -rf "$PKG_DIR/$p"
+        cp -a "$XG_MWAN_TMP/repo/$p" "$PKG_DIR/$p"
+      done
+      normalize_custom_luci_makefile "$PKG_DIR/luci-app-mwan3/Makefile"
+      # feeds 自带同名 mwan3 仍是旧实现；移除已安装链接，确保只索引 nft 版本。
+      rm -rf package/feeds/packages/mwan3 package/feeds/luci/luci-app-mwan3 \
+        package/feeds/luci/luci-i18n-mwan3-zh-cn
+      rm -rf "$XG_MWAN_TMP"
+      ;;
+    mwan4)
+      clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
+      clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1
+      for p in mwan4 luci-app-mwan4; do
+        if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
+          echo "::error::$PKG_DIR/$p/Makefile 不存在，包无法被索引"
+          exit 1
+        fi
+      done
+      normalize_custom_luci_makefile "$PKG_DIR/luci-app-mwan4/Makefile"
+      ;;
+    *)
+      echo "::error::未知 MWAN_STACK=$MWAN_STACK（支持 mwan4 或 mwan3-nft）"
       exit 1
-    fi
-  done
-  normalize_custom_luci_makefile "$PKG_DIR/luci-app-mwan4/Makefile"
+      ;;
+  esac
 
   clone_at https://github.com/eamonxg/luci-app-aurora-config a5299ce0144859f47683ec3bc40805bf616f534f "$PKG_DIR/luci-app-aurora-config" || exit 1
   clone_at https://github.com/eamonxg/luci-theme-aurora 84c27b66952e6fc4be60128067a6b88bfd34afb5 "$PKG_DIR/luci-theme-aurora" || exit 1
@@ -376,7 +402,12 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
+    if [ "$MWAN_STACK" = "mwan3-nft" ]; then
+      REQUIRED="$REQUIRED mwan3 luci-app-mwan3"
+    else
+      REQUIRED="$REQUIRED mwan4 luci-app-mwan4"
+    fi
+    REQUIRED="$REQUIRED luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do

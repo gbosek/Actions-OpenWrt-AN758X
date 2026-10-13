@@ -23,6 +23,7 @@ env:
   REPO_BRANCH: ${{ github.event.inputs.branch || 'master' }}
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
   PROFILE: ${{ github.event.inputs.profile || 'fiberhome_hg5585f-ct' }}
+  MWAN_STACK: 'mwan3-nft'
   BUILD_SCOPE: ${{ github.event.inputs.scope || 'firmware' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   FW_BUILD_TIME: ''                 # 留空 = 自动取构建时时间（Asia/Shanghai）
@@ -150,7 +151,9 @@ jobs:
           # 若传入的 soc 与机型冲突，以机型为准
           echo "SOC=$SOC" >> "$GITHUB_ENV"
           echo "PROFILE=$PROFILE" >> "$GITHUB_ENV"
-          echo "DEVICE_NAME=ponwrt-${SOC}-${PROFILE}" >> "$GITHUB_ENV"
+          DEVICE_VARIANT=""
+          if [ "$MWAN_STACK" = "mwan3-nft" ]; then DEVICE_VARIANT="-mwan3-nft"; fi
+          echo "DEVICE_NAME=ponwrt-${SOC}-${PROFILE}${DEVICE_VARIANT}" >> "$GITHUB_ENV"
           # 每机型一份 config；profile=all 时回退到 SoC 通用配置
           if [ "$PROFILE" = "all" ]; then
             echo "CONFIG_FILE=configs/${SOC}.config" >> "$GITHUB_ENV"
@@ -400,11 +403,17 @@ jobs:
           fi
           echo "✅ 状态插件校验通过"
 
-          # XG2010G 的 MWAN4 与截图中的系统菜单项必须进入最终固件。
+          # XG2010G 的 MWAN 变体与截图中的系统菜单项必须进入最终固件。
           if [ "${PROFILE}" = "gemtek_xg2010g" ]; then
             MENU_MISS=""
-            for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn \
-                     luci-app-aurora-config luci-theme-aurora \
+            if [ "${MWAN_STACK}" = "mwan3-nft" ]; then
+              MWAN_REQUIRED="mwan3 luci-app-mwan3 luci-i18n-mwan3-zh-cn"
+              MWAN_LABEL="MWAN3-nft"
+            else
+              MWAN_REQUIRED="mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn"
+              MWAN_LABEL="MWAN4"
+            fi
+            for p in $MWAN_REQUIRED luci-app-aurora-config luci-theme-aurora \
                      luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
                      block-mount ttyd luci-app-ttyd; do
               if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
@@ -412,10 +421,10 @@ jobs:
               fi
             done
             if [ -n "$MENU_MISS" ]; then
-              echo "::error::XG2010G 的 MWAN4/系统菜单插件未进入固件:$MENU_MISS"
+              echo "::error::XG2010G 的 ${MWAN_LABEL}/系统菜单插件未进入固件:$MENU_MISS"
               exit 1
             fi
-            echo "✅ XG2010G MWAN4 与系统菜单包校验通过"
+            echo "✅ XG2010G ${MWAN_LABEL} 与系统菜单包校验通过"
           fi
 
           # 中文包（po 注入后才存在，缺失只警告不阻断）
