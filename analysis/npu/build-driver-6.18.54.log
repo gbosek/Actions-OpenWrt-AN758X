@@ -1,0 +1,11 @@
+make: Entering directory '/workspace/npu-analysis/sources/linux-6.18.54'
+make[1]: Entering directory '/workspace/npu-analysis/build54'
+  GEN     Makefile
+  CALL    /workspace/npu-analysis/sources/linux-6.18.54/scripts/checksyscalls.sh
+  CC [M]  drivers/net/ethernet/airoha/airoha_eth.o
+  CC [M]  drivers/net/ethernet/airoha/airoha_ppe.o
+  CC [M]  drivers/net/ethernet/airoha/airoha_ppe_debugfs.o
+  CC [M]  drivers/net/ethernet/airoha/airoha_npu.o
+  LD [M]  drivers/net/ethernet/airoha/airoha-eth.o
+make[1]: Leaving directory '/workspace/npu-analysis/build54'
+make: Leaving directory '/workspace/npu-analysis/sources/linux-6.18.54'

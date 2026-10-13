@@ -1,0 +1,74 @@
+[
+  {
+    "kernel": "6.18.52",
+    "openwrt_source_repo": "https://github.com/pbs05/ponwrt",
+    "openwrt_source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+    "compiler": "aarch64-openwrt-linux-musl-gcc (OpenWrt GCC 14.4.0 r0-c3b518b) 14.4.0",
+    "arch": "arm64",
+    "W": 1,
+    "scope": "Airoha driver objects only; no full firmware or hardware tests",
+    "config": [
+      "CONFIG_WERROR=y",
+      "CONFIG_NET_DSA=m",
+      "CONFIG_NET_AIROHA_NPU=m",
+      "CONFIG_NET_AIROHA=m",
+      "CONFIG_NET_AIROHA_FLOW_STATS=y",
+      "CONFIG_DEBUG_FS=y"
+    ],
+    "driver_sha256": {
+      "airoha_eth.h": "86cfc8b1cef125f166e2caa6f4542bf6f2270369a869b2fd0ce601010e43ae77",
+      "airoha_eth.c": "6307cc776722bcd932d9ce0d28b0b6e0180eea6c2c9593f8f6168f03726b1359",
+      "airoha_ppe.c": "c738559330febf6d2642487d9112576b00dec2a6885e1fbdcd81a5984c774ad2",
+      "airoha_ppe_debugfs.c": "573f590041388a1d4b7fd25f347bc63cd3b9cca1cb4b1467843f4e51b830d047",
+      "airoha_npu.c": "702650212cbb4641b454114da44f63abb24a879d20c2d3c32dc6aa843a81c421"
+    },
+    "objects_sha256": {
+      "airoha-eth.o": "ff81bd2d73baae968e2c271a280958094aad71ebe94e2c47f48cdaab3f61de2b",
+      "airoha_ppe.o": "f29eb2d9010e6b3fdc70682647f99519545220bc6ce72a4701278ad4a207456f",
+      "airoha_ppe_debugfs.o": "fa8b362537c15e659a719452ded5a3583b3c45d3b5d39b60e0275973d290b58a",
+      "airoha_npu.o": "77fc67ed4e7cce95609b3ad5fb2bf276b3244ac72483201d19b2a02b93f7f267"
+    },
+    "patch_sha256": {
+      "931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch": "493822d2cec4a61c115c08066da1b60ca5af6fe68ef0b1f16cff46a3314df2dc",
+      "932-net-airoha-use-direct-egress-with-physical-GDM2.patch": "ff7a10b38f3f22ccc1b353a355091bea4c1a6342bd5dc0faa023dc25d935d08e",
+      "933-net-airoha-expose-PPE-setup-and-effective-egress.patch": "9df71791e59f8ba432ddb04102d79bf2d6d901e0d505de85533694b886efbb91",
+      "934-net-airoha-key-L2-flows-by-ingress-and-VLAN.patch": "3a72a8e71d1960086354130ec7ae34bead634f4c4204bd7cc0b668489ad70e70"
+    }
+  },
+  {
+    "kernel": "6.18.54",
+    "openwrt_source_repo": "https://github.com/VIKINGYFY/immortalwrt",
+    "openwrt_source_commit": "a38520034ee4bdd25dd6e88c4c59261f289ee17e",
+    "compiler": "aarch64-openwrt-linux-musl-gcc (OpenWrt GCC 14.4.0 r0-c3b518b) 14.4.0",
+    "arch": "arm64",
+    "W": 1,
+    "scope": "Airoha driver objects only; no full firmware or hardware tests",
+    "config": [
+      "CONFIG_WERROR=y",
+      "CONFIG_NET_DSA=m",
+      "CONFIG_NET_AIROHA_NPU=m",
+      "CONFIG_NET_AIROHA=m",
+      "CONFIG_NET_AIROHA_FLOW_STATS=y",
+      "CONFIG_DEBUG_FS=y"
+    ],
+    "driver_sha256": {
+      "airoha_eth.h": "b8dfd1cb1f556c6dba2053fba44b5b15f486b990cbd80884e6dbe4dbc382603f",
+      "airoha_eth.c": "6307cc776722bcd932d9ce0d28b0b6e0180eea6c2c9593f8f6168f03726b1359",
+      "airoha_ppe.c": "ea5044d15ffc6863cf3059876fda4b9f58a54944d575de109123c9596987b760",
+      "airoha_ppe_debugfs.c": "573f590041388a1d4b7fd25f347bc63cd3b9cca1cb4b1467843f4e51b830d047",
+      "airoha_npu.c": "702650212cbb4641b454114da44f63abb24a879d20c2d3c32dc6aa843a81c421"
+    },
+    "objects_sha256": {
+      "airoha-eth.o": "fe939c233b702167eb893f9991a0d7cecbaba9ae2d5b8f86df0b35b2cef01097",
+      "airoha_ppe.o": "d649aeae91437f406aea0c6ab9b5e3feb29d486f10c8557199021e63a6c06a51",
+      "airoha_ppe_debugfs.o": "96a0fda6f747be60a914ae4616568e7816d27149ebe91e7ac215420f259621b8",
+      "airoha_npu.o": "9a8a1139ae239ac44f4d61304b9affeb3e9aa22283a5e5c72a50ec50e9cb28e4"
+    },
+    "patch_sha256": {
+      "931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch": "493822d2cec4a61c115c08066da1b60ca5af6fe68ef0b1f16cff46a3314df2dc",
+      "932-net-airoha-use-direct-egress-with-physical-GDM2.patch": "ff7a10b38f3f22ccc1b353a355091bea4c1a6342bd5dc0faa023dc25d935d08e",
+      "933-net-airoha-expose-PPE-setup-and-effective-egress.patch": "9df71791e59f8ba432ddb04102d79bf2d6d901e0d505de85533694b886efbb91",
+      "934-net-airoha-key-L2-flows-by-ingress-and-VLAN.patch": "3a72a8e71d1960086354130ec7ae34bead634f4c4204bd7cc0b668489ad70e70"
+    }
+  }
+]

@@ -1,0 +1,538 @@
+
+/workspace/npu-drivers/extracted-6.6/7581-原厂6.6-npu-firmware/npu.ko:     file format elf64-littleaarch64
+
+
+Disassembly of section .text:
+
+0000000000000000 <fileCopyToSram-0x144>:
+   0:	d503233f 	paciasp
+   4:	d10103ff 	sub	sp, sp, #0x40
+   8:	d5384103 	mrs	x3, sp_el0
+   c:	f100105f 	cmp	x2, #0x4
+  10:	a9027bfd 	stp	x29, x30, [sp, #32]
+  14:	910083fd 	add	x29, sp, #0x20
+  18:	f941f860 	ldr	x0, [x3, #1008]
+  1c:	f9000fe0 	str	x0, [sp, #24]
+  20:	d2800000 	mov	x0, #0x0                   	// #0
+  24:	b9000fff 	str	wzr, [sp, #12]
+  28:	54000868 	b.hi	134 <fileCopyToSram-0x10>  // b.pmore
+  2c:	a90353f3 	stp	x19, x20, [sp, #48]
+  30:	aa0203f4 	mov	x20, x2
+  34:	d5384102 	mrs	x2, sp_el0
+  38:	b9402c43 	ldr	w3, [x2, #44]
+  3c:	aa0103e0 	mov	x0, x1
+  40:	36a80523 	tbz	w3, #21, e4 <fileCopyToSram-0x60>
+  44:	9340dc20 	sbfx	x0, x1, #0, #56
+  48:	8a000020 	and	x0, x1, x0
+  4c:	d2c01002 	mov	x2, #0x8000000000          	// #549755813888
+  50:	cb140042 	sub	x2, x2, x20
+  54:	eb00005f 	cmp	x2, x0
+  58:	aa1403e0 	mov	x0, x20
+  5c:	540003a2 	b.cs	d0 <fileCopyToSram-0x74>  // b.hs, b.nlast
+  60:	b5000640 	cbnz	x0, 128 <fileCopyToSram-0x1c>
+  64:	91004fe0 	add	x0, sp, #0x13
+  68:	90000001 	adrp	x1, 0 <fileCopyToSram-0x144>
+			68: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x20
+  6c:	91000021 	add	x1, x1, #0x0
+			6c: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x20
+  70:	910033e2 	add	x2, sp, #0xc
+  74:	3834681f 	strb	wzr, [x0, x20]
+  78:	94000000 	bl	0 <sscanf>
+			78: R_AARCH64_CALL26	sscanf
+  7c:	b9400fe1 	ldr	w1, [sp, #12]
+  80:	7100203f 	cmp	w1, #0x8
+  84:	540004a8 	b.hi	118 <fileCopyToSram-0x2c>  // b.pmore
+  88:	54000340 	b.eq	f0 <fileCopyToSram-0x54>  // b.none
+  8c:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			8c: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x58
+  90:	91000000 	add	x0, x0, #0x0
+			90: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x58
+  94:	94000000 	bl	0 <_printk>
+			94: R_AARCH64_CALL26	_printk
+  98:	b9400fe0 	ldr	w0, [sp, #12]
+  9c:	94000000 	bl	0 <host_dump_npu_csr>
+			9c: R_AARCH64_CALL26	host_dump_npu_csr
+  a0:	aa1403e0 	mov	x0, x20
+  a4:	a94353f3 	ldp	x19, x20, [sp, #48]
+  a8:	d5384101 	mrs	x1, sp_el0
+  ac:	f9400fe3 	ldr	x3, [sp, #24]
+  b0:	f941f822 	ldr	x2, [x1, #1008]
+  b4:	eb020063 	subs	x3, x3, x2
+  b8:	d2800002 	mov	x2, #0x0                   	// #0
+  bc:	54000401 	b.ne	13c <fileCopyToSram-0x8>  // b.any
+  c0:	a9427bfd 	ldp	x29, x30, [sp, #32]
+  c4:	910103ff 	add	sp, sp, #0x40
+  c8:	d50323bf 	autiasp
+  cc:	d65f03c0 	ret
+  d0:	9248f821 	and	x1, x1, #0xff7fffffffffffff
+  d4:	aa1403e2 	mov	x2, x20
+  d8:	91004fe0 	add	x0, sp, #0x13
+  dc:	94000000 	bl	0 <__arch_copy_from_user>
+			dc: R_AARCH64_CALL26	__arch_copy_from_user
+  e0:	17ffffe0 	b	60 <fileCopyToSram-0xe4>
+  e4:	f9400042 	ldr	x2, [x2]
+  e8:	36d7fb22 	tbz	w2, #26, 4c <fileCopyToSram-0xf8>
+  ec:	17ffffd6 	b	44 <fileCopyToSram-0x100>
+  f0:	52800013 	mov	w19, #0x0                   	// #0
+  f4:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			f4: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x40
+  f8:	91000000 	add	x0, x0, #0x0
+			f8: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x40
+  fc:	94000000 	bl	0 <_printk>
+			fc: R_AARCH64_CALL26	_printk
+ 100:	2a1303e0 	mov	w0, w19
+ 104:	11000673 	add	w19, w19, #0x1
+ 108:	94000000 	bl	0 <host_dump_npu_csr>
+			108: R_AARCH64_CALL26	host_dump_npu_csr
+ 10c:	7100227f 	cmp	w19, #0x8
+ 110:	54ffff81 	b.ne	100 <fileCopyToSram-0x44>  // b.any
+ 114:	17ffffe3 	b	a0 <fileCopyToSram-0xa4>
+ 118:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			118: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x28
+ 11c:	91000000 	add	x0, x0, #0x0
+			11c: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x28
+ 120:	94000000 	bl	0 <_printk>
+			120: R_AARCH64_CALL26	_printk
+ 124:	17ffffdf 	b	a0 <fileCopyToSram-0xa4>
+ 128:	a94353f3 	ldp	x19, x20, [sp, #48]
+ 12c:	928001a0 	mov	x0, #0xfffffffffffffff2    	// #-14
+ 130:	17ffffde 	b	a8 <fileCopyToSram-0x9c>
+ 134:	928002a0 	mov	x0, #0xffffffffffffffea    	// #-22
+ 138:	17ffffdc 	b	a8 <fileCopyToSram-0x9c>
+ 13c:	a90353f3 	stp	x19, x20, [sp, #48]
+ 140:	94000000 	bl	0 <__stack_chk_fail>
+			140: R_AARCH64_CALL26	__stack_chk_fail
+
+0000000000000144 <fileCopyToSram>:
+ 144:	d503233f 	paciasp
+ 148:	d10403ff 	sub	sp, sp, #0x100
+ 14c:	d5384101 	mrs	x1, sp_el0
+ 150:	910fc024 	add	x4, x1, #0x3f0
+ 154:	a90c7bfd 	stp	x29, x30, [sp, #192]
+ 158:	910303fd 	add	x29, sp, #0xc0
+ 15c:	a90d53f3 	stp	x19, x20, [sp, #208]
+ 160:	aa0003f4 	mov	x20, x0
+ 164:	a90e5bf5 	stp	x21, x22, [sp, #224]
+ 168:	2a0203f6 	mov	w22, w2
+ 16c:	2a0303f5 	mov	w21, w3
+ 170:	f9400081 	ldr	x1, [x4]
+ 174:	f9005fe1 	str	x1, [sp, #184]
+ 178:	d2800001 	mov	x1, #0x0                   	// #0
+ 17c:	910023e2 	add	x2, sp, #0x8
+ 180:	52800021 	mov	w1, #0x1                   	// #1
+ 184:	94000000 	bl	0 <kern_path>
+			184: R_AARCH64_CALL26	kern_path
+ 188:	35000500 	cbnz	w0, 228 <fileCopyToSram+0xe4>
+ 18c:	910063e1 	add	x1, sp, #0x18
+ 190:	910023e0 	add	x0, sp, #0x8
+ 194:	52800003 	mov	w3, #0x0                   	// #0
+ 198:	5280ffe2 	mov	w2, #0x7ff                 	// #2047
+ 19c:	94000000 	bl	0 <vfs_getattr>
+			19c: R_AARCH64_CALL26	vfs_getattr
+ 1a0:	2a0003f3 	mov	w19, w0
+ 1a4:	35000200 	cbnz	w0, 1e4 <fileCopyToSram+0xa0>
+ 1a8:	f9007bf7 	str	x23, [sp, #240]
+ 1ac:	910023e0 	add	x0, sp, #0x8
+ 1b0:	f9402bf7 	ldr	x23, [sp, #80]
+ 1b4:	94000000 	bl	0 <path_put>
+			1b4: R_AARCH64_CALL26	path_put
+ 1b8:	6b1702df 	cmp	w22, w23
+ 1bc:	54000603 	b.cc	27c <fileCopyToSram+0x138>  // b.lo, b.ul, b.last
+ 1c0:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			1c0: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0xd8
+ 1c4:	aa1403e1 	mov	x1, x20
+ 1c8:	91000000 	add	x0, x0, #0x0
+			1c8: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0xd8
+ 1cc:	94000000 	bl	0 <_printk>
+			1cc: R_AARCH64_CALL26	_printk
+ 1d0:	b4000074 	cbz	x20, 1dc <fileCopyToSram+0x98>
+ 1d4:	39c00280 	ldrsb	w0, [x20]
+ 1d8:	35000340 	cbnz	w0, 240 <fileCopyToSram+0xfc>
+ 1dc:	f9407bf7 	ldr	x23, [sp, #240]
+ 1e0:	14000005 	b	1f4 <fileCopyToSram+0xb0>
+ 1e4:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			1e4: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x88
+ 1e8:	91000000 	add	x0, x0, #0x0
+			1e8: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x88
+ 1ec:	aa1403e1 	mov	x1, x20
+ 1f0:	94000000 	bl	0 <_printk>
+			1f0: R_AARCH64_CALL26	_printk
+ 1f4:	d5384100 	mrs	x0, sp_el0
+ 1f8:	f9405fe2 	ldr	x2, [sp, #184]
+ 1fc:	f941f801 	ldr	x1, [x0, #1008]
+ 200:	eb010042 	subs	x2, x2, x1
+ 204:	d2800001 	mov	x1, #0x0                   	// #0
+ 208:	54000541 	b.ne	2b0 <fileCopyToSram+0x16c>  // b.any
+ 20c:	a94c7bfd 	ldp	x29, x30, [sp, #192]
+ 210:	2a1303e0 	mov	w0, w19
+ 214:	a94d53f3 	ldp	x19, x20, [sp, #208]
+ 218:	a94e5bf5 	ldp	x21, x22, [sp, #224]
+ 21c:	910403ff 	add	sp, sp, #0x100
+ 220:	d50323bf 	autiasp
+ 224:	d65f03c0 	ret
+ 228:	2a0003f3 	mov	w19, w0
+ 22c:	aa1403e1 	mov	x1, x20
+ 230:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			230: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x70
+ 234:	91000000 	add	x0, x0, #0x0
+			234: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x70
+ 238:	94000000 	bl	0 <_printk>
+			238: R_AARCH64_CALL26	_printk
+ 23c:	17ffffee 	b	1f4 <fileCopyToSram+0xb0>
+ 240:	aa1403e0 	mov	x0, x20
+ 244:	52800002 	mov	w2, #0x0                   	// #0
+ 248:	52800001 	mov	w1, #0x0                   	// #0
+ 24c:	94000000 	bl	0 <filp_open>
+			24c: R_AARCH64_CALL26	filp_open
+ 250:	aa0003f4 	mov	x20, x0
+ 254:	b140041f 	cmn	x0, #0x1, lsl #12
+ 258:	54000248 	b.hi	2a0 <fileCopyToSram+0x15c>  // b.pmore
+ 25c:	2a1503e2 	mov	w2, w21
+ 260:	2a1703e1 	mov	w1, w23
+ 264:	94000000 	bl	0 <copy_file_to_ram>
+			264: R_AARCH64_CALL26	copy_file_to_ram
+ 268:	aa1403e0 	mov	x0, x20
+ 26c:	d2800001 	mov	x1, #0x0                   	// #0
+ 270:	94000000 	bl	0 <filp_close>
+			270: R_AARCH64_CALL26	filp_close
+ 274:	f9407bf7 	ldr	x23, [sp, #240]
+ 278:	17ffffdf 	b	1f4 <fileCopyToSram+0xb0>
+ 27c:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			27c: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0xa8
+ 280:	91000000 	add	x0, x0, #0x0
+			280: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0xa8
+ 284:	2a1603e3 	mov	w3, w22
+ 288:	2a1703e2 	mov	w2, w23
+ 28c:	aa1403e1 	mov	x1, x20
+ 290:	94000000 	bl	0 <_printk>
+			290: R_AARCH64_CALL26	_printk
+ 294:	f9407bf7 	ldr	x23, [sp, #240]
+ 298:	52800033 	mov	w19, #0x1                   	// #1
+ 29c:	17ffffd6 	b	1f4 <fileCopyToSram+0xb0>
+ 2a0:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			2a0: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0xf0
+ 2a4:	91000000 	add	x0, x0, #0x0
+			2a4: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0xf0
+ 2a8:	94000000 	bl	0 <_printk>
+			2a8: R_AARCH64_CALL26	_printk
+ 2ac:	17fffffa 	b	294 <fileCopyToSram+0x150>
+ 2b0:	f9007bf7 	str	x23, [sp, #240]
+ 2b4:	94000000 	bl	0 <__stack_chk_fail>
+			2b4: R_AARCH64_CALL26	__stack_chk_fail
+
+00000000000002b8 <init_module>:
+ 2b8:	d503233f 	paciasp
+ 2bc:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
+ 2c0:	910003fd 	mov	x29, sp
+ 2c4:	94000000 	bl	0 <test_ram_b4_npu_load>
+			2c4: R_AARCH64_CALL26	test_ram_b4_npu_load
+ 2c8:	3100041f 	cmn	w0, #0x1
+ 2cc:	540006a0 	b.eq	3a0 <init_module+0xe8>  // b.none
+ 2d0:	90000001 	adrp	x1, 0 <fileCopyToSram-0x144>
+			2d0: R_AARCH64_ADR_PREL_PG_HI21	.bss
+ 2d4:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			2d4: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x130
+ 2d8:	52800003 	mov	w3, #0x0                   	// #0
+ 2dc:	91000000 	add	x0, x0, #0x0
+			2dc: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x130
+ 2e0:	b9400021 	ldr	w1, [x1]
+			2e0: R_AARCH64_LDST32_ABS_LO12_NC	.bss
+ 2e4:	52a00402 	mov	w2, #0x200000              	// #2097152
+ 2e8:	94000000 	bl	144 <fileCopyToSram>
+			2e8: R_AARCH64_CALL26	fileCopyToSram
+ 2ec:	350004c0 	cbnz	w0, 384 <init_module+0xcc>
+ 2f0:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			2f0: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x180
+ 2f4:	52800023 	mov	w3, #0x1                   	// #1
+ 2f8:	91000000 	add	x0, x0, #0x0
+			2f8: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x180
+ 2fc:	52a00022 	mov	w2, #0x10000               	// #65536
+ 300:	52b7d201 	mov	w1, #0xbe900000            	// #-1097859072
+ 304:	94000000 	bl	144 <fileCopyToSram>
+			304: R_AARCH64_CALL26	fileCopyToSram
+ 308:	350005a0 	cbnz	w0, 3bc <init_module+0x104>
+ 30c:	a90153f3 	stp	x19, x20, [sp, #16]
+ 310:	d2912b14 	mov	x20, #0x8958                	// #35160
+ 314:	f2a00834 	movk	x20, #0x41, lsl #16
+ 318:	d2801913 	mov	x19, #0xc8                  	// #200
+ 31c:	94000000 	bl	0 <set_npu_needed_info>
+			31c: R_AARCH64_CALL26	set_npu_needed_info
+ 320:	aa1403e0 	mov	x0, x20
+ 324:	94000000 	bl	0 <__const_udelay>
+			324: R_AARCH64_CALL26	__const_udelay
+ 328:	f1000673 	subs	x19, x19, #0x1
+ 32c:	54ffffa1 	b.ne	320 <init_module+0x68>  // b.any
+ 330:	94000000 	bl	0 <boot_npu_all_cores>
+			330: R_AARCH64_CALL26	boot_npu_all_cores
+ 334:	90000013 	adrp	x19, 0 <fileCopyToSram-0x144>
+			334: R_AARCH64_ADR_PREL_PG_HI21	.rodata
+ 338:	91000273 	add	x19, x19, #0x0
+			338: R_AARCH64_ADD_ABS_LO12_NC	.rodata
+ 33c:	d2800002 	mov	x2, #0x0                   	// #0
+ 340:	91002263 	add	x3, x19, #0x8
+ 344:	52800001 	mov	w1, #0x0                   	// #0
+ 348:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			348: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x8
+ 34c:	91000000 	add	x0, x0, #0x0
+			34c: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x8
+ 350:	94000000 	bl	0 <proc_create>
+			350: R_AARCH64_CALL26	proc_create
+ 354:	94000000 	bl	0 <npu_wifi_oper_init>
+			354: R_AARCH64_CALL26	npu_wifi_oper_init
+ 358:	9101a263 	add	x3, x19, #0x68
+ 35c:	d2800002 	mov	x2, #0x0                   	// #0
+ 360:	52800001 	mov	w1, #0x0                   	// #0
+ 364:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			364: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x1d0
+ 368:	91000000 	add	x0, x0, #0x0
+			368: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x1d0
+ 36c:	94000000 	bl	0 <proc_create>
+			36c: R_AARCH64_CALL26	proc_create
+ 370:	a94153f3 	ldp	x19, x20, [sp, #16]
+ 374:	52800000 	mov	w0, #0x0                   	// #0
+ 378:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ 37c:	d50323bf 	autiasp
+ 380:	d65f03c0 	ret
+ 384:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			384: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x148
+ 388:	91000000 	add	x0, x0, #0x0
+			388: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x148
+ 38c:	94000000 	bl	0 <_printk>
+			38c: R_AARCH64_CALL26	_printk
+ 390:	52800000 	mov	w0, #0x0                   	// #0
+ 394:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ 398:	d50323bf 	autiasp
+ 39c:	d65f03c0 	ret
+ 3a0:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			3a0: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x108
+ 3a4:	91000000 	add	x0, x0, #0x0
+			3a4: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x108
+ 3a8:	94000000 	bl	0 <_printk>
+			3a8: R_AARCH64_CALL26	_printk
+ 3ac:	52800000 	mov	w0, #0x0                   	// #0
+ 3b0:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ 3b4:	d50323bf 	autiasp
+ 3b8:	d65f03c0 	ret
+ 3bc:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			3bc: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x198
+ 3c0:	91000000 	add	x0, x0, #0x0
+			3c0: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x198
+ 3c4:	94000000 	bl	0 <_printk>
+			3c4: R_AARCH64_CALL26	_printk
+ 3c8:	52800000 	mov	w0, #0x0                   	// #0
+ 3cc:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ 3d0:	d50323bf 	autiasp
+ 3d4:	d65f03c0 	ret
+
+00000000000003d8 <boot_all_npu_cores>:
+ 3d8:	d503233f 	paciasp
+ 3dc:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ 3e0:	910003fd 	mov	x29, sp
+ 3e4:	94000000 	bl	0 <boot_npu_all_cores>
+			3e4: R_AARCH64_CALL26	boot_npu_all_cores
+ 3e8:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ 3ec:	d50323bf 	autiasp
+ 3f0:	d65f03c0 	ret
+
+00000000000003f4 <AN7552_NPU_PS>:
+ 3f4:	d503233f 	paciasp
+ 3f8:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ 3fc:	52800001 	mov	w1, #0x0                   	// #0
+ 400:	910003fd 	mov	x29, sp
+ 404:	52800000 	mov	w0, #0x0                   	// #0
+ 408:	94000000 	bl	0 <host_set_npu_core_on_off>
+			408: R_AARCH64_CALL26	host_set_npu_core_on_off
+ 40c:	52800001 	mov	w1, #0x0                   	// #0
+ 410:	52800020 	mov	w0, #0x1                   	// #1
+ 414:	94000000 	bl	0 <host_set_npu_core_on_off>
+			414: R_AARCH64_CALL26	host_set_npu_core_on_off
+ 418:	528021e1 	mov	w1, #0x10f                 	// #271
+ 41c:	52800100 	mov	w0, #0x8                   	// #8
+ 420:	94000000 	bl	0 <set_npu_sram_power_save>
+			420: R_AARCH64_CALL26	set_npu_sram_power_save
+ 424:	3200c7e1 	mov	w1, #0x3030303             	// #50529027
+ 428:	52800300 	mov	w0, #0x18                  	// #24
+ 42c:	94000000 	bl	0 <set_npu_sram_power_save>
+			42c: R_AARCH64_CALL26	set_npu_sram_power_save
+ 430:	52800003 	mov	w3, #0x0                   	// #0
+ 434:	52800022 	mov	w2, #0x1                   	// #1
+ 438:	52800081 	mov	w1, #0x4                   	// #4
+ 43c:	52803c80 	mov	w0, #0x1e4                 	// #484
+ 440:	94000000 	bl	0 <set_npu_clk_power_save>
+			440: R_AARCH64_CALL26	set_npu_clk_power_save
+ 444:	52800003 	mov	w3, #0x0                   	// #0
+ 448:	52800022 	mov	w2, #0x1                   	// #1
+ 44c:	52800281 	mov	w1, #0x14                  	// #20
+ 450:	52803d80 	mov	w0, #0x1ec                 	// #492
+ 454:	94000000 	bl	0 <set_npu_clk_power_save>
+			454: R_AARCH64_CALL26	set_npu_clk_power_save
+ 458:	52800003 	mov	w3, #0x0                   	// #0
+ 45c:	528001e2 	mov	w2, #0xf                   	// #15
+ 460:	52800181 	mov	w1, #0xc                   	// #12
+ 464:	52804080 	mov	w0, #0x204                 	// #516
+ 468:	94000000 	bl	0 <set_npu_clk_power_save>
+			468: R_AARCH64_CALL26	set_npu_clk_power_save
+ 46c:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ 470:	d50323bf 	autiasp
+ 474:	d65f03c0 	ret
+
+0000000000000478 <npu_dump_mapping_address>:
+ 478:	d503233f 	paciasp
+ 47c:	d101c3ff 	sub	sp, sp, #0x70
+ 480:	d5384100 	mrs	x0, sp_el0
+ 484:	a9047bfd 	stp	x29, x30, [sp, #64]
+ 488:	910103fd 	add	x29, sp, #0x40
+ 48c:	f941f801 	ldr	x1, [x0, #1008]
+ 490:	f9001fe1 	str	x1, [sp, #56]
+ 494:	d2800001 	mov	x1, #0x0                   	// #0
+ 498:	f90007ff 	str	xzr, [sp, #8]
+ 49c:	94000000 	bl	0 <get_ecnt_npu_dev>
+			49c: R_AARCH64_CALL26	get_ecnt_npu_dev
+ 4a0:	b4000820 	cbz	x0, 5a4 <npu_dump_mapping_address+0x12c>
+ 4a4:	910023e2 	add	x2, sp, #0x8
+ 4a8:	d2802004 	mov	x4, #0x100                 	// #256
+ 4ac:	52850423 	mov	w3, #0x2821                	// #10273
+ 4b0:	d2824a01 	mov	x1, #0x1250                	// #4688
+ 4b4:	a90553f3 	stp	x19, x20, [sp, #80]
+ 4b8:	aa0003f4 	mov	x20, x0
+ 4bc:	94000000 	bl	0 <dma_alloc_attrs>
+			4bc: R_AARCH64_CALL26	dma_alloc_attrs
+ 4c0:	aa0003f3 	mov	x19, x0
+ 4c4:	b4000780 	cbz	x0, 5b4 <npu_dump_mapping_address+0x13c>
+ 4c8:	52800001 	mov	w1, #0x0                   	// #0
+ 4cc:	b80263ff 	stur	wzr, [sp, #38]
+ 4d0:	790057ff 	strh	wzr, [sp, #42]
+ 4d4:	f90033f5 	str	x21, [sp, #96]
+ 4d8:	d2824a15 	mov	x21, #0x1250                	// #4688
+ 4dc:	aa1503e2 	mov	x2, x21
+ 4e0:	94000000 	bl	0 <memset>
+			4e0: R_AARCH64_CALL26	memset
+ 4e4:	39400261 	ldrb	w1, [x19]
+ 4e8:	52800062 	mov	w2, #0x3                   	// #3
+ 4ec:	52800120 	mov	w0, #0x9                   	// #9
+ 4f0:	b9000660 	str	w0, [x19, #4]
+ 4f4:	d2800023 	mov	x3, #0x1                   	// #1
+ 4f8:	910043e0 	add	x0, sp, #0x10
+ 4fc:	331c0c41 	bfi	w1, w2, #4, #4
+ 500:	39000261 	strb	w1, [x19]
+ 504:	f2c4e203 	movk	x3, #0x2710, lsl #32
+ 508:	a9014fff 	stp	xzr, x19, [sp, #16]
+ 50c:	f94017e1 	ldr	x1, [sp, #40]
+ 510:	79004bf5 	strh	w21, [sp, #36]
+ 514:	f94007e2 	ldr	x2, [sp, #8]
+ 518:	927f7821 	and	x1, x1, #0xfffffffe
+ 51c:	aa030021 	orr	x1, x1, x3
+ 520:	b90023e2 	str	w2, [sp, #32]
+ 524:	a902ffe1 	stp	x1, xzr, [sp, #40]
+ 528:	94000000 	bl	0 <host_notify_npuMbox>
+			528: R_AARCH64_CALL26	host_notify_npuMbox
+ 52c:	7100041f 	cmp	w0, #0x1
+ 530:	f94007e3 	ldr	x3, [sp, #8]
+ 534:	aa1303e2 	mov	x2, x19
+ 538:	aa1503e1 	mov	x1, x21
+ 53c:	aa1403e0 	mov	x0, x20
+ 540:	d2800004 	mov	x4, #0x0                   	// #0
+ 544:	540001c1 	b.ne	57c <npu_dump_mapping_address+0x104>  // b.any
+ 548:	94000000 	bl	0 <dma_free_attrs>
+			548: R_AARCH64_CALL26	dma_free_attrs
+ 54c:	a94553f3 	ldp	x19, x20, [sp, #80]
+ 550:	f94033f5 	ldr	x21, [sp, #96]
+ 554:	d5384100 	mrs	x0, sp_el0
+ 558:	f9401fe2 	ldr	x2, [sp, #56]
+ 55c:	f941f801 	ldr	x1, [x0, #1008]
+ 560:	eb010042 	subs	x2, x2, x1
+ 564:	d2800001 	mov	x1, #0x0                   	// #0
+ 568:	54000361 	b.ne	5d4 <npu_dump_mapping_address+0x15c>  // b.any
+ 56c:	a9447bfd 	ldp	x29, x30, [sp, #64]
+ 570:	9101c3ff 	add	sp, sp, #0x70
+ 574:	d50323bf 	autiasp
+ 578:	d65f03c0 	ret
+ 57c:	94000000 	bl	0 <dma_free_attrs>
+			57c: R_AARCH64_CALL26	dma_free_attrs
+ 580:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			580: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x228
+ 584:	91000000 	add	x0, x0, #0x0
+			584: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x228
+ 588:	94000000 	bl	0 <_printk>
+			588: R_AARCH64_CALL26	_printk
+ 58c:	a94553f3 	ldp	x19, x20, [sp, #80]
+ 590:	f94033f5 	ldr	x21, [sp, #96]
+ 594:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			594: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x258
+ 598:	91000000 	add	x0, x0, #0x0
+			598: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x258
+ 59c:	94000000 	bl	0 <_printk>
+			59c: R_AARCH64_CALL26	_printk
+ 5a0:	17ffffed 	b	554 <npu_dump_mapping_address+0xdc>
+ 5a4:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			5a4: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x1e8
+ 5a8:	91000000 	add	x0, x0, #0x0
+			5a8: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x1e8
+ 5ac:	94000000 	bl	0 <_printk>
+			5ac: R_AARCH64_CALL26	_printk
+ 5b0:	17fffff9 	b	594 <npu_dump_mapping_address+0x11c>
+ 5b4:	90000001 	adrp	x1, 0 <fileCopyToSram-0x144>
+			5b4: R_AARCH64_ADR_PREL_PG_HI21	.rodata
+ 5b8:	91000021 	add	x1, x1, #0x0
+			5b8: R_AARCH64_ADD_ABS_LO12_NC	.rodata
+ 5bc:	91032021 	add	x1, x1, #0xc8
+ 5c0:	90000000 	adrp	x0, 0 <fileCopyToSram-0x144>
+			5c0: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x208
+ 5c4:	91000000 	add	x0, x0, #0x0
+			5c4: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x208
+ 5c8:	94000000 	bl	0 <_printk>
+			5c8: R_AARCH64_CALL26	_printk
+ 5cc:	a94553f3 	ldp	x19, x20, [sp, #80]
+ 5d0:	17fffff1 	b	594 <npu_dump_mapping_address+0x11c>
+ 5d4:	a90553f3 	stp	x19, x20, [sp, #80]
+ 5d8:	f90033f5 	str	x21, [sp, #96]
+ 5dc:	94000000 	bl	0 <__stack_chk_fail>
+			5dc: R_AARCH64_CALL26	__stack_chk_fail
+ 5e0:	d503233f 	paciasp
+ 5e4:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ 5e8:	910003fd 	mov	x29, sp
+ 5ec:	94000000 	bl	478 <npu_dump_mapping_address>
+			5ec: R_AARCH64_CALL26	npu_dump_mapping_address
+ 5f0:	d2800000 	mov	x0, #0x0                   	// #0
+ 5f4:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ 5f8:	d50323bf 	autiasp
+ 5fc:	d65f03c0 	ret
+
+Disassembly of section .exit.text:
+
+0000000000000000 <cleanup_module>:
+   0:	90000001 	adrp	x1, 0 <cleanup_module>
+			0: R_AARCH64_ADR_PREL_PG_HI21	.rodata
+   4:	91000021 	add	x1, x1, #0x0
+			4: R_AARCH64_ADD_ABS_LO12_NC	.rodata
+   8:	d503233f 	paciasp
+   c:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+  10:	90000000 	adrp	x0, 0 <cleanup_module>
+			10: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8
+  14:	910003fd 	mov	x29, sp
+  18:	91000000 	add	x0, x0, #0x0
+			18: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8
+  1c:	94000000 	bl	0 <_printk>
+			1c: R_AARCH64_CALL26	_printk
+  20:	94000000 	bl	0 <npu_wifi_oper_exit>
+			20: R_AARCH64_CALL26	npu_wifi_oper_exit
+  24:	d2800001 	mov	x1, #0x0                   	// #0
+  28:	90000000 	adrp	x0, 0 <cleanup_module>
+			28: R_AARCH64_ADR_PREL_PG_HI21	.rodata.str1.8+0x8
+  2c:	91000000 	add	x0, x0, #0x0
+			2c: R_AARCH64_ADD_ABS_LO12_NC	.rodata.str1.8+0x8
+  30:	94000000 	bl	0 <remove_proc_entry>
+			30: R_AARCH64_CALL26	remove_proc_entry
+  34:	a8c17bfd 	ldp	x29, x30, [sp], #16
+  38:	d50323bf 	autiasp
+  3c:	d65f03c0 	ret
+
+Disassembly of section .plt:
+
+0000000000000000 <.plt>:
+	...
+
+Disassembly of section .text.ftrace_trampoline:
+
+0000000000000000 <.text.ftrace_trampoline>:
+	...

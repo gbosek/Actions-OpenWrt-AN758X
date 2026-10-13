@@ -1,0 +1,25 @@
+From: XG2010G PPE integration
+Subject: [PATCH] net: airoha: use physical egress when GDM2 is present
+
+Backport the direct-egress condition from upstream commit
+8e0a754b0836d996802713bbebc87bc1cc17925c to the multi-netdev PonWrt
+driver. XG2010G has a real PON GDM2. An external Ethernet egress
+marked WAN must retain its own GDM/NBQ destination instead of selecting
+the GDM2 loopback reserved for boards without a physical GDM2.
+
+This does not allocate WAN selectors or alter board wiring. Existing
+NBQ selection and PON GEM/T-CONT metadata remain in the flow builder.
+
+---
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -468,7 +468,8 @@
+ 			*egress_dev = dev;
+ 
+ 			port = dev->port;
+-			if (dsa_port >= 0 || airoha_is_lan_gdm_dev(dev))
++			if (dsa_port >= 0 || airoha_is_lan_gdm_dev(dev) ||
++			    eth->ports[AIROHA_GDM2_IDX - 1])
+ 				pse_port = port->id == 4 ? FE_PSE_PORT_GDM4
+ 							 : port->id;
+ 			else

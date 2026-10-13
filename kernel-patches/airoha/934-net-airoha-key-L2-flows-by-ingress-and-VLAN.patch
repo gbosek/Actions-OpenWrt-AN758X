@@ -1,0 +1,249 @@
+From: XG2010G PPE integration
+Subject: [PATCH] net: airoha: distinguish L2 ingress and VLAN templates
+
+Bridger installs distinct MAC-pair rules for each ingress device and VID.
+A MAC-only template key lets one VLAN or ingress replace another template.
+Include the exact ingress device and outer VLAN identity in the software
+lookup used when a hardware-learned entry is bound. Preserve an unchanged
+802.1Q bridge tag and apply bridge VLAN pop/push to a single tag.
+Reject stacked output tags until their ordering is confirmed.
+
+Require exact MAC/ingress/VID matches. Unsupported priority, DEI and QinQ
+input matches return EOPNOTSUPP instead of being accepted and ignored.
+Native hardware keys and the routed/NAT action builder are unchanged.
+
+---
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -548,6 +548,14 @@
+ 	FLOW_TYPE_L2_SUBFLOW,
+ };
+ 
++struct airoha_l2_flow_key {
++	u32 ingress_ifindex;
++	u16 vlan_id;
++	__be16 vlan_proto;
++	u8 dest_mac[ETH_ALEN];
++	u8 src_mac[ETH_ALEN];
++};
++
+ struct airoha_flow_table_entry {
+ 	union {
+ 		struct hlist_node list; /* PPE L3 flow entry */
+@@ -565,6 +573,7 @@
+ 
+ 	struct rhash_head node;
+ 	unsigned long cookie;
++	struct airoha_l2_flow_key l2_key;
+ 	/* Track the final egress GDM netdev for each flow. PON bearer mappings
+ 	 * can change after O5 recovery or OMCI reconfiguration, so invalidate
+ 	 * only FOEs attached to the affected PON egress device.
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -12,6 +12,7 @@
+ #include <linux/rhashtable.h>
+ #include <net/ipv6.h>
+ #include <linux/if_vlan.h>
++#include <net/dst_metadata.h>
+ #include <net/pkt_cls.h>
+ #include <net/route.h>
+ 
+@@ -33,8 +34,8 @@
+ 
+ static const struct rhashtable_params airoha_l2_flow_table_params = {
+ 	.head_offset = offsetof(struct airoha_flow_table_entry, l2_node),
+-	.key_offset = offsetof(struct airoha_flow_table_entry, data.bridge),
+-	.key_len = 2 * ETH_ALEN,
++	.key_offset = offsetof(struct airoha_flow_table_entry, l2_key),
++	.key_len = sizeof(struct airoha_l2_flow_key),
+ 	.automatic_shrinking = true,
+ };
+ 
+@@ -1060,12 +1061,63 @@
+ 	return 0;
+ }
+ 
++static int airoha_ppe_l2_key_from_skb(struct airoha_l2_flow_key *key,
++				     const struct sk_buff *skb)
++{
++	struct vlan_hdr vlan_buf, *vlan;
++	const struct ethhdr *eh = eth_hdr(skb);
++
++	memset(key, 0, sizeof(*key));
++	if (!skb->dev)
++		return -EINVAL;
++	key->ingress_ifindex = skb->dev->ifindex;
++#if IS_ENABLED(CONFIG_NET_DSA)
++	if (netdev_uses_dsa(skb->dev)) {
++		struct metadata_dst *md = skb_metadata_dst(skb);
++		struct dsa_port *dp;
++
++		if (!md || md->type != METADATA_HW_PORT_MUX)
++			return -EINVAL;
++		key->ingress_ifindex = 0;
++		list_for_each_entry(dp, &skb->dev->dsa_ptr->dst->ports, list) {
++			if (dp->ds->index == 0 && dp->type == DSA_PORT_TYPE_USER &&
++			    dp->index == md->u.port_info.port_id) {
++				key->ingress_ifindex = dp->user->ifindex;
++				break;
++			}
++		}
++		if (!key->ingress_ifindex)
++			return -EINVAL;
++	}
++#endif
++	ether_addr_copy(key->dest_mac, eh->h_dest);
++	ether_addr_copy(key->src_mac, eh->h_source);
++	if (skb_vlan_tag_present(skb)) {
++		if (skb->vlan_proto != htons(ETH_P_8021Q) ||
++		    eth_type_vlan(eh->h_proto))
++			return -EOPNOTSUPP;
++		key->vlan_proto = skb->vlan_proto;
++		key->vlan_id = skb_vlan_tag_get_id(skb);
++	} else if (eth_type_vlan(eh->h_proto)) {
++		vlan = skb_header_pointer(skb, skb_mac_offset(skb) + ETH_HLEN,
++					 sizeof(vlan_buf), &vlan_buf);
++		if (!vlan)
++			return -EINVAL;
++		if (eh->h_proto != htons(ETH_P_8021Q) ||
++		    eth_type_vlan(vlan->h_vlan_encapsulated_proto))
++			return -EOPNOTSUPP;
++		key->vlan_proto = eh->h_proto;
++		key->vlan_id = ntohs(vlan->h_vlan_TCI) & VLAN_VID_MASK;
++	}
++	return 0;
++}
++
+ static void airoha_ppe_foe_insert_entry(struct airoha_ppe *ppe,
+ 					struct sk_buff *skb,
+ 					u32 hash, bool rx_wlan)
+ {
+ 	struct airoha_flow_table_entry *e;
+-	struct airoha_foe_bridge br = {};
++	struct airoha_l2_flow_key l2_key;
+ 	struct airoha_foe_entry *hwe;
+ 	bool commit_done = false;
+ 	struct hlist_node *n;
+@@ -1110,8 +1162,9 @@
+ 		goto unlock;
+ 
+ l2_lookup:
+-	airoha_ppe_foe_set_bridge_addrs(&br, eth_hdr(skb));
+-	e = rhashtable_lookup_fast(&ppe->l2_flows, &br,
++	if (airoha_ppe_l2_key_from_skb(&l2_key, skb))
++		goto unlock;
++	e = rhashtable_lookup_fast(&ppe->l2_flows, &l2_key,
+ 				   airoha_l2_flow_table_params);
+ 	if (e)
+ 		airoha_ppe_foe_commit_subflow_entry(ppe, e, hash, rx_wlan);
+@@ -1253,6 +1306,51 @@
+ 	return airoha_ppe_get_entry_idle_time(ppe, e->data.ib1);
+ }
+ 
++static int airoha_ppe_parse_l2_key(struct flow_rule *rule,
++				  struct airoha_l2_flow_key *key,
++				  struct airoha_flow_data *data)
++{
++	struct flow_match_eth_addrs eth;
++	struct flow_match_meta meta;
++
++	if (!flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_ETH_ADDRS))
++		return -EOPNOTSUPP;
++	flow_rule_match_eth_addrs(rule, &eth);
++	flow_rule_match_meta(rule, &meta);
++	if (!is_broadcast_ether_addr(eth.mask->src) ||
++	    !is_broadcast_ether_addr(eth.mask->dst) ||
++	    meta.mask->ingress_ifindex != -1 ||
++	    meta.key->ingress_ifindex <= 0)
++		return -EOPNOTSUPP;
++
++	memset(key, 0, sizeof(*key));
++	key->ingress_ifindex = meta.key->ingress_ifindex;
++	ether_addr_copy(key->dest_mac, eth.key->dst);
++	ether_addr_copy(key->src_mac, eth.key->src);
++	ether_addr_copy(data->eth.h_dest, eth.key->dst);
++	ether_addr_copy(data->eth.h_source, eth.key->src);
++	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_CVLAN))
++		return -EOPNOTSUPP;
++	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_VLAN)) {
++		struct flow_match_vlan vlan;
++
++		flow_rule_match_vlan(rule, &vlan);
++		if (vlan.mask->vlan_id != VLAN_VID_MASK ||
++		    vlan.mask->vlan_priority || vlan.mask->vlan_dei ||
++		    vlan.mask->vlan_eth_type ||
++		    vlan.mask->vlan_tpid != htons(0xffff) ||
++		    vlan.key->vlan_tpid != htons(ETH_P_8021Q))
++			return -EOPNOTSUPP;
++		key->vlan_id = vlan.key->vlan_id;
++		key->vlan_proto = vlan.key->vlan_tpid;
++		/* A bridge rule without VLAN actions preserves its ingress tag. */
++		data->vlan.hdr[0].id = key->vlan_id;
++		data->vlan.hdr[0].proto = key->vlan_proto;
++		data->vlan.num = 1;
++	}
++	return 0;
++}
++
+ static int airoha_ppe_flow_offload_replace(struct airoha_eth *eth,
+ 					   struct flow_cls_offload *f)
+ {
+@@ -1260,6 +1358,7 @@
+ 	struct airoha_flow_table_entry *e;
+ 	struct airoha_gdm_dev *egress_dev;
+ 	struct airoha_flow_data data = {};
++	struct airoha_l2_flow_key l2_key = {};
+ 	struct net_device *odev = NULL;
+ 	struct flow_action_entry *act;
+ 	struct airoha_foe_entry hwe;
+@@ -1305,14 +1404,11 @@
+ 	switch (addr_type) {
+ 	case 0:
+ 		offload_type = PPE_PKT_TYPE_BRIDGE;
+-		if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_ETH_ADDRS)) {
+-			struct flow_match_eth_addrs match;
+-
+-			flow_rule_match_eth_addrs(rule, &match);
+-			memcpy(data.eth.h_dest, match.key->dst, ETH_ALEN);
+-			memcpy(data.eth.h_source, match.key->src, ETH_ALEN);
+-		} else {
+-			return -EOPNOTSUPP;
++		err = airoha_ppe_parse_l2_key(rule, &l2_key, &data);
++		if (err) {
++			NL_SET_ERR_MSG_MOD(f->common.extack,
++					   "L2 offload requires exact MAC/ingress and a supported VLAN key");
++			return err;
+ 		}
+ 		break;
+ 	case FLOW_DISSECTOR_KEY_IPV4_ADDRS:
+@@ -1344,11 +1440,22 @@
+ 			    act->vlan.proto != htons(ETH_P_8021Q))
+ 				return -EOPNOTSUPP;
+ 
++			if (offload_type == PPE_PKT_TYPE_BRIDGE) {
++				if (act->vlan.prio || data.vlan.num)
++					return -EOPNOTSUPP;
++				data.vlan.hdr[0].id = act->vlan.vid;
++				data.vlan.hdr[0].proto = act->vlan.proto;
++				data.vlan.num++;
++				break;
++			}
+ 			data.vlan.hdr[data.vlan.num].id = act->vlan.vid;
+ 			data.vlan.hdr[data.vlan.num].proto = act->vlan.proto;
+ 			data.vlan.num++;
+ 			break;
+ 		case FLOW_ACTION_VLAN_POP:
++			if (offload_type == PPE_PKT_TYPE_BRIDGE && data.vlan.num) {
++				data.vlan.num--;
++			}
+ 			break;
+ 		case FLOW_ACTION_PPPOE_PUSH:
+ 			if (data.pppoe.num == 1 || data.vlan.num == 2)
+@@ -1447,6 +1554,7 @@
+ 
+ 	INIT_LIST_HEAD(&e->gc_node);
+ 	e->cookie = f->cookie;
++	e->l2_key = l2_key;
+ 	e->egress_dev = egress_dev;
+ 	memcpy(&e->data, &hwe, sizeof(e->data));
+ 

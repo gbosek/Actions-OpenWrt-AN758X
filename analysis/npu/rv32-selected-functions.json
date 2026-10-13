@@ -1,0 +1,206 @@
+[
+  {
+    "version_label": "1456",
+    "provider": "direct-ghidra-12.1.4",
+    "language": "RISCV:LE:32:default",
+    "code_base": "0x84000000",
+    "data_base": "0x3e900000",
+    "gp": "0x3e9013a0",
+    "code_sha256": "6e7b9cb9769398d5c0a603d758626719ee83610e0dd2a5bc0b66258e2ad1057f",
+    "data_sha256": "0e742e7bef0d8f4c1537d7c17de9b601274e42b18660dfde6deba81ac395c761",
+    "full_dump_sha256": "0b9e4728b7f0c7eae78ac172a65ef655ff6fad005b6f2b5e52e3d709baee068a",
+    "selection": "Exact listed function addresses from the supplemental direct-Ghidra dump; reference address namespace normalized.",
+    "limitations": [
+      "No REA Evidence envelope for raw RV32.",
+      "Candidate boundaries and unresolved instructions limit coverage.",
+      "Names are analyzer-generated."
+    ],
+    "functions": [
+      {
+        "address": "0x84006cb2",
+        "name": "FUN_ram_84006cb2",
+        "size": 38,
+        "decompiled": true,
+        "pseudocode": "\nvoid FUN_ram_84006cb2(void)\n\n{\n  gp = &DAT_ram_3e9013a0;\n  FUN_ram_8400cff2(\"%s npu_bridge_HwFlowCnt_UL_handle\\n\",\"core5_wifi_init_wrapper\");\n  FUN_ram_8400931c();\n  FUN_ram_8400af6e(5);\n  return;\n}\n\n",
+        "references": [
+          {
+            "source": "0x840002d8",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      },
+      {
+        "address": "0x84006cd8",
+        "name": "FUN_ram_84006cd8",
+        "size": 54,
+        "decompiled": true,
+        "pseudocode": "\nvoid FUN_ram_84006cd8(void)\n\n{\n  gp = &DAT_ram_3e9013a0;\n  FUN_ram_8400cff2(\"%s npu_bridge_HwFlowCnt_DL_handle\\n\",\"core6_wifi_init_wrapper\");\n  FUN_ram_8400af6e(6);\n  FUN_ram_8400cff2(\"%s finish\\n\",\"core6_wifi_init_wrapper\");\n  return;\n}\n\n",
+        "references": [
+          {
+            "source": "0x840002fc",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      },
+      {
+        "address": "0x8400af6e",
+        "name": "FUN_ram_8400af6e",
+        "size": 494,
+        "decompiled": true,
+        "pseudocode": "\nvoid FUN_ram_8400af6e(uint param_1)\n\n{\n  byte bVar1;\n  ushort uVar2;\n  uint uVar3;\n  int *piVar4;\n  uint *puVar5;\n  int iVar6;\n  uint uVar7;\n  uint uVar8;\n  uint uVar9;\n  uint *puVar10;\n  int iVar11;\n  uint uStack_48;\n  int *apiStack_44 [4];\n  \n  iVar11 = (param_1 & 0xff) * 0x20;\n  uStack_48 = 0;\n  apiStack_44[0] = (int *)0x0;\n  puVar10 = (uint *)((param_1 & 0xff) * 4 + 0x1ec12050);\n  puVar5 = (uint *)(&DAT_ram_3e900cf8 + (param_1 & 0xff) * 4);\n  do {\n    do {\n      iVar6 = FUN_ram_840093b6(param_1 & 0xff,&uStack_48,apiStack_44);\n      piVar4 = apiStack_44[0];\n      uVar3 = uStack_48;\n    } while (iVar6 != 0);\n    bVar1 = *(byte *)(apiStack_44[0] + 5);\n    uVar9 = apiStack_44[0][1];\n    uVar7 = (uint)*(ushort *)(apiStack_44[0] + 4);\n    uVar2 = *(ushort *)((int)apiStack_44[0] + 0x12);\n    if ((uVar7 < 0x2000) || (uVar7 = uVar7 - 0x1000 & 0xffff, uVar7 < 0x2000)) {\n      iVar6 = uVar7 * 8;\n      uVar7 = *(uint *)(iVar6 + 0x3e85fff0);\n      uVar8 = ((uStack_48 & 0xffff) - 0x20 & 0xffff) + uVar7;\n      if (uVar8 < uVar7) {\n        *(int *)(DAT_ram_3e9037a4 + iVar6) = *(int *)(DAT_ram_3e9037a4 + iVar6) + 1;\n      }\n      *(uint *)(iVar6 + 0x3e85fff0) = uVar8;\n      uVar7 = *(uint *)(iVar6 + 0x3e85fff4) + 1;\n      if (uVar7 < *(uint *)(iVar6 + 0x3e85fff4)) {\n        *(int *)(iVar6 + DAT_ram_3e9037a4 + 4) = *(int *)(iVar6 + DAT_ram_3e9037a4 + 4) + 1;\n      }\n      *(uint *)(iVar6 + 0x3e85fff4) = uVar7;\n    }\n    else {\n      FUN_ram_8400cff2(\"[WARN] ppe_index >= %u ppe_index is %u\\n\",0x2000);\n    }\n    piVar4[5] = piVar4[5] & 0xff003fffU | 0x7f0007ff | (uVar2 >> 9 & 1) << 0xe |\n                (uVar2 & 0x1f) << 0xf | (uVar2 >> 5 & 0xf) << 0x14;\n    *piVar4 = (param_1 & 0xff) << 4;\n    piVar4[4] = (uVar9 & 0xffff) << 0xe | 0x3800 | bVar1 & 0xf8 | bVar1 & 7 | uVar2 >> 1 & 0x200;\n    piVar4[6] = 0xffff;\n    uVar7 = *puVar5;\n    while (uVar7 == 0) {\n      uVar7 = *puVar10 >> 8 & 0xff;\n      *puVar5 = uVar7;\n      if (uVar7 != 0) break;\n      uVar7 = *puVar10 >> 8 & 0xff;\n      *puVar5 = uVar7;\n    }\n    *puVar5 = uVar7 - 1;\n    *(uint *)(iVar11 + 0x1ec12104) = uVar3 << 0x10;\n    *(uint *)(iVar11 + 0x1ec12108) = param_1 & 7 | 0xc0000000;\n    *(uint *)(iVar11 + 0x1ec12100) = (uint)piVar4 & 0x1fffffff;\n  } while( true );\n}\n\n",
+        "references": [
+          {
+            "source": "0x84006cf6",
+            "type": "UNCONDITIONAL_CALL"
+          },
+          {
+            "source": "0x84006cd4",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      },
+      {
+        "address": "0x8400bfea",
+        "name": "FUN_ram_8400bfea",
+        "size": 184,
+        "decompiled": true,
+        "pseudocode": "\n/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */\n\nvoid FUN_ram_8400bfea(void)\n\n{\n  uint uVar1;\n  undefined *puVar2;\n  undefined *puVar3;\n  int *piVar4;\n  int iVar5;\n  \n  gp = &DAT_ram_3e9013a0;\n  _DAT_ram_1ec0c008 = 1;\n  uVar1 = 0;\n  piVar4 = (int *)&DAT_ram_1ec0c00c;\n  iVar5 = 1;\n  do {\n    FUN_ram_8400b31c(uVar1 + 8,FUN_ram_8400bdbe,iVar5);\n    uVar1 = uVar1 + 1;\n    iVar5 = 1 << (uVar1 & 0x1f);\n    *piVar4 = iVar5;\n    piVar4 = piVar4 + 1;\n  } while (uVar1 != 7);\n  _DAT_ram_1ec0c004 = 0x100;\n  DAT_ram_3e903834 = 0x1e;\n  DAT_ram_3e903838 = 0;\n  puVar2 = &DAT_ram_3e900d34;\n  do {\n    puVar3 = puVar2 + 0x50;\n    FUN_ram_8400fc2a(puVar2,0,0x50);\n    puVar2 = puVar3;\n  } while (puVar3 != &DAT_ram_3e900fb4);\n  DAT_ram_3e900d64 = &LAB_ram_8400bb82;\n  DAT_ram_3e900f98 = &LAB_ram_8400bb6c;\n  DAT_ram_3e900d74 = FUN_ram_84008f40;\n  DAT_ram_3e900d78 = FUN_ram_8400f280;\n  return;\n}\n\n",
+        "references": [
+          {
+            "source": "0x8400cb60",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      },
+      {
+        "address": "0x8400ef86",
+        "name": "FUN_ram_8400ef86",
+        "size": 64,
+        "decompiled": true,
+        "pseudocode": "\nundefined4 FUN_ram_8400ef86(int param_1)\n\n{\n  undefined4 uVar1;\n  \n  uVar1 = DAT_ram_3e900ba8;\n  gp = &DAT_ram_3e9013a0;\n  DAT_ram_3e9037a4 = *(uint *)(param_1 + 0xc) & 0x3fffffff | 0x40000000;\n  *(undefined4 *)(param_1 + 8) = 0x1e85fff0;\n  FUN_ram_8400cff2(\"table_base is 0x%x gPpeSramFoeNum is %d\\n\",0x1e85fff0,uVar1);\n  return 1;\n}\n\n",
+        "references": [
+          {
+            "source": "0x3e9001f4",
+            "type": "DATA"
+          }
+        ]
+      },
+      {
+        "address": "0x8400f122",
+        "name": "FUN_ram_8400f122",
+        "size": 16,
+        "decompiled": true,
+        "pseudocode": "\nundefined4 FUN_ram_8400f122(void)\n\n{\n  gp = &DAT_ram_3e9013a0;\n  FUN_ram_8400212a();\n  return 1;\n}\n\n",
+        "references": [
+          {
+            "source": "0x3e9001ec",
+            "type": "DATA"
+          }
+        ]
+      },
+      {
+        "address": "0x8400f132",
+        "name": "FUN_ram_8400f132",
+        "size": 106,
+        "decompiled": true,
+        "pseudocode": "\nundefined4 FUN_ram_8400f132(int param_1)\n\n{\n  gp = &DAT_ram_3e9013a0;\n  DAT_ram_3e903890 = (uint)*(byte *)(param_1 + 0xb);\n  DAT_ram_3e90389c = (uint)*(byte *)(param_1 + 8);\n  DAT_ram_3e903898 = (uint)*(byte *)(param_1 + 9);\n  DAT_ram_3e903894 = (uint)*(byte *)(param_1 + 10);\n  DAT_ram_3e90388c = *(undefined1 *)(param_1 + 0xc);\n  DAT_ram_3e903888 = *(undefined4 *)(param_1 + 0x10);\n  DAT_ram_3e903884 = *(undefined4 *)(param_1 + 0x14);\n  DAT_ram_3e903880 = *(undefined4 *)(param_1 + 0x18);\n  FUN_ram_84001362();\n  return 1;\n}\n\n",
+        "references": [
+          {
+            "source": "0x3e9001e8",
+            "type": "DATA"
+          }
+        ]
+      },
+      {
+        "address": "0x8400f19c",
+        "name": "FUN_ram_8400f19c",
+        "size": 44,
+        "decompiled": true,
+        "pseudocode": "\nundefined4 FUN_ram_8400f19c(int param_1)\n\n{\n  int iVar1;\n  \n  gp = &DAT_ram_3e9013a0;\n  iVar1 = 0;\n  if ((code *)(&PTR_FUN_ram_8400f262_ram_3e9001d4)[*(int *)(param_1 + 8)] != (code *)0x0) {\n    iVar1 = (*(code *)(&PTR_FUN_ram_8400f262_ram_3e9001d4)[*(int *)(param_1 + 8)])();\n  }\n  if (iVar1 == 1) {\n    return 1;\n  }\n  FUN_ram_8400cff2(\"%s fail\\n\",\"hwnat_mail_set_wait_hwnat_api\");\n  return 0;\n}\n\n",
+        "references": [
+          {
+            "source": "0x3e9001f0",
+            "type": "DATA"
+          }
+        ]
+      },
+      {
+        "address": "0x8400f280",
+        "name": "FUN_ram_8400f280",
+        "size": 200,
+        "decompiled": true,
+        "pseudocode": "\nshort FUN_ram_8400f280(uint param_1)\n\n{\n  int iVar1;\n  int iVar2;\n  int *piVar3;\n  short sVar4;\n  \n  gp = &DAT_ram_3e9013a0;\n  piVar3 = (int *)(param_1 & 0x3fffffff | 0x40000000);\n  if (*piVar3 == 1) {\n    if (3 < piVar3[1] - 1U) {\n      FUN_ram_8400cff2(\"Error: invalid funcId! hwnat_mail_data->funcType=%u hwnat_mail_data->funcId=%u\\n\"\n                       ,1);\n      return 0;\n    }\n    if (*(code **)(&DAT_ram_3e9001e4 + piVar3[1] * 4) != (code *)0x0) {\n      sVar4 = (**(code **)(&DAT_ram_3e9001e4 + piVar3[1] * 4))(piVar3);\n      if (sVar4 == 0) {\n        FUN_ram_8400cff2(\"hwnat_mail_set_wait_operation fail !\\n\");\n      }\n      return sVar4;\n    }\n  }\n  else {\n    FUN_ram_8400cff2(\"not support unknow funcType\\n\");\n    iVar1 = 0;\n    do {\n      iVar2 = iVar1 + 4;\n      FUN_ram_8400cff2(\"Offset: %08zx, Value: 0x%08x\\n\",iVar1,*(undefined4 *)((int)piVar3 + iVar1));\n      iVar1 = iVar2;\n    } while (iVar2 != 0x1c);\n  }\n  return 0;\n}\n\n",
+        "references": [
+          {
+            "source": "0x8400c092",
+            "type": "DATA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "version_label": "54",
+    "provider": "direct-ghidra-12.1.4",
+    "language": "RISCV:LE:32:default",
+    "code_base": "0x84000000",
+    "data_base": "0x3e900000",
+    "gp": "0x3e901258",
+    "code_sha256": "5140747f2ce176ac6622522184651403594d4f5624bf2238543136a0f3bfe7b8",
+    "data_sha256": "d59db24e7d97453a689144a94d3b10cfb873197dfcbea0cb1d279d38cced87b1",
+    "full_dump_sha256": "4dc5758038adc77e493b6ac61e0985dc85ad2f52eac51553fc6dbb2d842f460f",
+    "selection": "Exact listed function addresses from the supplemental direct-Ghidra dump; reference address namespace normalized.",
+    "limitations": [
+      "No REA Evidence envelope for raw RV32.",
+      "Candidate boundaries and unresolved instructions limit coverage.",
+      "Names are analyzer-generated."
+    ],
+    "functions": [
+      {
+        "address": "0x84006604",
+        "name": "FUN_ram_84006604",
+        "size": 160,
+        "decompiled": true,
+        "pseudocode": "\n/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */\n\nvoid FUN_ram_84006604(void)\n\n{\n  uint uVar1;\n  undefined4 *puVar2;\n  undefined4 *puVar3;\n  int *piVar4;\n  int iVar5;\n  \n  gp = &DAT_ram_3e901258;\n  _DAT_ram_1ec0c008 = 1;\n  uVar1 = 0;\n  piVar4 = (int *)&DAT_ram_1ec0c00c;\n  iVar5 = 1;\n  do {\n    FUN_ram_84005a94(uVar1 + 8,FUN_ram_840063d8,iVar5);\n    uVar1 = uVar1 + 1;\n    iVar5 = 1 << (uVar1 & 0x1f);\n    *piVar4 = iVar5;\n    piVar4 = piVar4 + 1;\n  } while (uVar1 != 7);\n  _DAT_ram_1ec0c004 = 0x100;\n  DAT_ram_3e903f6c = 0x1e;\n  DAT_ram_3e903f70 = 0;\n  puVar2 = &DAT_ram_3e900aa8;\n  do {\n    puVar3 = puVar2 + 0x14;\n    FUN_ram_840090f8(puVar2,0,0x50);\n    puVar2 = puVar3;\n  } while (puVar3 != (undefined4 *)&DAT_ram_3e900d28);\n  DAT_ram_3e900ad8 = &LAB_ram_8400619e;\n  DAT_ram_3e900d0c = &LAB_ram_84006188;\n  return;\n}\n\n",
+        "references": [
+          {
+            "source": "0x84007062",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "version_label": "66",
+    "provider": "direct-ghidra-12.1.4",
+    "language": "RISCV:LE:32:default",
+    "code_base": "0x84000000",
+    "data_base": "0x3e900000",
+    "gp": "0x3e901328",
+    "code_sha256": "d74aa2f81214fda24725529a6000bb05c22c2da6f40dfd63f0c20ef067db08af",
+    "data_sha256": "11013d492120f406586413bad2689305f2713da2f0ebdde21feaf03fc93b0e3a",
+    "full_dump_sha256": "8956ba3910b3e8314e9385aa30f926b2de96c6faedc259072be1adaff5c17b6a",
+    "selection": "Exact listed function addresses from the supplemental direct-Ghidra dump; reference address namespace normalized.",
+    "limitations": [
+      "No REA Evidence envelope for raw RV32.",
+      "Candidate boundaries and unresolved instructions limit coverage.",
+      "Names are analyzer-generated."
+    ],
+    "functions": [
+      {
+        "address": "0x84002c66",
+        "name": "FUN_ram_84002c66",
+        "size": 160,
+        "decompiled": true,
+        "pseudocode": "\n/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */\n\nvoid FUN_ram_84002c66(void)\n\n{\n  uint uVar1;\n  undefined *puVar2;\n  undefined *puVar3;\n  int *piVar4;\n  int iVar5;\n  \n  gp = &DAT_ram_3e901328;\n  _DAT_ram_1ec0c008 = 1;\n  uVar1 = 0;\n  piVar4 = (int *)&DAT_ram_1ec0c00c;\n  iVar5 = 1;\n  do {\n    FUN_ram_840020c6(uVar1 + 8,FUN_ram_84002a3c,iVar5);\n    uVar1 = uVar1 + 1;\n    iVar5 = 1 << (uVar1 & 0x1f);\n    *piVar4 = iVar5;\n    piVar4 = piVar4 + 1;\n  } while (uVar1 != 7);\n  _DAT_ram_1ec0c004 = 0x100;\n  DAT_ram_3e9037ac = 0x1e;\n  DAT_ram_3e9037b0 = 0;\n  puVar2 = &DAT_ram_3e900bd0;\n  do {\n    puVar3 = puVar2 + 0x50;\n    FUN_ram_8400b660(puVar2,0,0x50);\n    puVar2 = puVar3;\n  } while (puVar3 != &DAT_ram_3e900e50);\n  DAT_ram_3e900c00 = &LAB_ram_84002804;\n  DAT_ram_3e900c04 = &LAB_ram_840027ee;\n  return;\n}\n\n",
+        "references": [
+          {
+            "source": "0x840031e2",
+            "type": "UNCONDITIONAL_CALL"
+          }
+        ]
+      }
+    ]
+  }
+]

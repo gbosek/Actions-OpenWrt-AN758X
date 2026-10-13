@@ -1,0 +1,180 @@
+{
+  "scope": "Analysis artifacts only; no original binaries, npu_wifi.ko exports, database, tool installation, credentials, or REA cache.",
+  "files": [
+    {
+      "file": "comparison/README.md",
+      "bytes": 4198,
+      "sha256": "324dca17179d433b5e0513ee16f173f99f0e005b1deda68cfe408b1657802358"
+    },
+    {
+      "file": "comparison/analysis-manifest.json",
+      "bytes": 2417,
+      "sha256": "fa87bd271c2d7f41c21963e76a4508ec181603415d78a1c44f28030ddf8b5293"
+    },
+    {
+      "file": "comparison/clanker-source-audit.md",
+      "bytes": 15501,
+      "sha256": "dc652a3101a3e3137455ce3cd08d736386f05dd76fb860a521c60702b44bad1a"
+    },
+    {
+      "file": "comparison/ghidra-npu66-inventory.json",
+      "bytes": 88972,
+      "sha256": "70bebbce5043f40bd98995a4ae048ed843778d377c39c817daad7eebba4256a9"
+    },
+    {
+      "file": "comparison/npu-core-module-audit.md",
+      "bytes": 3090,
+      "sha256": "aabad1753aeba49fece9993ce4fa021cc549e88af4b9f5ade4d437996ac32462"
+    },
+    {
+      "file": "comparison/npu66-objdump.txt",
+      "bytes": 21399,
+      "sha256": "8e564ecf3c363f827c53a0ae606ecadbae9c4cefe6d9e78a9cb151842c7e77b8"
+    },
+    {
+      "file": "comparison/old-firmware-audit.md",
+      "bytes": 4985,
+      "sha256": "e1e6c29350b6ae993eed27d186623d1b0bf60c09ee73326bf38a533c5621c5eb"
+    },
+    {
+      "file": "comparison/rv32-1456-candidate-functions.json",
+      "bytes": 908598,
+      "sha256": "691045c90e4fe641d5768ddec801bfcbac8134d42ac43c5c48941e002373df58"
+    },
+    {
+      "file": "comparison/rv32-54-candidate-functions.json",
+      "bytes": 689003,
+      "sha256": "be284d052cbba66425f3ce2162801a9b07bbf25743f8e041867189419ae55c2f"
+    },
+    {
+      "file": "comparison/rv32-66-candidate-functions.json",
+      "bytes": 781172,
+      "sha256": "3f057f8d64166632fdf480956a9d0be397292aaadcbaedb0b621f4530913cb22"
+    },
+    {
+      "file": "comparison/tools/NpuInventory.java",
+      "bytes": 5591,
+      "sha256": "e8bb864614172b4b9a1df1dd3445997a93f492a6de384a477a6e8e40fae71d14"
+    },
+    {
+      "file": "comparison/tools/NpuModuleRepair.java",
+      "bytes": 1322,
+      "sha256": "a3f59bde44ab99a5d3f29a13505538566d5f9fade833587fde870244d0e955f8"
+    },
+    {
+      "file": "comparison/tools/NpuOldAudit.java",
+      "bytes": 3569,
+      "sha256": "da5a197dc5376daa5639ce30bb7337c1792140a684261ad395671f5831e8523a"
+    },
+    {
+      "file": "comparison/tools/npu-rv32-opaque.ilp32d.slaspec",
+      "bytes": 529,
+      "sha256": "b60fea8d96c0fbcccf3a818e2c64bbf9cf4078c5ce92a2748a16929caadf78ed"
+    },
+    {
+      "file": "comparison/tools/npu-rv32-opaque.ldefs",
+      "bytes": 481,
+      "sha256": "5e4dd2b1f5cc834846f148188743a0fe5f57d9c7ae461d35336d25cac3760cf3"
+    },
+    {
+      "file": "comparison/tools/prepare-comparison.py",
+      "bytes": 5074,
+      "sha256": "5a4e5a9ad9c2d75341bc20220ecbcf414146e073a3bc89e4acc08339f44492d9"
+    },
+    {
+      "file": "comparison/wired-control-audit.md",
+      "bytes": 4072,
+      "sha256": "b77f7c483daddca6d32aabc0957c7259cf7f1586ab561ec8457b1c1b823b4679"
+    },
+    {
+      "file": "comparison/wired-mailbox-api-ledger.json",
+      "bytes": 11255,
+      "sha256": "8e50325d91e55b11a951f9018a82942bacea4a90dd2e52ae41d06771ab6325f6"
+    },
+    {
+      "file": "evidence/ghidra-1456-inventory.json",
+      "bytes": 6019994,
+      "sha256": "968943db31d2c334529b55362af16c96085cad066d68e451e4383ce89ab7e3cd"
+    },
+    {
+      "file": "evidence/ghidra-1456-opaque-inventory.json",
+      "bytes": 5967339,
+      "sha256": "21ff6df84049afa051b971200c4b49a1b1014ca45adb4a2a519630ae3bfa2d96"
+    },
+    {
+      "file": "evidence/ghidra-1456-opaque-inventory.log",
+      "bytes": 8575,
+      "sha256": "03ef3d3c70b7b0a129e8844525464eb77cad61b087d15b77fd01a7c103928068"
+    },
+    {
+      "file": "evidence/ghidra-54-inventory.json",
+      "bytes": 4397432,
+      "sha256": "bef3f88f56376881c5eead3b4b1a834030080a79d6ee73ae77bb270cdbac2b3e"
+    },
+    {
+      "file": "evidence/ghidra-54-opaque-inventory.json",
+      "bytes": 4381500,
+      "sha256": "0a2ea2248ad7f306c39420ce9c6d38c7903c9088546c45168394c8bf68dbcf56"
+    },
+    {
+      "file": "evidence/ghidra-54-opaque-inventory.log",
+      "bytes": 8177,
+      "sha256": "fbdc7523aa9a2edff6e9f5184da78de51eb3a374dd6ab5dfbb9e7df29e129df3"
+    },
+    {
+      "file": "evidence/ghidra-54-scoped-audit.txt",
+      "bytes": 51112,
+      "sha256": "98f47a3457a27ef7ec6213b943f85598db872193dbb3aaca09d6ffed72e2f3da"
+    },
+    {
+      "file": "evidence/ghidra-66-inventory.json",
+      "bytes": 5015456,
+      "sha256": "bfdd7efeceb82cb2b9bd71550461f6d3f061305734d0848783cd35478ae1b3bc"
+    },
+    {
+      "file": "evidence/ghidra-66-scoped-audit.txt",
+      "bytes": 51978,
+      "sha256": "b5ae71670cdde60ac3f8be5671218ed641fe98b0d3147bac6e54f54a4ab671a0"
+    },
+    {
+      "file": "evidence/mailbox-api-ledger.json",
+      "bytes": 47267,
+      "sha256": "ad8a6ce03655d9e9ae58ec75cc3124242a2f624da2400cf4616e8b17fde6d714"
+    },
+    {
+      "file": "evidence/npu-opaque-language-compile.log",
+      "bytes": 1335,
+      "sha256": "3f3d61564fcf0ee5966ad68a32a4f2ec74034fa067bff0377a6a7177385b0608"
+    },
+    {
+      "file": "evidence/rea-npu66-init.json",
+      "bytes": 138350,
+      "sha256": "1c7b583ba85a9f34b54eacf33b15d6078e618b2accafb99282a5a79a5f18fabc"
+    },
+    {
+      "file": "evidence/rea-npu66-load.json",
+      "bytes": 193864,
+      "sha256": "e8386e635a3c1ab1be0a7de8fdc04c31a17c3fe78d8107c8917a9f9276804d2c"
+    },
+    {
+      "file": "evidence/rea-npu66-overview.json",
+      "bytes": 4683,
+      "sha256": "d3082b365821185e531c5a9a9fd6372e61b2143bfdd6ab141050294f3745d611"
+    },
+    {
+      "file": "tools/NpuDump.java",
+      "bytes": 2941,
+      "sha256": "3928e98c0207f6913badbd98f7be5a01857156da1ca212798f27a90b345a236e"
+    },
+    {
+      "file": "tools/NpuMap.java",
+      "bytes": 1229,
+      "sha256": "efc63aee79c99c3f5d29e6172a4b1f9a543a7f47c580425179b5db145c309fbc"
+    },
+    {
+      "file": "tools/NpuSeed.java",
+      "bytes": 1452,
+      "sha256": "f00dccd07e6c7baaec1bcb4dce849643d1939b40ca24130040bf4d2c10646ba1"
+    }
+  ]
+}
