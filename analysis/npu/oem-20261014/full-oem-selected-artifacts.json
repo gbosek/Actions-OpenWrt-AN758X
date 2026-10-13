@@ -1,0 +1,372 @@
+{
+  "date": "2026-10-14",
+  "method": "read-only FIT and Squashfs parsing; no target execution; firmware/module provenance only",
+  "artifacts": [
+    {
+      "label": "xg54",
+      "path": "lib/libapi_lib_ppe.so.1.0.0",
+      "bytes": 22352,
+      "sha256": "9e8171057b21783d382888401699e5ca3311925b7334a004d59c6fc7a05c4fe6"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/libapi_lib_qdmamgr.so.1.0.0",
+      "bytes": 30544,
+      "sha256": "9c61e8344bd692a4082279eddf1ac875c41d1aebb09cf14f0ac0c5010486904b"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/8811_bbu_api.ko",
+      "bytes": 43256,
+      "sha256": "831b31b5bd089dc9358f011f376ce50665ceccbdc15db5c82b11d1161471898d"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/air_en8811h.ko",
+      "bytes": 32424,
+      "sha256": "19570b2ca2697ef9cfbe4b3f61edce4ab2f7fc6cb70e348679f31f6a5f30dafd"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/econet_bob.ko",
+      "bytes": 6200,
+      "sha256": "5871840727834d0b8483344b4c274e2728c551c29006bf8857f5796f39b8c612"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/en7572.ko",
+      "bytes": 72704,
+      "sha256": "db0065680707791fdd2275e98f7c8236626a6223795f3f647806711836832d67"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/hw_nat.ko",
+      "bytes": 819392,
+      "sha256": "e6ed0606db77e11adb1b6aaa940a0f14de60a72265152c62570b8a2142218d9d"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/npu.ko",
+      "bytes": 33800,
+      "sha256": "fecef1a24531765da1243de773ee7e9bb5b20ff47f1ad3b3736e1f09e9db088e"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/qdma_lan.ko",
+      "bytes": 722848,
+      "sha256": "342d29347347823a0268194e26b40cf4e4761379bed6c786f09d2f07bbc13db8"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/qdma_wan.ko",
+      "bytes": 420096,
+      "sha256": "09bb59092940902608f14a42954f9e49286bf99aa75cd65b993c8913b4382a18"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/xpon.ko",
+      "bytes": 1176304,
+      "sha256": "2ab6770ce75db1323c7c717bd1d3454a8b18f80864efc6b5fe9b68edfb43e75c"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/xpon_10g.ko",
+      "bytes": 1168568,
+      "sha256": "2c169db76abba280cfd44dc6b9dfc7c908d201a61219275eb40900227da6652a"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/xpon_int.ko",
+      "bytes": 18704,
+      "sha256": "0853ba523a37c0b83a8bf1461e2adc5c8f8d7c2bd9c90d3c0e503f2c6035859d"
+    },
+    {
+      "label": "xg54",
+      "path": "lib/modules/5.4.55/xponmap.ko",
+      "bytes": 83920,
+      "sha256": "fd8ddc9c6aee9fbf5c16053d26a7b4b3b7cb3292a794c12dd33912931ee09403"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/bin/npu_bridge_cmd",
+      "bytes": 19400,
+      "sha256": "9a16da896534aa86d7c9436dd9d6638e16537a7f5ca706a8e60d4e37e17b45ca"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/bin/ppemgr",
+      "bytes": 40872,
+      "sha256": "65fefac9d3374eae57f858df4f10f49d592a4064502dada55fe40b38878c4fc6"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/bin/qdmamgr_lan",
+      "bytes": 93032,
+      "sha256": "fa84eea7baa9f40907b1bc2a4c78d896c082462f12d5d32982f47d94fe39ecd7"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/bin/qdmamgr_wan",
+      "bytes": 92968,
+      "sha256": "137519f2fccb3f7143843af504e560a53c193a99b1102bc5939ce57344c2f6be"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/npu_data.bin",
+      "bytes": 2724,
+      "sha256": "d59db24e7d97453a689144a94d3b10cfb873197dfcbea0cb1d279d38cced87b1"
+    },
+    {
+      "label": "xg54",
+      "path": "userfs/npu_rv32.bin",
+      "bytes": 88596,
+      "sha256": "5140747f2ce176ac6622522184651403594d4f5624bf2238543136a0f3bfe7b8"
+    },
+    {
+      "label": "xg54",
+      "path": "usr/bin/hw_nat",
+      "bytes": 18408,
+      "sha256": "c05058de38be2c840edd2211b046dadb4f13ae9a903dd687c988f17b563dcf04"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/libapi_lib_ppe.so.1.0.0",
+      "bytes": 30456,
+      "sha256": "a39c13df95ff18326cc6539b890622a3e49b1d3978a5c5d5b5d35242efe4c136"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/libapi_lib_qdmamgr.so.1.0.0",
+      "bytes": 34552,
+      "sha256": "287e665d5b92e889483d915f89e8b4e1653f6d181885fdfa83f20b1ecef880e2"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/8811_bbu_api.ko",
+      "bytes": 134120,
+      "sha256": "e4513e09a3376ecd259f894ab0563df4b652be42587524141696b9e54d631a0f"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/air_en8811h.ko",
+      "bytes": 24384,
+      "sha256": "386e9945526bc194986ad1a8dbe940c090e3125ea22efb0f14aaca985775c354"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/en7572.ko",
+      "bytes": 85480,
+      "sha256": "1c7a42be490686d55ff4dad196c4c8d0e9a61a7d601b5ec88f0513b76af16f1c"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/hw_nat.ko",
+      "bytes": 943344,
+      "sha256": "f8ab9e61d80ce1ace05fc367742be9640c692aa65d8ce20210a9e886769d0d24"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/npu.ko",
+      "bytes": 10968,
+      "sha256": "1f8f2e2a7eab33197b24204e4c4ea45aa952cabf10f331337bb6c8bc237a079d"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/qdma_lan.ko",
+      "bytes": 471376,
+      "sha256": "d0b13f68803c4c7ffdd6f1723ba01f98d5ae8de5b8cd0c512d78e7cf70d35e35"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/qdma_wan.ko",
+      "bytes": 427576,
+      "sha256": "5b4dc829ab92f198546f53fd6e519c343abb46b1d3d497c0062e9ef7650d1685"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/xpon.ko",
+      "bytes": 1102320,
+      "sha256": "7711db719c1ee86c1fef3c98ae667255e75c99f258e787e3a99d02ad2572c005"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/xpon_10g.ko",
+      "bytes": 1191856,
+      "sha256": "aab0b4191f4db514a04035f0e43fbae073eea44ad834345cbcb899136976e860"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/xpon_int.ko",
+      "bytes": 48088,
+      "sha256": "782775e78eeb51ca489b189b39938e87615df70fb1cc13ff06e8c9c7c15ea0c1"
+    },
+    {
+      "label": "ct66A",
+      "path": "lib/modules/xponmap.ko",
+      "bytes": 91464,
+      "sha256": "acbf7b1fa5491ad594cd2c55e892ae80aa88cc8c3058dd51100862456555c5b3"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/bin/hw_nat",
+      "bytes": 26512,
+      "sha256": "08d3f5746500fb2998fbd6fdd69e33a820b53bf3f49e64aaa040d99d083c3fd2"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/bin/npu_bridge_cmd",
+      "bytes": 19312,
+      "sha256": "140266313f26cfb10dce1b1377f950ed10d97fb856209406cad0e45825530849"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/bin/ppemgr",
+      "bytes": 53376,
+      "sha256": "08219e1822f0c683f50b61c7f014ec125d6434817757e341915e992a2e4669ee"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/bin/qdmamgr_lan",
+      "bytes": 104624,
+      "sha256": "84fdc357b1c26815fdf34001fd2407db0b5d36e0806d123e0af8aaf1f9407787"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/bin/qdmamgr_wan",
+      "bytes": 104640,
+      "sha256": "7e6992f3a3d949f144b0b9c80528d0781e2e1c7a3d74a259443badd92c5af8df"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/npu_data.bin",
+      "bytes": 2940,
+      "sha256": "11013d492120f406586413bad2689305f2713da2f0ebdde21feaf03fc93b0e3a"
+    },
+    {
+      "label": "ct66A",
+      "path": "userfs/npu_rv32.bin",
+      "bytes": 98260,
+      "sha256": "d74aa2f81214fda24725529a6000bb05c22c2da6f40dfd63f0c20ef067db08af"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/libapi_lib_ppe.so.1.0.0",
+      "bytes": 34552,
+      "sha256": "568818a54e28c18ec3ed03a490a0c83159f704d87e130bd57b7d484665573ed1"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/libapi_lib_qdmamgr.so.1.0.0",
+      "bytes": 34552,
+      "sha256": "287e665d5b92e889483d915f89e8b4e1653f6d181885fdfa83f20b1ecef880e2"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/8811_bbu_api.ko",
+      "bytes": 134120,
+      "sha256": "e4513e09a3376ecd259f894ab0563df4b652be42587524141696b9e54d631a0f"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/air_en8811h.ko",
+      "bytes": 24384,
+      "sha256": "386e9945526bc194986ad1a8dbe940c090e3125ea22efb0f14aaca985775c354"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/en7572.ko",
+      "bytes": 85480,
+      "sha256": "1c7a42be490686d55ff4dad196c4c8d0e9a61a7d601b5ec88f0513b76af16f1c"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/hw_nat.ko",
+      "bytes": 951496,
+      "sha256": "377b38d076ad791a7a64c260c917f9e820c6ffde1ac1675f88e8cb272a8fc911"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/npu.ko",
+      "bytes": 10968,
+      "sha256": "1f8f2e2a7eab33197b24204e4c4ea45aa952cabf10f331337bb6c8bc237a079d"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/qdma_lan.ko",
+      "bytes": 477152,
+      "sha256": "50ab18c47a0538256ae07a159cd4879895da5d4ae8f69928289a8af57fe58891"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/qdma_wan.ko",
+      "bytes": 433424,
+      "sha256": "30dc66e2f17b80921d2aa6413c254e3d3e0cc810698fe83415f954662f87af62"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/xpon.ko",
+      "bytes": 1108088,
+      "sha256": "e7927eef31e82cc790c026da68214f5a9e2e253c88adeb6ee69dca5f8f37747b"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/xpon_10g.ko",
+      "bytes": 1198048,
+      "sha256": "2e27c6f4d542ef842bbda917d6b1abf0e992bf99f4242128898e97256729dca1"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/xpon_int.ko",
+      "bytes": 48088,
+      "sha256": "782775e78eeb51ca489b189b39938e87615df70fb1cc13ff06e8c9c7c15ea0c1"
+    },
+    {
+      "label": "ct66B",
+      "path": "lib/modules/xponmap.ko",
+      "bytes": 91464,
+      "sha256": "acbf7b1fa5491ad594cd2c55e892ae80aa88cc8c3058dd51100862456555c5b3"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/bin/hw_nat",
+      "bytes": 26512,
+      "sha256": "08d3f5746500fb2998fbd6fdd69e33a820b53bf3f49e64aaa040d99d083c3fd2"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/bin/npu_bridge_cmd",
+      "bytes": 19312,
+      "sha256": "140266313f26cfb10dce1b1377f950ed10d97fb856209406cad0e45825530849"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/bin/ppemgr",
+      "bytes": 53696,
+      "sha256": "85639285ff3eb8af18fd29ead827499440ea4e6209649b1aceada4bcbf9ba83f"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/bin/qdmamgr_lan",
+      "bytes": 104624,
+      "sha256": "84fdc357b1c26815fdf34001fd2407db0b5d36e0806d123e0af8aaf1f9407787"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/bin/qdmamgr_wan",
+      "bytes": 104640,
+      "sha256": "7e6992f3a3d949f144b0b9c80528d0781e2e1c7a3d74a259443badd92c5af8df"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/npu_data.bin",
+      "bytes": 2940,
+      "sha256": "11013d492120f406586413bad2689305f2713da2f0ebdde21feaf03fc93b0e3a"
+    },
+    {
+      "label": "ct66B",
+      "path": "userfs/npu_rv32.bin",
+      "bytes": 98260,
+      "sha256": "d74aa2f81214fda24725529a6000bb05c22c2da6f40dfd63f0c20ef067db08af"
+    }
+  ]
+}

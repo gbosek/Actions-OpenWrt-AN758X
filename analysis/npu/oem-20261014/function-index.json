@@ -1,0 +1,258 @@
+[
+  {
+    "sample": "xg54",
+    "function": "GetPppoeSid",
+    "evidence_id": "ev_b929e459f5362cf7522591100d3273dd5002236196e45d2047bde5ad6a81f34b",
+    "address": "0x13b7e0",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x13b7e0",
+          "end": "0x13b8ef"
+        }
+      ],
+      "total_bytes": 272,
+      "span_bytes": 272,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/GetPppoeSid.json"
+  },
+  {
+    "sample": "xg54",
+    "function": "PpeFillInL2Info",
+    "evidence_id": "ev_dc0e201d00adcda58b9f6ad26a321cbdfcbe99ee99fbb7d4dbbeea1f06ff64b3",
+    "address": "0x13e9a0",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x13e9a0",
+          "end": "0x13ed8f"
+        }
+      ],
+      "total_bytes": 1008,
+      "span_bytes": 1008,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/PpeFillInL2Info.json"
+  },
+  {
+    "sample": "xg54",
+    "function": "PpeSetBindThreshold",
+    "evidence_id": "ev_6499d16ad74071b06e00d7582e16b9869ef83f8b7435a7eb7356b99674892a7b",
+    "address": "0x10fb00",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x10fb00",
+          "end": "0x10fb9b"
+        }
+      ],
+      "total_bytes": 156,
+      "span_bytes": 156,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/PpeSetBindThreshold.json"
+  },
+  {
+    "sample": "xg54",
+    "function": "PpeSetEntryBind",
+    "evidence_id": "ev_1285edda1b3b69d14649ebf4a280c488068061d017df55759c635cc50d1000a5",
+    "address": "0x143f24",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x143f24",
+          "end": "0x1441e7"
+        }
+      ],
+      "total_bytes": 708,
+      "span_bytes": 708,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/PpeSetEntryBind.json"
+  },
+  {
+    "sample": "xg54",
+    "function": "PpeTxHandler",
+    "evidence_id": "ev_6e94f5202810fa609bba9d05df230a643ead6d4eff24dc3f4fa7a55767546c2b",
+    "address": "0x145350",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x145350",
+          "end": "0x145c67"
+        }
+      ],
+      "total_bytes": 2328,
+      "span_bytes": 2328,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/PpeTxHandler.json"
+  },
+  {
+    "sample": "xg54",
+    "function": "ppe_check_start_to_bind",
+    "evidence_id": "ev_dbf3ba7345f5ee5933b7d7dc4b808eb7a17de7f48ccc932f199a3b6852f6951c",
+    "address": "0x144680",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x144680",
+          "end": "0x1447a7"
+        }
+      ],
+      "total_bytes": 296,
+      "span_bytes": 296,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "xg54/ppe_check_start_to_bind.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "GetPppoeSid",
+    "evidence_id": "ev_78e6217124125c623d868e035dd7129549b055d07093ea0deec49c8e1ccacb84",
+    "address": "0x14e510",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x14e510",
+          "end": "0x14e62b"
+        }
+      ],
+      "total_bytes": 284,
+      "span_bytes": 284,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/GetPppoeSid.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "PpeFillInL2Info",
+    "evidence_id": "ev_e42102b006916fb9080fdd742314b6aae556a9a61a1ccdee31df0f0094b2759e",
+    "address": "0x15275c",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x15275c",
+          "end": "0x152b8b"
+        }
+      ],
+      "total_bytes": 1072,
+      "span_bytes": 1072,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/PpeFillInL2Info.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "PpeSetBindThreshold",
+    "evidence_id": "ev_3bc6ffdca3e52659e6b676b3904fefc801b908ae38a7ae4f0e77ba4e2db93532",
+    "address": "0x115bdc",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x115bdc",
+          "end": "0x115c83"
+        }
+      ],
+      "total_bytes": 168,
+      "span_bytes": 168,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/PpeSetBindThreshold.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "PpeSetEntryBind",
+    "evidence_id": "ev_092e148adf60ecfcef877e38bde0cb27216db009b7e6d5f00f8056b848ce4a66",
+    "address": "0x159aa4",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x159aa4",
+          "end": "0x159d1f"
+        }
+      ],
+      "total_bytes": 636,
+      "span_bytes": 636,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/PpeSetEntryBind.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "PpeTxHandler",
+    "evidence_id": "ev_47658ed465c7754cea4c0f2d048127a0ad7b5c9e324f603365a2143c60e430c0",
+    "address": "0x15b288",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x15b288",
+          "end": "0x15b603"
+        },
+        {
+          "start": "0x15b618",
+          "end": "0x15c3bb"
+        }
+      ],
+      "total_bytes": 4384,
+      "span_bytes": 4404,
+      "non_contiguous": true,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/PpeTxHandler.json"
+  },
+  {
+    "sample": "ct66B",
+    "function": "ppe_check_start_to_bind",
+    "evidence_id": "ev_bebdecac2a28370b6d85c17f4074e218e782248638e72a26af734c87121192fc",
+    "address": "0x15a244",
+    "body": {
+      "available": true,
+      "provenance": "ghidra-function-body-address-set",
+      "ranges": [
+        {
+          "start": "0x15a244",
+          "end": "0x15a3a7"
+        }
+      ],
+      "total_bytes": 356,
+      "span_bytes": 356,
+      "non_contiguous": false,
+      "contains_entry": true
+    },
+    "input_record": "ct66B/ppe_check_start_to_bind.json"
+  }
+]

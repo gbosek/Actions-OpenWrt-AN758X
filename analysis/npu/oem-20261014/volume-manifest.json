@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-14",
+  "volumes": [
+    {
+      "file": "6.6内核的5585F CT.zip.part1.rar",
+      "bytes": 20971520,
+      "sha256": "992af67cbeac43255ff33fa9cc3452f99be47b49a950b75f5288158515b517e8"
+    },
+    {
+      "file": "6.6内核的5585F CT.zip.part2.rar",
+      "bytes": 20971520,
+      "sha256": "1068a90ea47b4cd7fc796eba8d0a3a74fd8d5f8dc7fb208a4e23a6148400c65a"
+    },
+    {
+      "file": "6.6内核的5585F CT.zip.part3.rar",
+      "bytes": 20971520,
+      "sha256": "af522028a09cf63dcc963bc6eb10d4f45302fe7b418c02492c7ecc443876eae6"
+    },
+    {
+      "file": "6.6内核的5585F CT.zip.part4.rar",
+      "bytes": 20971520,
+      "sha256": "eb29634aa67b8876ec96ea514db452150bb7c2f3601c6d57763c8a45d70a4e76"
+    },
+    {
+      "file": "6.6内核的5585F CT.zip.part5.rar",
+      "bytes": 6017662,
+      "sha256": "3edae2de8e239d26cda907fcf4e1f647b90380413bf3af807e80a88e14e702ee"
+    },
+    {
+      "file": "XG2010G_origin_bak.part1.rar",
+      "bytes": 20971520,
+      "sha256": "18f87fca771cb1db348908be94bfe93d39b461f6fc2b87f9ba230e60e2c3c977"
+    },
+    {
+      "file": "XG2010G_origin_bak.part2.rar",
+      "bytes": 20971520,
+      "sha256": "43859453b6c77374d4ecc7abe72ebf008a0bc53ebdca549eebb70e931cf3ad78"
+    },
+    {
+      "file": "XG2010G_origin_bak.part3.rar",
+      "bytes": 20971520,
+      "sha256": "ddd9edb053e17875dc1dd1ff472fb06c759fb6833d959d4cc188a53aba50630c"
+    },
+    {
+      "file": "XG2010G_origin_bak.part4.rar",
+      "bytes": 7904298,
+      "sha256": "cbf56accc00bb5fc9611dd2ce0111e4ecbb7117447d24ebf0965449289a8f8a4"
+    }
+  ],
+  "first_volume_header_preview": [
+    {
+      "volume": "6.6内核的5585F CT.zip.part1.rar",
+      "entries": [
+        {
+          "path": "6.6内核的5585F CT.zip",
+          "bytes": 89902740
+        }
+      ]
+    },
+    {
+      "volume": "XG2010G_origin_bak.part1.rar",
+      "entries": [
+        {
+          "path": "XG2010G_origin_bak.rar",
+          "bytes": 70818074
+        }
+      ]
+    }
+  ],
+  "missing_volumes": [],
+  "status": "Both complete outer multipart sets restored by official unrar e; both returned exit 0 and All OK. Inner archive parse succeeded.",
+  "restored_archives": [
+    {
+      "file": "6.6内核的5585F CT.zip",
+      "bytes": 89902740,
+      "sha256": "76569fbeae8cacc87f6aab6cee2e2b30c718e8ac082c3806aa27b77db8af22c0"
+    },
+    {
+      "file": "XG2010G_origin_bak.rar",
+      "bytes": 70818074,
+      "sha256": "1cbaca709ae411d41454ca6dcf23df1cb2c4aa6baf7655240c0d0d715098be0e"
+    }
+  ]
+}
