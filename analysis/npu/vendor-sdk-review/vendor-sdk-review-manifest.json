@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-13",
+  "sdk_archive_sha256": "e04f6ade0a152c967be8ee4a2bc6e947b2a2ec3a9181a4617fbfe364774dcb66",
+  "sdk_archive_bytes": 16754574,
+  "extracted_regular_files": 2391,
+  "extracted_regular_bytes": 85536181,
+  "report_sha256": "408fa9ca3086abcf07e224a73c6b24200af3622dc360e6774dd540ae435e7216",
+  "report_bytes": 28876,
+  "source_files": [
+    {
+      "file": "private/hw_nat/foe_fdb.h",
+      "bytes": 2789,
+      "sha256": "88d076f13e833d694d20d502825f8a6f6dce0dfd2c1b49877440c1c3f760994b"
+    },
+    {
+      "file": "private/hw_nat/foe_fdb_7581_64Byte.h",
+      "bytes": 53334,
+      "sha256": "56a1d22816c288684b6e2cd10bd81902a80126b3377c7e498346d60a953afd0c"
+    },
+    {
+      "file": "private/hw_nat/frame_engine.h",
+      "bytes": 36725,
+      "sha256": "4b330b1695798864d76cf664ae5f3fb60aa060c8c60a69f3ad7fe9673c5335e1"
+    },
+    {
+      "file": "private/hw_nat/hwnat_ioctl.c",
+      "bytes": 78596,
+      "sha256": "c2e478f0cb926c9b705e88142b47810d827c329f6e651ac12d5b8ee82a1434cc"
+    },
+    {
+      "file": "private/hw_nat/ra_nat_entry.c",
+      "bytes": 260201,
+      "sha256": "6f8fc4762811923eb5df375fc16290865eb9712b67a5c1eb9539b3dfc1bd2ae4"
+    },
+    {
+      "file": "private/hw_nat/ra_nat_offload.c",
+      "bytes": 212990,
+      "sha256": "42fd87ee9954f015e8debeb1697952afd1453706ecd9f22e4916a8f5bac48210"
+    },
+    {
+      "file": "private/npu/host/npu_rv32.c",
+      "bytes": 22094,
+      "sha256": "04a53c4fb5ca8c78b4f250777e140248fb494151b72a1a16505be057475e547a"
+    },
+    {
+      "file": "linux/include/global_inc/modules/npu/npuMboxAPI.h",
+      "bytes": 1523,
+      "sha256": "fb2ee64ef60e361e2781c12344b2021a82cb36c7530f541467fe3f0d2ebf9470"
+    },
+    {
+      "file": "private/lddla/en7572_init.c",
+      "bytes": 13279,
+      "sha256": "00d363f4960d415af0251d0b4f18ebdb8a333715e4d50a1a90e2b21cfe079fe0"
+    },
+    {
+      "file": "private/econet_bob/ecnt_ready_bob.c",
+      "bytes": 4343,
+      "sha256": "ed5ade31074b109a521a6cc086056b1d72783943d99860b20c75061b26a09f94"
+    },
+    {
+      "file": "private/xpon_10g/src/gpon/gpon_dev.c",
+      "bytes": 144917,
+      "sha256": "65932495b665340167104830913f163f7b6b0a76098ef1e6f6067a12cdf6d3c7"
+    },
+    {
+      "file": "linux/arch/arm64/mach-econet/ecnt_npu.c",
+      "bytes": 47154,
+      "sha256": "06f3dd66f97f9fb74033ccbf77084dca1d1462e7f66944b009f8432059bc8b42"
+    }
+  ],
+  "blocked_uploads": [
+    {
+      "file": "Airoha_Doc.7z",
+      "reason": "download_file: exceeds executor transfer limit of 32 MiB; original bytes unavailable; no archive listing or split performed"
+    },
+    {
+      "file": "6.6内核的5585F CT.zip",
+      "reason": "download_file: exceeds executor transfer limit of 32 MiB; original bytes unavailable; no archive listing or split performed"
+    },
+    {
+      "file": "XG2010G_origin_bak.rar",
+      "reason": "download_file: exceeds executor transfer limit of 32 MiB; original bytes unavailable; no archive listing or split performed"
+    }
+  ],
+  "host_functions_recovered": {
+    "boot_npu_all_cores": 298,
+    "copy_file_to_ram": 485,
+    "set_npu_needed_info": 716,
+    "host_notify_npuMbox": 940
+  },
+  "boundary": "The ARM64 SDK implementations are now present. Exact binary/source and build configuration correspondence to uploaded OEM firmwares has not been verified."
+}

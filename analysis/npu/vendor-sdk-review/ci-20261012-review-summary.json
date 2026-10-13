@@ -1,0 +1,26 @@
+{
+  "release_tag": "AIROHA-VIKINGYFY-MOSSDEF-MWAN4-owrt-26.10.12-21.18.28",
+  "kernel": "6.18.54",
+  "source_commit": "a38520034ee4bdd25dd6e88c4c59261f289ee17e",
+  "image_sha256": "0e2fe87f3c4952f94c14b4598531c204f882f17087243cd20f020b5a5d5dafc1",
+  "firmware": [
+    {
+      "file": "en7581_npu_rv32.bin",
+      "bytes": 120272,
+      "sha256": "6e7b9cb9769398d5c0a603d758626719ee83610e0dd2a5bc0b66258e2ad1057f"
+    },
+    {
+      "file": "en7581_npu_data.bin",
+      "bytes": 3100,
+      "sha256": "0e742e7bef0d8f4c1537d7c17de9b601274e42b18660dfde6deba81ac395c761"
+    }
+  ],
+  "manifest_presence": {
+    "bridger": null,
+    "tc-full": null,
+    "luci-app-airoha-npu": "2.0.0-r9",
+    "kmod-nf-flow": "6.18.54-r1",
+    "kmod-nft-offload": "6.18.54-r1",
+    "mwan4": "0.1.1-r7"
+  }
+}
