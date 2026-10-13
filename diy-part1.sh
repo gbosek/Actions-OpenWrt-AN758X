@@ -86,6 +86,17 @@ normalize_custom_luci_makefile() {
 # XG2010G MWAN4 + 系统菜单扩展
 # =========================================================
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  KERNEL_PATCH="931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch"
+  KERNEL_PATCH_SOURCE="$GITHUB_WORKSPACE/kernel-patches/airoha/$KERNEL_PATCH"
+  KERNEL_PATCH_DEST="target/linux/airoha/patches-6.18/$KERNEL_PATCH"
+  if [ ! -f "$KERNEL_PATCH_SOURCE" ]; then
+    echo "::error::缺少 Airoha PPE 补丁: $KERNEL_PATCH_SOURCE"
+    exit 1
+  fi
+  mkdir -p "$(dirname "$KERNEL_PATCH_DEST")"
+  cp "$KERNEL_PATCH_SOURCE" "$KERNEL_PATCH_DEST"
+  echo "✅ 已加入 Airoha PPE 补丁: $KERNEL_PATCH"
+
   clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
   clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1
   for p in mwan4 luci-app-mwan4; do
