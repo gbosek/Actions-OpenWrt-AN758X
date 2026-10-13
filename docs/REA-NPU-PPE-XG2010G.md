@@ -2,6 +2,8 @@
 
 日期：2026-10-13。状态：候选驱动与构建集成，两个内核版本的驱动对象编译通过，尚未完成新镜像实机验收。
 
+补充：[有线NPU版本比较、完整导出范围及选择结论](NPU-STATIC-COMPARISON.md)。XG2010G没有WiFi，`npu_wifi.ko`不用于适配。已纠正此前将GDM4写成PSE7的文档/诊断数字：当前两套6.18驱动中GDM4是PSE9，PSE7是CDM4；驱动代码按GDM4枚举编码，无需因此更改FOE逻辑。
+
 ## 目标与设备拓扑
 
 目标是让硬件能够表达的转发连接进入 PPE：WAN→LAN、LAN→WAN、LAN→LAN 和双 WAN。路由选择、连接建立及异常报文仍经过 Linux。硬件绑定后，同一连接的后续报文由 FE/PPE/NPU/QDMA 转发。
@@ -11,8 +13,8 @@
 | 物理接口 | 硬件连接 | PPE 的实际出口 | PPPoE 出口需要的内容 |
 | --- | --- | --- | --- |
 | PON / pon0 | GDM2 | PSE2；NBQ/CHANNEL 为 T-CONT 或 LLID | 独立 SID、对端 MAC、服务 VLAN、GEM/T-CONT |
-| LAN3 / EN8811H | GDM4、NBQ1、USB PCS、2500BASE-X | PSE7、NBQ1 | 独立 SID、对端 MAC、服务 VLAN |
-| LAN1 | GDM4、NBQ0 | PSE7、NBQ0 | 普通 LAN 转发 |
+| LAN3 / EN8811H | GDM4、NBQ1、USB PCS、2500BASE-X | PSE9、NBQ1 | 独立 SID、对端 MAC、服务 VLAN |
+| LAN1 | GDM4、NBQ0 | PSE9、NBQ0 | 普通 LAN 转发 |
 | LAN2 | GDM3、NBQ5 | PSE3、NBQ5 | 普通 LAN 转发 |
 
 LAN3 的逻辑 WAN 身份由 PPPoE、路由和 MWAN4 决定。芯片的 WAN selector 与 OpenWrt 的 WAN 接口数量没有一一对应关系。当前候选改动保留实际 GDM/NBQ 出口；没有引入尚未证实的第二个全局 WAN selector。
@@ -146,7 +148,7 @@ xg2010g-ppe-report 3 2 > /tmp/ppe-report.txt
 | 场景 | 需要观察的结果 |
 | --- | --- |
 | LAN→PON PPPoE | BND、`pppoe=1`、该线路 SID；实际 PSE2；GEM/T-CONT 与服务映射一致 |
-| LAN→LAN3 PPPoE | BND、`pppoe=1`、另一线路 SID；实际 PSE7/NBQ1 |
+| LAN→LAN3 PPPoE | BND、`pppoe=1`、另一线路 SID；实际 PSE9/NBQ1 |
 | 两条 WAN 的回程 | 对应原连接的反方向 BND，实际出口指向客户端 LAN；NAT 与会话信息对应 |
 | LAN1↔LAN2 等桥接单播 | bridger 请求进入硬件，实际流为 BND；端口 MIB 增长，VLAN 输出正确；native L2B 单流计数为 unavailable |
 | 两路同时使用 | 两组连接保留各自 SID 和出口；不能依据 MWAN 权重百分比推断实时硬件吞吐 |

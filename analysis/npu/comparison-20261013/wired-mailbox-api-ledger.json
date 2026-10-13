@@ -1,0 +1,353 @@
+{
+  "provider": "supplemental-direct-ghidra-and-original-data-words",
+  "scope": "Static callback table words and current analyzed entries; no execution verification.",
+  "source_ledger_sha256": "ad8a6ce03655d9e9ae58ec75cc3124242a2f624da2400cf4616e8b17fde6d714",
+  "selection": "Static tunnel, ppe, and ppe_sram_api table records only; XG2010G has no WiFi.",
+  "samples": [
+    {
+      "label": "54",
+      "data_sha256": "d59db24e7d97453a689144a94d3b10cfb873197dfcbea0cb1d279d38cced87b1",
+      "inventory_sha256": "bef3f88f56376881c5eead3b4b1a834030080a79d6ee73ae77bb270cdbac2b3e",
+      "tables": [
+        {
+          "kind": "tunnel",
+          "base": "0x3e900098",
+          "record_count": 7,
+          "records": [
+            {
+              "id": 0,
+              "pointer": "0x840088e6",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088e6",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 1,
+              "pointer": "0x840088f2",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088f2",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 2,
+              "pointer": "0x840088f6",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088f6",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 3,
+              "pointer": "0x840088fa",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088fa",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 4,
+              "pointer": "0x840088fe",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088fe",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 5,
+              "pointer": "0x840088ea",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088ea",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 6,
+              "pointer": "0x840088ee",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_840088ee",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "66",
+      "data_sha256": "11013d492120f406586413bad2689305f2713da2f0ebdde21feaf03fc93b0e3a",
+      "inventory_sha256": "bfdd7efeceb82cb2b9bd71550461f6d3f061305734d0848783cd35478ae1b3bc",
+      "tables": [
+        {
+          "kind": "tunnel",
+          "base": "0x3e900080",
+          "record_count": 8,
+          "records": [
+            {
+              "id": 0,
+              "pointer": "0x84003fae",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84003fae",
+              "body_bytes": 46,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 1,
+              "pointer": "0x84003faa",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_84003faa",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 2,
+              "pointer": "0x84003fdc",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84003fdc",
+              "body_bytes": 36,
+              "diagnostic_strings": [
+                "set vxlan mtu %d\\n"
+              ]
+            },
+            {
+              "id": 3,
+              "pointer": "0x84004000",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84004000",
+              "body_bytes": 116,
+              "diagnostic_strings": [
+                "invalid idx %d in %s,%d\\n",
+                "tunnel_mail_npu_store_srv6_hdr"
+              ]
+            },
+            {
+              "id": 4,
+              "pointer": "0x84004074",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84004074",
+              "body_bytes": 124,
+              "diagnostic_strings": [
+                "set srv6 my ipv6: %02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X\\n"
+              ]
+            },
+            {
+              "id": 5,
+              "pointer": "0x840040f0",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_840040f0",
+              "body_bytes": 48,
+              "diagnostic_strings": [
+                "set fragment mtu-%d: %d\\n"
+              ]
+            },
+            {
+              "id": 6,
+              "pointer": "0x84004144",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84004144",
+              "body_bytes": 20,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 7,
+              "pointer": "0x84004120",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_84004120",
+              "body_bytes": 36,
+              "diagnostic_strings": [
+                "map_info_base %x\\n"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "1456",
+      "data_sha256": "0e742e7bef0d8f4c1537d7c17de9b601274e42b18660dfde6deba81ac395c761",
+      "inventory_sha256": "968943db31d2c334529b55362af16c96085cad066d68e451e4383ce89ab7e3cd",
+      "tables": [
+        {
+          "kind": "tunnel",
+          "base": "0x3e9000f4",
+          "record_count": 8,
+          "records": [
+            {
+              "id": 0,
+              "pointer": "0x8400e6e0",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e6e0",
+              "body_bytes": 46,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 1,
+              "pointer": "0x8400e6dc",
+              "status": "success_stub",
+              "analyzer_name": "FUN_ram_8400e6dc",
+              "body_bytes": 4,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 2,
+              "pointer": "0x8400e70e",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e70e",
+              "body_bytes": 32,
+              "diagnostic_strings": [
+                "set vxlan mtu %d\\n"
+              ]
+            },
+            {
+              "id": 3,
+              "pointer": "0x8400e72e",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e72e",
+              "body_bytes": 116,
+              "diagnostic_strings": [
+                "invalid idx %d in %s,%d\\n",
+                "tunnel_mail_npu_store_srv6_hdr"
+              ]
+            },
+            {
+              "id": 4,
+              "pointer": "0x8400e7a2",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e7a2",
+              "body_bytes": 124,
+              "diagnostic_strings": [
+                "set srv6 my ipv6: %02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X:%02X%02X\\n"
+              ]
+            },
+            {
+              "id": 5,
+              "pointer": "0x8400e81e",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e81e",
+              "body_bytes": 48,
+              "diagnostic_strings": [
+                "set fragment mtu-%d: %d\\n"
+              ]
+            },
+            {
+              "id": 6,
+              "pointer": "0x8400e872",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e872",
+              "body_bytes": 20,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 7,
+              "pointer": "0x8400e84e",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400e84e",
+              "body_bytes": 36,
+              "diagnostic_strings": [
+                "map_info_base %x\\n"
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "ppe_sram_api",
+          "base": "0x3e9001d4",
+          "record_count": 4,
+          "records": [
+            {
+              "id": 0,
+              "pointer": "0x8400f262",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f262",
+              "body_bytes": 8,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 1,
+              "pointer": "0x8400f244",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f244",
+              "body_bytes": 8,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 2,
+              "pointer": "0x8400f082",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f082",
+              "body_bytes": 160,
+              "diagnostic_strings": [
+                "%s [ERROR] expected data_size is %d, now data_size is %d\\n",
+                "sram_set_entry_value"
+              ]
+            },
+            {
+              "id": 3,
+              "pointer": "0x8400efc6",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400efc6",
+              "body_bytes": 188,
+              "diagnostic_strings": [
+                "%s [ERROR] expected data_size is %d, now data_size is %d\\n",
+                "sram_set_entry_to_zero"
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "ppe",
+          "base": "0x3e9001e4",
+          "record_count": 5,
+          "records": [
+            {
+              "id": 0,
+              "pointer": "0x0",
+              "status": "null_callback",
+              "analyzer_name": null,
+              "body_bytes": null,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 1,
+              "pointer": "0x8400f132",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f132",
+              "body_bytes": 106,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 2,
+              "pointer": "0x8400f122",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f122",
+              "body_bytes": 16,
+              "diagnostic_strings": []
+            },
+            {
+              "id": 3,
+              "pointer": "0x8400f19c",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400f19c",
+              "body_bytes": 44,
+              "diagnostic_strings": [
+                "%s fail\\n",
+                "hwnat_mail_set_wait_hwnat_api"
+              ]
+            },
+            {
+              "id": 4,
+              "pointer": "0x8400ef86",
+              "status": "analyzed_function",
+              "analyzer_name": "FUN_ram_8400ef86",
+              "body_bytes": 64,
+              "diagnostic_strings": [
+                "table_base is 0x%x gPpeSramFoeNum is %d\\n"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

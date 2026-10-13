@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<language_definitions>
+  <language processor="RISCV" endian="little" size="32"
+            variant="NPU_OPAQUE_FC2" version="1.0"
+            slafile="npu-rv32-opaque.ilp32d.sla" processorspec="RV32.pspec"
+            id="RISCV:LE:32:NPU_OPAQUE_FC2">
+    <description>AN7581 analysis supplement; FC2 is an opaque vendor operation</description>
+    <compiler name="gcc" spec="riscv32-fp.cspec" id="gcc"/>
+  </language>
+</language_definitions>

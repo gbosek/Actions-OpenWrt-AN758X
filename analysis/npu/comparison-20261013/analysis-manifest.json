@@ -1,0 +1,71 @@
+{
+  "scope": "Static analysis exports, original target binaries excluded; no npu_wifi.ko analysis delivery.",
+  "original_sample_hashes": [
+    {
+      "label": "54",
+      "code_sha256": "5140747f2ce176ac6622522184651403594d4f5624bf2238543136a0f3bfe7b8",
+      "data_sha256": "d59db24e7d97453a689144a94d3b10cfb873197dfcbea0cb1d279d38cced87b1"
+    },
+    {
+      "label": "66",
+      "code_sha256": "d74aa2f81214fda24725529a6000bb05c22c2da6f40dfd63f0c20ef067db08af",
+      "data_sha256": "11013d492120f406586413bad2689305f2713da2f0ebdde21feaf03fc93b0e3a"
+    },
+    {
+      "label": "1456",
+      "code_sha256": "6e7b9cb9769398d5c0a603d758626719ee83610e0dd2a5bc0b66258e2ad1057f",
+      "data_sha256": "0e742e7bef0d8f4c1537d7c17de9b601274e42b18660dfde6deba81ac395c761"
+    }
+  ],
+  "exports": [
+    {
+      "file": "rv32-54-candidate-functions.json",
+      "sha256": "be284d052cbba66425f3ce2162801a9b07bbf25743f8e041867189419ae55c2f"
+    },
+    {
+      "file": "rv32-66-candidate-functions.json",
+      "sha256": "3f057f8d64166632fdf480956a9d0be397292aaadcbaedb0b621f4530913cb22"
+    },
+    {
+      "file": "rv32-1456-candidate-functions.json",
+      "sha256": "691045c90e4fe641d5768ddec801bfcbac8134d42ac43c5c48941e002373df58"
+    }
+  ],
+  "full_inventories": [
+    {
+      "file": "ghidra-54-inventory.json",
+      "bytes": 4397432,
+      "sha256": "bef3f88f56376881c5eead3b4b1a834030080a79d6ee73ae77bb270cdbac2b3e"
+    },
+    {
+      "file": "ghidra-66-inventory.json",
+      "bytes": 5015456,
+      "sha256": "bfdd7efeceb82cb2b9bd71550461f6d3f061305734d0848783cd35478ae1b3bc"
+    },
+    {
+      "file": "ghidra-1456-inventory.json",
+      "bytes": 6019994,
+      "sha256": "968943db31d2c334529b55362af16c96085cad066d68e451e4383ce89ab7e3cd"
+    },
+    {
+      "file": "ghidra-54-opaque-inventory.json",
+      "bytes": 4381500,
+      "sha256": "0a2ea2248ad7f306c39420ce9c6d38c7903c9088546c45168394c8bf68dbcf56"
+    },
+    {
+      "file": "ghidra-1456-opaque-inventory.json",
+      "bytes": 5967339,
+      "sha256": "21ff6df84049afa051b971200c4b49a1b1014ca45adb4a2a519630ae3bfa2d96"
+    },
+    {
+      "file": "ghidra-npu66-inventory.json",
+      "bytes": 88972,
+      "sha256": "70bebbce5043f40bd98995a4ae048ed843778d377c39c817daad7eebba4256a9"
+    },
+    {
+      "file": "mailbox-api-ledger.json",
+      "bytes": 47267,
+      "sha256": "ad8a6ce03655d9e9ae58ec75cc3124242a2f624da2400cf4616e8b17fde6d714"
+    }
+  ]
+}

@@ -129,5 +129,5 @@ echo 'TC replace success means a request was accepted; verify BND and the real e
 echo 'NPU stats may use pse_port=6; compare egress_pse_port/egress_nbq with netdev identities.'
 echo 'Native AN7581 L2B counters are unavailable; use bindings plus port hardware counters.'
 echo 'Test both directions on each WAN and verify new flows after WAN failover.'
-echo 'For PON + EN8811H LAN3: PON uses GDM2/PSE2; LAN3 uses GDM4/PSE7/NBQ1.'
+echo 'For PON + EN8811H LAN3: PON uses GDM2/PSE2; LAN3 uses GDM4/PSE9/NBQ1.'
 echo 'Match each egress pppoe_sid against /proc/net/pppoe; -1 means unavailable.'

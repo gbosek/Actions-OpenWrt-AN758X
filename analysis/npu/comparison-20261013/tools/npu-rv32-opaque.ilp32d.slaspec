@@ -1,0 +1,18 @@
+# Task-specific supplement: decode the carrier, keep vendor effects opaque.
+# This is not an execution emulator or a verified cache implementation.
+define endian=little;
+@define XLEN 4
+@define XLEN2 8
+@define FLEN 8
+@define CONTEXTLEN 4
+@define ADDRSIZE "32"
+@define FPSIZE "64"
+@include "riscv.reg.sinc"
+@include "riscv.table.sinc"
+@include "riscv.instr.sinc"
+@include "riscv.custom.sinc"
+
+define pcodeop npu_vendor_fc2;
+:npu_vendor_fc2 rs1 is op0006=0x73 & funct3=0 & op0711=0 & op2031=0xfc2 & rs1 {
+    npu_vendor_fc2(rs1);
+}
