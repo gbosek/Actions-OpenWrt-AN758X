@@ -193,51 +193,16 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   rm -rf "$LUCI_APP_TMP"
 fi
 
-# --- Airoha SoC 状态页（NPU 卸载 / CPU 频率 / Frame Engine / PPE 流表）---
-# 包名由目录名决定（luci.mk: PKG_NAME ?= $(notdir ${CURDIR})），
-# 目录必须是 luci-app-airoha-npu，否则 config 里的符号对不上。
-#
-# 源用 luanmuc/luci-app-airoha-npu（rchen14b 的 fork 改进版）：
-#   - 自带 po/zh_Hans 完整中文翻译（48 条）
-#   - 无 rchen14b 那种「根目录 + 同名子目录」重复结构，feed 索引不会中断
-#   - 修了 luci.mk 的 include 路径、加了独立 CPU 温度与 PLL 备用频率
+# --- Latest verified naoki66 Airoha source snapshot ---
 if [ "$ADD_AIROHA_NPU" = "true" ]; then
-  if ! clone https://github.com/luanmuc/luci-app-airoha-npu "$PKG_DIR/luci-app-airoha-npu" main; then
-    echo "::error::luci-app-airoha-npu 拉取失败，后续 defconfig 会静默剔除该包"
-    exit 1
-  fi
-
-  # 包名校验：Makefile 必须存在，否则 buildroot 扫不到这个包
-  if [ ! -f "$PKG_DIR/luci-app-airoha-npu/Makefile" ]; then
-    echo "::error::$PKG_DIR/luci-app-airoha-npu/Makefile 不存在，包无法被索引"
-    exit 1
-  fi
-  echo "   版本: $(grep -m1 '^PKG_VERSION' "$PKG_DIR/luci-app-airoha-npu/Makefile" 2>/dev/null)"
-
-  # =========================================================
-  # 关键：po 文件名必须改成 airoha-npu.po
-  #
-  # luci.mk 的 i18n install 规则：
-  #   po2lmo $(po) → $(LUCI_LIBRARYDIR)/i18n/$(basename $(notdir $(po))).$(lang).lmo
-  # 即 lmo 名取自 po 文件主名。而运行时按
-  #   LUCI_BASENAME = $(patsubst luci-app-%,%,luci-app-airoha-npu) = airoha-npu
-  # 查找 lmo。上游两份 po 都叫 luci-app-airoha-npu.po，
-  # 会生成 luci-app-airoha-npu.zh-cn.lmo，前端找不到 → 中文不生效。
-  # 官方 app 都是 basename 命名（firewall.po / package-manager.po / pon.po）。
-  # =========================================================
-  PODIR="$PKG_DIR/luci-app-airoha-npu/po"
-  if [ -f "$PODIR/zh_Hans/luci-app-airoha-npu.po" ]; then
-    # 确保 Language 头是 zh_Hans（上游头部缺该字段时 po2lmo 可能识别异常）
-    grep -q '^"Language:' "$PODIR/zh_Hans/luci-app-airoha-npu.po" || \
-      sed -i 's/^msgstr ""$/msgstr ""\n"Language: zh_Hans\\n"/' "$PODIR/zh_Hans/luci-app-airoha-npu.po"
-    mv "$PODIR/zh_Hans/luci-app-airoha-npu.po" "$PODIR/zh_Hans/airoha-npu.po"
-    echo "✅ po 改名: luci-app-airoha-npu.po -> airoha-npu.po（luci.mk 按 LUCI_BASENAME 查找）"
-  fi
-  if [ -f "$PODIR/es/luci-app-airoha-npu.po" ]; then
-    mv "$PODIR/es/luci-app-airoha-npu.po" "$PODIR/es/airoha-npu.po"
-  fi
-  echo "   po/zh_Hans: $(ls -1 "$PODIR/zh_Hans/" 2>/dev/null | tr '\n' ' ')"
+  cp -a "$GITHUB_WORKSPACE/Packages/luci-app-airoha-npu" "$PKG_DIR/"
+  normalize_custom_luci_makefile "$PKG_DIR/luci-app-airoha-npu/Makefile"
 fi
+if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  cp -a "$GITHUB_WORKSPACE/Packages/xg2010g-rps" "$PKG_DIR/"
+fi
+mkdir -p files/etc
+cp "$GITHUB_WORKSPACE/AIROHA-SOURCE.json" files/etc/airoha-build-source.json
 
 # --- passwall ---
 if [ "$ADD_PASSWALL" = "true" ]; then

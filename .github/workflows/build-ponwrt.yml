@@ -6,10 +6,10 @@ name: Build PonWrt (Airoha AN758x PON)
 # =========================================================
 env:
   BUILD_ROOT: /workdir
-  SOURCE: ${{ github.event.inputs.source || 'fork' }}
+  SOURCE: ${{ github.event.inputs.source || 'pbs05/ponwrt' }}
   # 唯一真相源：固件版本后缀的作者名（LuCI 概览页「固件版本」）
   FW_AUTHOR: 'qwe'
-  REPO_URL: ${{ github.event.inputs.source == 'pbs05/ponwrt' && 'https://github.com/pbs05/ponwrt' || 'https://github.com/qwe3017/ponwrt' }}
+  REPO_URL: ${{ (github.event.inputs.source || 'pbs05/ponwrt') == 'pbs05/ponwrt' && 'https://github.com/pbs05/ponwrt' || 'https://github.com/qwe3017/ponwrt' }}
   FEEDS_CONF: ''
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
@@ -22,13 +22,15 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REPO_BRANCH: ${{ github.event.inputs.branch || 'master' }}
   SOC: ${{ github.event.inputs.soc || 'an7581' }}
-  PROFILE: ${{ github.event.inputs.profile || 'fiberhome_hg5585f-ct' }}
+  PROFILE: ${{ github.event.inputs.profile || 'gemtek_xg2010g' }}
   BUILD_SCOPE: ${{ github.event.inputs.scope || 'firmware' }}
   IGNORE_CACHE: ${{ github.event.inputs.ignore_cache || 'false' }}
   FW_BUILD_TIME: ''                 # 留空 = 自动取构建时时间（Asia/Shanghai）
   FW_DESC_SUFFIX: ''               # 留空 = "· qwe · <构建时间>"；填了则完全自定义
 
 on:
+  push:
+    branches: [xg2010g-mwan4]
   repository_dispatch:
   workflow_dispatch:
     inputs:
@@ -55,7 +57,7 @@ on:
       profile:
         description: '机型 profile (all=全机型编译)'
         required: true
-        default: 'fiberhome_hg5585f-ct'
+        default: 'gemtek_xg2010g'
         type: choice
         options:
           - fiberhome_hg5585f-cu
@@ -225,6 +227,10 @@ jobs:
           cd "$BUILD_ROOT"
           df -hT "$PWD"
           git clone "$REPO_URL" -b "$REPO_BRANCH" --single-branch --depth=1 openwrt
+          if [ "$SOURCE" = 'pbs05/ponwrt' ] && [ "$REPO_BRANCH" = 'master' ]; then
+            git -C openwrt fetch --depth=1 origin a57faf93c6c3638ba3651690228aabaa51d3f235
+            git -C openwrt checkout --detach a57faf93c6c3638ba3651690228aabaa51d3f235
+          fi
           ln -sf "$BUILD_ROOT/openwrt" "$GITHUB_WORKSPACE/openwrt"
 
           # 输入项为空时回退到 workflow 级默认值，确保 diy-part2.sh 拿到的
@@ -403,7 +409,7 @@ jobs:
           # XG2010G 的 MWAN4 与截图中的系统菜单项必须进入最终固件。
           if [ "${PROFILE}" = "gemtek_xg2010g" ]; then
             MENU_MISS=""
-            for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn \
+            for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn xg2010g-rps luci-i18n-airoha-npu-zh-cn \
                      luci-app-aurora-config luci-theme-aurora \
                      luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
                      block-mount ttyd luci-app-ttyd; do
@@ -731,6 +737,10 @@ jobs:
           fi
 
           df -hT /
+          if [ "$PROFILE" = 'gemtek_xg2010g' ]; then
+            python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
+            python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
+          fi
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
 
@@ -762,6 +772,7 @@ jobs:
         if: env.UPLOAD_FIRMWARE == 'true' && steps.compile.outputs.status == 'success'
         run: |
           cd "$BUILD_ROOT"/openwrt/bin/targets/*/*
+          cp "$GITHUB_WORKSPACE/AIROHA-SOURCE.json" AIROHA-SOURCE.json
           rm -rf packages
           echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
           echo "status=success" >> "$GITHUB_OUTPUT"
@@ -813,6 +824,7 @@ jobs:
             echo '```'
             echo ""
             echo "---"
+            echo "Airoha 来源：naoki66/luci-app-airoha@323539c；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；CPU0–CPU3 独立使用率；RPS 重启恢复。"
             echo "> 本 Release 为滚动发布页，仅保留最新一次编译产物。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

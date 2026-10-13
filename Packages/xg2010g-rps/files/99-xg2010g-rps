@@ -1,0 +1,19 @@
+#!/bin/sh
+IFS= read -r board < /tmp/sysinfo/board_name 2>/dev/null || exit 0
+[ "$board" = "gemtek,xg2010g" ] || exit 0
+uci -q get 'network.@globals[0]' >/dev/null || uci add network globals >/dev/null
+# Preserve a configured off/single-CPU mode during sysupgrade.
+uci -q get 'network.@globals[0].packet_steering' >/dev/null ||
+	uci set 'network.@globals[0].packet_steering=2'
+uci -q get 'network.@globals[0].steering_flows' >/dev/null ||
+	uci set 'network.@globals[0].steering_flows=4096'
+uci commit network
+/etc/init.d/packet_steering enable
+# Migrate the package's old once-per-minute guard, keeping other cron jobs.
+if [ -f /etc/crontabs/root ]; then
+	sed -i '\@^\* \* \* \* \* /usr/bin/rps-guard.sh$@d' /etc/crontabs/root
+	/etc/init.d/cron reload
+fi
+/etc/init.d/xg2010g-rps enable
+/etc/init.d/xg2010g-rps start
+exit 0

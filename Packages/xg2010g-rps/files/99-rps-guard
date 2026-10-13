@@ -1,0 +1,5 @@
+#!/bin/sh
+# Run after the driver has initialized receive queues.
+case "$ACTION" in
+	ifup|ifupdate) (sleep 2; /usr/bin/rps-guard.sh) >/dev/null 2>&1 & ;;
+esac

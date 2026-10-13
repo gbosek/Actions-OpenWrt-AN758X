@@ -189,23 +189,9 @@ if [ -f .config ]; then
 fi
 
 # ---------------------------------------------------------
-# 5. 概览页「CPU 使用率（%）」行：显示 USR/SYS + 每核明细
-#
-#    ImmortalWrt 的 luci 把这一行的值写成
-#      luci.getCPUUsage → popen("top -n1 | awk '/^CPU/ {printf(\"%d%\", 100 - $8)}'")
-#    只有一个总占用率。这里把它改指到 files/sbin/cpuusage（rootfs 覆盖，
-#    已由 workflow 第 6 步拷进源码树的 files/），前端 10_system.js 与 ACL
-#    都不用动。
-#
-#    脚本负责判断、打补丁与自检，找不到目标只 warning 不中断编译 ——
-#    这是纯显示层的东西，不该让它把一次几小时的构建搞挂。
-# ---------------------------------------------------------
+# 5. Overview RPC and renderer must both show all four cores.
 PATCH_CPUUSAGE="$(dirname "$0")/scripts/patch-luci-cpuusage.sh"
-if [ -f "$PATCH_CPUUSAGE" ]; then
-  PONWRT_DIR=. bash "$PATCH_CPUUSAGE" || true
-else
-  echo "::warning::未找到 $PATCH_CPUUSAGE，跳过概览页 CPU 使用率行定制"
-fi
+PONWRT_DIR=. bash "$PATCH_CPUUSAGE" || exit 1
 
 [ -z "$FW_BUILD_TIME" ] && FW_BUILD_TIME="$(TZ="${TZ:-Asia/Shanghai}" date '+%Y-%m-%d %H:%M')"
 
