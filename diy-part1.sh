@@ -302,7 +302,12 @@ for p in luci-app-natmode luci-app-pon-status; do
 done
 
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  for p in mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora \
+  if [ "$MWAN_STACK" = "mwan3-nft" ]; then
+    MWAN_REQUIRED="mwan3 luci-app-mwan3"
+  else
+    MWAN_REQUIRED="mwan4 luci-app-mwan4"
+  fi
+  for p in $MWAN_REQUIRED luci-app-aurora-config luci-theme-aurora \
            luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp; do
     if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
       echo "::error::$p 未拉到，XG2010G 配置中的 =y 会被 defconfig 剔除"
