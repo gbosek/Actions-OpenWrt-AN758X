@@ -86,28 +86,7 @@ normalize_custom_luci_makefile() {
 # XG2010G MWAN4 + 系统菜单扩展
 # =========================================================
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  KERNEL_PATCH="931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch"
-  KERNEL_PATCH_SOURCE="$GITHUB_WORKSPACE/kernel-patches/airoha/$KERNEL_PATCH"
-  KERNEL_PATCH_DEST="target/linux/airoha/patches-6.18/$KERNEL_PATCH"
-  if [ ! -f "$KERNEL_PATCH_SOURCE" ]; then
-    echo "::error::缺少 Airoha PPE 补丁: $KERNEL_PATCH_SOURCE"
-    exit 1
-  fi
-  mkdir -p "$(dirname "$KERNEL_PATCH_DEST")"
-  cp "$KERNEL_PATCH_SOURCE" "$KERNEL_PATCH_DEST"
-  echo "✅ 已加入 Airoha PPE 补丁: $KERNEL_PATCH"
-
-  KERNEL_CONFIG="target/linux/airoha/an7581/config-6.18"
-  if [ ! -f "$KERNEL_CONFIG" ]; then
-    echo "::error::找不到 AN7581 内核配置: $KERNEL_CONFIG"
-    exit 1
-  fi
-  if grep -q '^# CONFIG_NET_AIROHA_FLOW_STATS is not set$' "$KERNEL_CONFIG"; then
-    sed -i 's/^# CONFIG_NET_AIROHA_FLOW_STATS is not set$/CONFIG_NET_AIROHA_FLOW_STATS=y/' "$KERNEL_CONFIG"
-  elif ! grep -q '^CONFIG_NET_AIROHA_FLOW_STATS=y$' "$KERNEL_CONFIG"; then
-    echo 'CONFIG_NET_AIROHA_FLOW_STATS=y' >> "$KERNEL_CONFIG"
-  fi
-  echo "✅ 已启用 AN7581 Airoha PPE flow stats，以使用补丁中的 NPU 拒绝回退逻辑"
+  python3 "$GITHUB_WORKSPACE/scripts/apply-ppe-kernel.py" . || exit 1
 
   clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
   clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1

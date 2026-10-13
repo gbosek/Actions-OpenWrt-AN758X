@@ -1,0 +1,286 @@
+From: XG2010G PPE integration
+Subject: [PATCH] net: airoha: expose setup errors and effective FOE egress
+
+Expose optional statistics capability, initialization errors, TC replace
+results and GDM/NBQ/QDMA identities through read-only PPE debugfs. TC
+request success is not proof that a hardware FOE has reached BIND.
+
+Decode the original destination saved in the meter field when flow stats
+redirect a routed entry to the NPU. Report unavailable counters explicitly
+for native AN7581 L2B and firmware statistics fallback.
+
+---
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -715,6 +715,13 @@
+ 	void *foe;
+ 	dma_addr_t foe_dma;
+ 	bool flow_stats_cap;
++	/* Control-plane diagnostics, serialized by flow_offload_mutex. */
++	u32 setup_attempts;
++	int setup_error;
++	int flow_stats_error;
++	u64 tc_replace_success;
++	u64 tc_replace_failed;
++	int tc_replace_error;
+ 
+ 	struct rhashtable l2_flows;
+ 
+@@ -851,7 +858,7 @@
+ u32 airoha_ppe_get_total_num_entries(struct airoha_ppe *ppe);
+ struct airoha_foe_entry *airoha_ppe_foe_get_entry(struct airoha_ppe *ppe,
+ 						  u32 hash);
+-void airoha_ppe_foe_entry_get_stats(struct airoha_ppe *ppe, u32 hash,
++bool airoha_ppe_foe_entry_get_stats(struct airoha_ppe *ppe, u32 hash,
+ 				    struct airoha_foe_stats64 *stats);
+ 
+ #ifdef CONFIG_DEBUG_FS
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -1487,35 +1487,36 @@
+ 	return 0;
+ }
+ 
+-void airoha_ppe_foe_entry_get_stats(struct airoha_ppe *ppe, u32 hash,
++bool airoha_ppe_foe_entry_get_stats(struct airoha_ppe *ppe, u32 hash,
+ 				    struct airoha_foe_stats64 *stats)
+ {
+ 	struct airoha_eth *eth = ppe->eth;
+ 	int ppe_num_stats_entries;
+ 	struct airoha_npu *npu;
+ 	struct airoha_foe_entry *hwe;
++	bool available = false;
+ 	u32 index;
+ 
+ 	hwe = ppe->foe + hash * sizeof(*hwe);
+ 	if (airoha_is_7581(eth) &&
+ 	    FIELD_GET(AIROHA_FOE_IB1_BIND_PACKET_TYPE, READ_ONCE(hwe->ib1)) ==
+ 	    PPE_PKT_TYPE_BRIDGE)
+-		return;
++		return false;
+ 
+ 	ppe_num_stats_entries = airoha_ppe_get_total_num_stats_entries(ppe);
+ 	if (ppe_num_stats_entries < 0)
+-		return;
++		return false;
+ 
+ 	if (airoha_ppe_foe_get_flow_stats_index(ppe, hash, &index))
+-		return;
++		return false;
+ 
+ 	if (index >= ppe_num_stats_entries)
+-		return;
++		return false;
+ 
+ 	rcu_read_lock();
+ 
+ 	npu = rcu_dereference(eth->npu);
+-	if (npu) {
++	if (npu && npu->stats) {
+ 		u64 packets = ppe->foe_stats[index].packets;
+ 		u64 bytes = ppe->foe_stats[index].bytes;
+ 		struct airoha_foe_stats npu_stats;
+@@ -1524,9 +1525,11 @@
+ 			      sizeof(*npu->stats));
+ 		stats->packets = packets << 32 | npu_stats.packets;
+ 		stats->bytes = bytes << 32 | npu_stats.bytes;
++		available = true;
+ 	}
+ 
+ 	rcu_read_unlock();
++	return available;
+ }
+ 
+ static int airoha_ppe_flow_offload_stats(struct airoha_eth *eth,
+@@ -1631,8 +1634,12 @@
+ 	struct airoha_ppe *ppe = eth->ppe;
+ 	int err, ppe_num_stats_entries;
+ 
+-	if (IS_ERR(npu))
+-		return PTR_ERR(npu);
++	ppe->setup_attempts++;
++	ppe->setup_error = 0;
++	if (IS_ERR(npu)) {
++		ppe->setup_error = PTR_ERR(npu);
++		return ppe->setup_error;
++	}
+ 
+ 	err = npu->ops.ppe_init(npu);
+ 	if (err)
+@@ -1647,6 +1654,7 @@
+ 	if (ppe_num_stats_entries > 0) {
+ 		err = npu->ops.ppe_init_stats(npu, ppe->foe_stats_dma,
+ 					      ppe_num_stats_entries);
++		ppe->flow_stats_error = err;
+ 		if (err) {
+ 			dev_warn(eth->dev, "NPU refused flow stats (%d)\n",
+ 				 err);
+@@ -1663,6 +1671,7 @@
+ 	return 0;
+ 
+ error_npu_put:
++	ppe->setup_error = err;
+ 	airoha_npu_put(npu);
+ 
+ 	return err;
+@@ -1672,6 +1681,7 @@
+ {
+ 	struct airoha_ppe *ppe = dev->priv;
+ 	struct airoha_eth *eth = ppe->eth;
++	struct flow_cls_offload *f = type_data;
+ 	int err = 0;
+ 
+ 	/* Netfilter flowtable can try to offload flower rules while not all
+@@ -1687,6 +1697,13 @@
+ 		err = airoha_ppe_offload_setup(eth);
+ 	if (!err)
+ 		err = airoha_ppe_flow_offload_cmd(eth, type_data);
++	if (f->command == FLOW_CLS_REPLACE) {
++		ppe->tc_replace_error = err;
++		if (err)
++			ppe->tc_replace_failed++;
++		else
++			ppe->tc_replace_success++;
++	}
+ 
+ 	mutex_unlock(&flow_offload_mutex);
+ 
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -5,6 +5,8 @@
+  */
+ 
+ #include "airoha_regs.h"
++#include <linux/rtnetlink.h>
++
+ #include "airoha_eth.h"
+ 
+ static void airoha_debugfs_ppe_print_tuple(struct seq_file *m,
+@@ -67,8 +69,10 @@
+ 		struct airoha_foe_stats64 stats = {};
+ 		unsigned char h_dest[ETH_ALEN];
+ 		struct airoha_foe_entry *hwe;
+-		u32 type, state, ib2, data;
++		u32 type, state, ib2, data, meter = 0, egress_ib2;
++		bool stats_available;
+ 		bool ipv6 = false;
++		int pppoe_sid = -1;
+ 
+ 		hwe = airoha_ppe_foe_get_entry(ppe, i);
+ 		if (!hwe)
+@@ -148,16 +152,34 @@
+ 		} else if (type >= PPE_PKT_TYPE_IPV6_ROUTE_3T) {
+ 			data = hwe->ipv6.data;
+ 			ib2 = hwe->ipv6.ib2;
++			meter = hwe->ipv6.meter;
++			pppoe_sid = FIELD_GET(AIROHA_FOE_MAC_PPPOE_ID,
++					      hwe->ipv6.l2.src_mac_hi);
+ 			l2 = &hwe->ipv6.l2;
+ 		} else {
+ 			data = hwe->ipv4.data;
+ 			ib2 = hwe->ipv4.ib2;
++			meter = hwe->ipv4.l2.meter;
++			pppoe_sid = hwe->ipv4.l2.pppoe_id;
+ 			l2 = &hwe->ipv4.l2.common;
+ 			*((__be16 *)&h_source[4]) =
+ 				cpu_to_be16(hwe->ipv4.l2.src_mac_lo);
+ 		}
+ 
+-		airoha_ppe_foe_entry_get_stats(ppe, i, &stats);
++		stats_available = airoha_ppe_foe_entry_get_stats(ppe, i, &stats);
++		egress_ib2 = ib2;
++		/* Routed statistics temporarily steer traffic through the NPU.
++		 * The original PSE/NBQ egress is saved in the meter field.
++		 */
++		if (stats_available &&
++		    FIELD_GET(AIROHA_FOE_IB2_PSE_PORT, ib2) == 6 &&
++		    (FIELD_GET(AIROHA_FOE_IB2_NBQ, ib2) == 5 ||
++		     FIELD_GET(AIROHA_FOE_IB2_NBQ, ib2) == 6))
++			egress_ib2 = FIELD_GET(AIROHA_FOE_TUNNEL_MTU, meter);
++		else
++			stats_available = false;
++		if (!(hwe->ib1 & AIROHA_FOE_IB1_BIND_PPPOE))
++			pppoe_sid = 0;
+ 
+ 		*((__be32 *)h_dest) = cpu_to_be32(l2->dest_mac_hi);
+ 		*((__be16 *)&h_dest[4]) = cpu_to_be16(l2->dest_mac_lo);
+@@ -165,10 +187,20 @@
+ 
+ 		seq_printf(m, " eth=%pM->%pM etype=%04x data=%08x"
+ 			      " vlan=%d,%d ib1=%08x ib2=%08x"
+-			      " packets=%llu bytes=%llu\n",
++			      " packets=%llu bytes=%llu stats=%s"
++			      " pse_port=%u nbq=%u egress_pse_port=%u egress_nbq=%u"
++			      " pppoe=%u pppoe_sid=%d channel=%u qid=%u\n",
+ 			   h_source, h_dest, l2->etype, data,
+ 			   l2->vlan1, l2->vlan2, hwe->ib1, ib2,
+-			   stats.packets, stats.bytes);
++			   stats.packets, stats.bytes,
++			   stats_available ? "available" : "unavailable",
++			   (u32)FIELD_GET(AIROHA_FOE_IB2_PSE_PORT, ib2),
++			   (u32)FIELD_GET(AIROHA_FOE_IB2_NBQ, ib2),
++			   (u32)FIELD_GET(AIROHA_FOE_IB2_PSE_PORT, egress_ib2),
++			   (u32)FIELD_GET(AIROHA_FOE_IB2_NBQ, egress_ib2),
++			   !!(hwe->ib1 & AIROHA_FOE_IB1_BIND_PPPOE), pppoe_sid,
++			   (u32)FIELD_GET(AIROHA_FOE_CHANNEL, data),
++			   (u32)FIELD_GET(AIROHA_FOE_QID, data));
+ 	}
+ 
+ 	return 0;
+@@ -192,6 +224,15 @@
+ 	struct airoha_eth *eth = ppe->eth;
+ 	unsigned int i;
+ 
++	rtnl_lock();
++	mutex_lock(&flow_offload_mutex);
++	seq_printf(m, "setup_attempts: %u\n", ppe->setup_attempts);
++	seq_printf(m, "setup_error: %d\n", ppe->setup_error);
++	seq_printf(m, "flow_stats_cap: %u\n", ppe->flow_stats_cap);
++	seq_printf(m, "flow_stats_error: %d\n", ppe->flow_stats_error);
++	seq_printf(m, "tc_replace_success: %llu\n", ppe->tc_replace_success);
++	seq_printf(m, "tc_replace_failed: %llu\n", ppe->tc_replace_failed);
++	seq_printf(m, "tc_replace_error: %d\n", ppe->tc_replace_error);
+ 	/* These registers select the CPU/QDMA path for GDM2 PPE misses.
+ 	 * PPPoE Discovery reaches this path before a FOE exists.
+ 	 */
+@@ -212,11 +253,38 @@
+ 
+ 		seq_printf(m, "ppe%u_flow_cfg: %08x\n", i,
+ 			   airoha_fe_rr(eth, REG_PPE_PPE_FLOW_CFG(i)));
++		seq_printf(m, "ppe%u_enabled: %u\n", i,
++			   airoha_ppe_is_enabled(eth, i));
+ 		seq_printf(m, "ppe%u_table_cfg: %08x\n", i,
+ 			   airoha_fe_rr(eth, REG_PPE_TB_CFG(i)));
+ 		seq_printf(m, "ppe%u_gdm2_default_cpu_port: %u\n", i,
+-			   FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
+-	}
++			   (u32)FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
++	}
++	for (i = 0; i < ARRAY_SIZE(eth->ports); i++) {
++		struct airoha_gdm_port *port = eth->ports[i];
++		unsigned int j;
++
++		if (!port)
++			continue;
++		for (j = 0; j < ARRAY_SIZE(port->devs); j++) {
++			struct airoha_gdm_dev *dev = port->devs[j];
++			struct airoha_qdma *qdma;
++			struct net_device *netdev;
++
++			if (!dev)
++				continue;
++			qdma = airoha_qdma_deref(dev);
++			netdev = netdev_from_priv(dev);
++			seq_printf(m, "netdev %s gdm=%u nbq=%u sport=%d qdma=%d hw_role=%s pon=%u\n",
++				   netdev->name, port->id, dev->nbq,
++				   eth->soc->ops.get_sport(port, dev->nbq),
++				   qdma ? (int)(qdma - &eth->qdma[0]) : -1,
++				   airoha_is_lan_gdm_dev(dev) ? "lan" : "wan",
++				   !!(dev->flags & AIROHA_PRIV_F_PON));
++		}
++	}
++	mutex_unlock(&flow_offload_mutex);
++	rtnl_unlock();
+ 
+ 	return 0;
+ }

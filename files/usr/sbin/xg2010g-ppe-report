@@ -1,0 +1,133 @@
+#!/bin/sh
+# Read-only, bounded diagnostics. Do not mount debugfs or change forwarding.
+set -u
+
+case "${1:-}" in
+    -h|--help)
+        echo 'Usage: xg2010g-ppe-report [samples: 1..5] [interval: 1..10 seconds]'
+        echo 'Run while traffic is active; redirect output to /tmp/ppe-report.txt.'
+        exit 0 ;;
+esac
+samples=${1:-3}
+interval=${2:-2}
+case "$samples" in 1|2|3|4|5) ;; *) echo 'samples must be 1..5' >&2; exit 2 ;; esac
+case "$interval" in 1|2|3|4|5|6|7|8|9|10) ;; *) echo 'interval must be 1..10' >&2; exit 2 ;; esac
+[ "$#" -le 2 ] || { echo 'Too many arguments' >&2; exit 2; }
+
+board=$(cat /tmp/sysinfo/board_name 2>/dev/null || true)
+compatible=$(tr '\000' '\n' </proc/device-tree/compatible 2>/dev/null || true)
+case "$board $compatible" in
+    *gemtek*xg2010g*) ;; *) echo 'This report is intended for Gemtek XG2010G.' >&2; exit 1 ;;
+esac
+section() { printf '\n== %s ==\n' "$1"; }
+bounded() {
+    if command -v "$1" >/dev/null 2>&1; then
+        "$@" 2>&1 | head -n 160
+    else
+        echo "$1: unavailable"
+    fi
+}
+
+section 'Device and firmware'
+date -u
+uname -a
+printf 'board: %s\n' "$board"
+for firmware in /lib/firmware/airoha/en7581_npu_rv32.bin /lib/firmware/airoha/en7581_npu_data.bin; do
+    if [ -r "$firmware" ]; then
+        sha256sum "$firmware"
+    else
+        echo "firmware unavailable: $firmware"
+    fi
+done
+section 'Configured flow offload'
+bounded uci -q get firewall.@defaults[0].flow_offloading
+bounded uci -q get firewall.@defaults[0].flow_offloading_hw
+if command -v nft >/dev/null 2>&1; then
+    nft -a list ruleset 2>/dev/null | awk '
+        /flowtable / {show=1; count=0}
+        show {print; count++}
+        show && /}/ {show=0}
+        count>20 {show=0}
+        /flow (add|offload)/ && !show {print}
+    ' | head -n 100
+else
+    echo 'nft unavailable'
+fi
+section 'Bridge manager'
+bounded pidof bridger
+bounded ubus -v list bridger
+section 'PPPoE sessions (SID, peer MAC and physical interface)'
+if [ -r /proc/net/pppoe ]; then
+    head -n 30 /proc/net/pppoe
+else
+    echo 'PPPoE session inventory unavailable'
+fi
+section 'Interfaces and policy routing'
+bounded ip -d link show
+bounded ip -4 rule show
+bounded ip -6 rule show
+bounded ip -4 route show table all
+bounded ip -6 route show table all
+bounded bridge vlan show
+
+sample=1
+while [ "$sample" -le "$samples" ]; do
+    section "Sample $sample/$samples"
+    date -u
+    if [ -r /sys/kernel/debug/ppe/config ]; then
+        head -n 160 /sys/kernel/debug/ppe/config
+    else
+        echo 'PPE config unavailable (debugfs unmounted, permissions, or driver missing).'
+    fi
+    if [ -r /sys/kernel/debug/ppe/bind ]; then
+        # Print a bounded sample, but count every entry in this read.
+        awk '
+            / BND / {bound++; if (bound <= 128) print}
+            END {printf "PPE bound_entries=%d; printed_at_most=128\n", bound}
+        ' /sys/kernel/debug/ppe/bind
+    else
+        echo 'PPE binding table unavailable; no binding conclusion is possible.'
+    fi
+    conntrack_file=/proc/net/nf_conntrack
+    if [ -r "$conntrack_file" ]; then
+        awk '
+            /\[HW_OFFLOAD\]/ {hw++; if (shown++ < 60) print}
+            /\[OFFLOAD\]/ {sw++}
+            END {printf "conntrack HW_OFFLOAD=%d OFFLOAD=%d\n", hw, sw}
+        ' "$conntrack_file"
+    else
+        echo 'conntrack status unavailable'
+    fi
+    section 'Interface counters (total port counts alone do not prove PPE activity)'
+    for netdev in /sys/class/net/*; do
+        [ -e "$netdev/device" ] || [ -d "$netdev/dsa" ] || continue
+        printf '%s' "${netdev##*/}"
+        for counter in rx_packets rx_bytes tx_packets tx_bytes rx_dropped tx_dropped; do
+            value=$(cat "$netdev/statistics/$counter" 2>/dev/null || echo unavailable)
+            printf ' %s=%s' "$counter" "$value"
+        done
+        printf '\n'
+        if command -v ethtool >/dev/null 2>&1; then
+            ethtool -S "${netdev##*/}" 2>/dev/null | head -n 70
+        fi
+    done
+    if [ "$sample" -lt "$samples" ]; then sleep "$interval"; fi
+    sample=$((sample + 1))
+done
+section 'TC bridge requests'
+if command -v tc >/dev/null 2>&1; then
+    for netdev in /sys/class/net/*; do
+        [ -e "$netdev/brport" ] || continue
+        printf '\n%s ingress:\n' "${netdev##*/}"
+        tc -s filter show dev "${netdev##*/}" ingress 2>&1 | head -n 100
+    done
+else
+    echo 'tc unavailable'
+fi
+section 'Interpretation'
+echo 'TC replace success means a request was accepted; verify BND and the real egress.'
+echo 'NPU stats may use pse_port=6; compare egress_pse_port/egress_nbq with netdev identities.'
+echo 'Native AN7581 L2B counters are unavailable; use bindings plus port hardware counters.'
+echo 'Test both directions on each WAN and verify new flows after WAN failover.'
+echo 'For PON + EN8811H LAN3: PON uses GDM2/PSE2; LAN3 uses GDM4/PSE7/NBQ1.'
+echo 'Match each egress pppoe_sid against /proc/net/pppoe; -1 means unavailable.'

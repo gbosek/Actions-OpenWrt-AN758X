@@ -1,0 +1,29 @@
+52 932-net-airoha-use-direct-egress-with-physical-GDM2.patch patching file drivers/net/ethernet/airoha/airoha_ppe.c
+
+52 933-net-airoha-expose-PPE-setup-and-effective-egress.patch patching file drivers/net/ethernet/airoha/airoha_eth.h
+patching file drivers/net/ethernet/airoha/airoha_ppe.c
+patching file drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+
+52 934-net-airoha-key-L2-flows-by-ingress-and-VLAN.patch patching file drivers/net/ethernet/airoha/airoha_eth.h
+patching file drivers/net/ethernet/airoha/airoha_ppe.c
+
+52 published queue matches the compiled driver source exactly
+54 932-net-airoha-use-direct-egress-with-physical-GDM2.patch patching file drivers/net/ethernet/airoha/airoha_ppe.c
+
+54 933-net-airoha-expose-PPE-setup-and-effective-egress.patch patching file drivers/net/ethernet/airoha/airoha_eth.h
+patching file drivers/net/ethernet/airoha/airoha_ppe.c
+Hunk #1 succeeded at 1488 (offset 1 line).
+Hunk #2 succeeded at 1526 (offset 1 line).
+Hunk #3 succeeded at 1635 (offset 1 line).
+Hunk #4 succeeded at 1655 (offset 1 line).
+Hunk #5 succeeded at 1672 (offset 1 line).
+Hunk #6 succeeded at 1682 (offset 1 line).
+Hunk #7 succeeded at 1698 (offset 1 line).
+patching file drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+
+54 934-net-airoha-key-L2-flows-by-ingress-and-VLAN.patch patching file drivers/net/ethernet/airoha/airoha_eth.h
+patching file drivers/net/ethernet/airoha/airoha_ppe.c
+Hunk #8 succeeded at 1441 (offset 1 line).
+Hunk #9 succeeded at 1555 (offset 1 line).
+
+54 published queue matches the compiled driver source exactly

@@ -283,6 +283,7 @@ jobs:
 
           # git 可能在 checkout 时丢掉 exec bit，rpcd 就执行不了 tempinfo
           [ -d files/sbin ] && chmod +x files/sbin/* 2>/dev/null
+          [ -d files/usr/sbin ] && chmod +x files/usr/sbin/* 2>/dev/null
           [ -d files/etc/uci-defaults ] && chmod +x files/etc/uci-defaults/* 2>/dev/null
 
           # =========================================================
@@ -406,7 +407,8 @@ jobs:
             for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn \
                      luci-app-aurora-config luci-theme-aurora \
                      luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
-                     block-mount ttyd luci-app-ttyd; do
+                     block-mount ttyd luci-app-ttyd bridger tc-full ethtool-full \
+                     kmod-nf-flow kmod-nft-offload airoha-en7581-npu-firmware; do
               if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
                 MENU_MISS="$MENU_MISS $p"
               fi
@@ -730,6 +732,11 @@ jobs:
             exit 1
           fi
 
+          if [ "$PROFILE" = "gemtek_xg2010g" ]; then
+            python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" \
+              --manifest-dir "$BUILD_ROOT/openwrt/bin/targets/airoha/an7581" \
+              --build-dir "$BUILD_ROOT/openwrt/build_dir"
+          fi
           df -hT /
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
