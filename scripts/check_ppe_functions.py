@@ -10,10 +10,13 @@ from pathlib import Path
 
 
 def find_kernel(build_dir):
-    kernels = [p.parent for p in build_dir.glob('target-*/linux-*/linux-6.18.*/.config')
-               if (p.parent / 'drivers/net/ethernet/airoha/airoha_ppe.c').is_file()]
+    # target/linux/prepare extracts and patches sources before kernel configure
+    # creates .config.  The post-build gate checks the actual configuration.
+    sources = build_dir.glob('target-*/linux-*/linux-6.18.*/drivers/net/ethernet/airoha/airoha_ppe.c')
+    kernels = sorted({p.parents[4] for p in sources
+                      if (p.parent / 'airoha_eth.h').is_file()})
     if len(kernels) != 1:
-        raise ValueError(f'Expected one prepared 6.18 kernel, found {len(kernels)}')
+        raise ValueError(f'Expected one prepared 6.18 kernel with PPE source/header in {build_dir}, found {len(kernels)}')
     return kernels[0]
 
 

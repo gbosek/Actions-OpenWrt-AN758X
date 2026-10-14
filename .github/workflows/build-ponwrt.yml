@@ -187,6 +187,7 @@ jobs:
           python3 Packages/xg2010g-rps/tests/rps-test.py
           python3 CPU/tests/network-defaults-test.py
           python3 CPU/tests/pon-selection-test.py
+          python3 tests/ppe-prepare-test.py
           node UI/tests/overview-test.js
 
       - name: Cancel superseded boost builds
