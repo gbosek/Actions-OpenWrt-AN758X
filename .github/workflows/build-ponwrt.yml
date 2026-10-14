@@ -285,7 +285,12 @@ jobs:
       - name: Load custom configuration
         run: |
           cd "$BUILD_ROOT/openwrt"
-          [ -e "$GITHUB_WORKSPACE/files" ] && cp -r "$GITHUB_WORKSPACE/files" files
+          # Copy contents, including when provenance has already created files/etc.
+          # Copying the directory itself would install /files/sbin/tempinfo.
+          if [ -d "$GITHUB_WORKSPACE/files" ]; then
+            mkdir -p files
+            cp -a "$GITHUB_WORKSPACE/files/." files/
+          fi
 
           # git 可能在 checkout 时丢掉 exec bit，rpcd 就执行不了 tempinfo
           [ -d files/sbin ] && chmod +x files/sbin/* 2>/dev/null

@@ -31,7 +31,15 @@ installed = roots[0]
 assert json.loads((installed / 'etc/airoha-build-source.json').read_text()) == meta
 assert b'cpucores' in (installed / 'usr/share/rpcd/ucode/luci').read_bytes()
 assert 'cpucores' in (installed / 'www/luci-static/resources/view/status/include/10_system.js').read_text()
+expected_temp = Path(__file__).resolve().parents[1] / 'files/sbin/tempinfo'
+temp = installed / 'sbin/tempinfo'
+assert temp.is_file() and temp.stat().st_mode & 0o111, 'Missing executable /sbin/tempinfo in rootfs'
+assert temp.read_bytes() == expected_temp.read_bytes(), 'Temperature script differs from the requested overlay'
+for label in ('CPU:', 'PON:', 'LAN1:', 'LAN2:'):
+    assert label in temp.read_text(), f'Missing temperature sensor: {label}'
+assert "popen('/sbin/tempinfo')" in (installed / 'usr/share/rpcd/ucode/luci').read_text(), 'RPC temperature path differs'
+assert not (installed / 'files/sbin/tempinfo').exists(), 'Nested /files overlay found in rootfs'
 for name in ('airoha-npu', 'xg2010g-rps'):
     path = installed / 'etc/init.d' / name
     assert path.is_file() and path.stat().st_mode & 0o111, f'Service not executable: {name}'
-print('Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores and RPS recovery verified in staged rootfs')
+print('Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
