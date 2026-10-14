@@ -276,8 +276,10 @@ jobs:
           if [ -n "${FEEDS_CONF}" ] && [ -e "$GITHUB_WORKSPACE/${FEEDS_CONF}" ]; then
             cp "$GITHUB_WORKSPACE/${FEEDS_CONF}" feeds.conf.default
           fi
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase feed
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase verify
 
       # =========================================================
       # 5. diy-part1.sh —— 拉取可选插件
@@ -377,14 +379,18 @@ jobs:
 
           # diffconfig(精简配置) 必须 defconfig 展开；保留末尾输出便于排查
           echo "===== make defconfig ====="
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase config
           make defconfig 2>&1 | tail -5
+          python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT" --config-only
 
           # =========================================================
           # 关键包校验：defconfig 会把 feeds 里不存在的包静默剔除，
           # 这里显式确认 PON 核心链路还在，否则编出来光口不通
           # =========================================================
           MISSING=""
-          for p in kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl luci-app-pon; do
+          PON_PACKAGES="luci-app-pon"
+          [ "$NPU_VARIANT" = naoki ] && PON_PACKAGES="luci-app-onu luci-i18n-onu-zh-cn airoha-pon-debug"
+          for p in kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl $PON_PACKAGES; do
             if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
               MISSING="$MISSING $p"
             fi
@@ -401,7 +407,9 @@ jobs:
           # 编完发现界面里没这个菜单时才察觉就晚了
           # =========================================================
           OPT_MISS=""
-          for p in luci-app-airoha-npu luci-app-pon-status luci-app-natmode; do
+          STATUS_PACKAGES="luci-app-airoha-npu luci-app-natmode"
+          [ "$NPU_VARIANT" != naoki ] && STATUS_PACKAGES="$STATUS_PACKAGES luci-app-pon-status"
+          for p in $STATUS_PACKAGES; do
             if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
               OPT_MISS="$OPT_MISS $p"
               echo "::warning::${p} 在 defconfig 后未启用"
@@ -756,6 +764,7 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-stock-cpu.py" .
+            python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT"
           fi
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
@@ -790,6 +799,9 @@ jobs:
           cd "$BUILD_ROOT"/openwrt/bin/targets/*/*
           cp "$BUILD_ROOT/openwrt/files/etc/airoha-build-source.json" AIROHA-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-BOOST-SOURCE.json" CPU-BOOST-SOURCE.json
+          if [ -f "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" ]; then
+            cp "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" PON-SOURCE.json
+          fi
           cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
           rm -rf packages
           echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"

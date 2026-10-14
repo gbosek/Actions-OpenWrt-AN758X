@@ -35,6 +35,10 @@ ADD_LUCI_APP=true       # qwe3017/luci-app 仓库（monorepo）
                         #   ├─ luci-app-natmode     NAT 类型三选一（网络 → NAT 类型）
                         #   └─ luci-app-pon-status  PON 光模块卡片（概览页「系统」下一格）
 
+# ONU replaces the old PON app/card only in the stock naoki image.
+LUCI_APP_PACKAGES="luci-app-natmode luci-app-pon-status"
+[ "${NPU_VARIANT:-naoki}" = naoki ] && LUCI_APP_PACKAGES="luci-app-natmode"
+
 # 这组扩展与 configs/gemtek_xg2010g.config 对应，只在 XG2010G 构建时拉取。
 ADD_XG2010G_EXTRAS=false
 [ "${PROFILE:-}" = "gemtek_xg2010g" ] && ADD_XG2010G_EXTRAS=true
@@ -180,7 +184,7 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
     exit 1
   fi
 
-  for p in luci-app-natmode luci-app-pon-status; do
+  for p in $LUCI_APP_PACKAGES; do
     if [ ! -f "$LUCI_APP_TMP/$p/Makefile" ]; then
       echo "::error::$LUCI_APP_TMP/$p/Makefile 不存在，包无法被索引"
       exit 1
@@ -256,7 +260,7 @@ if [ "$ADD_AIROHA_NPU" = "true" ] && [ ! -d "$PKG_DIR/luci-app-airoha-npu" ]; th
 fi
 
 # natmode / pon-status 来自 qwe3017/luci-app（config 里也是 =y）
-for p in luci-app-natmode luci-app-pon-status; do
+for p in $LUCI_APP_PACKAGES; do
   if [ "$ADD_LUCI_APP" = "true" ] && [ ! -d "$PKG_DIR/$p" ]; then
     echo "::error::$p 未拉到，config 里的 =y 会被 defconfig 剔除"
     exit 1
@@ -361,7 +365,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
   REQUIRED=""
   [ "$ADD_AIROHA_NPU" = "true" ] && REQUIRED="$REQUIRED luci-app-airoha-npu"
   if [ "$ADD_LUCI_APP" = "true" ]; then
-    REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
+    REQUIRED="$REQUIRED $LUCI_APP_PACKAGES"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
     REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"

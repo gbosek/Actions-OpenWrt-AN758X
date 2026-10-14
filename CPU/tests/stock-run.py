@@ -45,3 +45,4 @@ assert module.ready({'status':'completed','conclusion':'success'})
 assert module.choose_run('current',[{'id':1,'head_sha':'old','event':'push','path':'x.yml','status':'completed','conclusion':'success'}],'x.yml') is None
 assert not all(module.ready(r) for r in [{'status':'completed','conclusion':'success'}]*3+[{'status':'in_progress','conclusion':None}])
 print('PASS: unmodified stock DTS/driver queue, dynamic 500–1200 policy, rejected overclock settings, NPU variants and four-build dependency gate')
+subprocess.run(['python3',str(repo/'CPU/tests/pon-selection-test.py')],check=True)

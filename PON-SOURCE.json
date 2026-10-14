@@ -1,0 +1,18 @@
+{
+  "upstream": "naoki66/OpenWrt_ONU_CONFIG",
+  "commit": "35e2d676c31f2ff510960fb03a403599d292a535",
+  "scope": "Only stock XG2010G images using naoki NPU LuCI",
+  "packages": {
+    "luci-app-onu": "0.1.0-r25",
+    "airoha-pond": "0.3.0-r2",
+    "airoha-ponctl": "0.2.0-r1",
+    "airoha-pon-debug": "0.1.0-r3"
+  },
+  "replaces": [
+    "luci-app-pon",
+    "luci-app-iptv",
+    "luci-app-pon-status"
+  ],
+  "kernel_pon_drivers_changed": false,
+  "npu_upstream_changed": false
+}

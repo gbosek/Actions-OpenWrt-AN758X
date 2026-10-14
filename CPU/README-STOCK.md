@@ -5,3 +5,5 @@
 使用未修改的上游 BL31 CPU 驱动与 500–1200MHz OPP 表，默认 ondemand，最低500MHz、最高1200MHz。不应用兼容超频内核补丁或 DTS 补丁；luanmuc 直接 PLL 写入已移除，超频行也移除。
 
 stock-after-boost 工作流在四个超频分支最新构建全部成功之后才运行两个 NPU 变体。等待任务不提前编译固件；失败时保持阻塞，等待修复后的分支构建。等待最长约340分钟，超时不会启动不超频构建。
+
+naoki NPU 版本的 PON 用户态栈使用 naoki66/OpenWrt_ONU_CONFIG@35e2d67，包含 ONU 菜单、中文界面和配套后台。luanmuc 版本沿用原 PON 来源。来源与发布前检查见 PON-SOURCE.json。
