@@ -104,6 +104,6 @@ case "$1" in
     rpc.write_text(text)
     make = app / 'Makefile'
     s = make.read_text()
-    s, n = re.subn(r'^PKG_RELEASE:=(\d+)$', lambda m: 'PKG_RELEASE:='+m[1]+'.1', s, flags=re.M)
+    s, n = re.subn(r'^PKG_RELEASE:=(\d+)$', lambda m: 'PKG_RELEASE:='+str(int(m[1])*100+1), s, flags=re.M)
     if n != 1: raise ValueError('Cannot assign a distinct local package revision')
     make.write_text(s)
