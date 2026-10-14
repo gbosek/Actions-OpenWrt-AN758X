@@ -22,6 +22,7 @@ for flavor,version in [('pon','6.18.52'),('ci','6.18.54')]:
   make=root/'package/emortal/cpufreq/Makefile';make.parent.mkdir(parents=True)
   (make.parent/'files').mkdir()
   shutil.copyfile(fixtures/(flavor+'-cpufreq-Makefile'),make)
+  (make.parent/'files/cpufreq.config').write_text("config cpufreq 'cpufreq'\n")
   script=scripts/'apply-compatible-boost.py'
   subprocess.run(['python3',str(script),d],check=True,stdout=subprocess.DEVNULL)
   first=board.read_bytes()
@@ -30,6 +31,7 @@ for flavor,version in [('pon','6.18.52'),('ci','6.18.54')]:
   assert first.count(b'gemtek,1400mhz-boost')==1 and first.count(b'opp-1400000000')==1
   assert b'bootargs = "console=ttyS0,115200 earlycon cpufreq.default_governor=powersave";' in first
   assert make.read_text().count('$(1)/usr/libexec/xg2010g-cpu-policy')==1
+  subprocess.run(['python3',str(repo/'CPU/tests/cpufreq-install-test.py'),str(make)],check=True)
   # Do not auto-reverse an applied patch or conceal incompatible board source.
   incompatible=first.replace(b'cpufreq.default_governor=powersave',b'cpufreq.default_governor=performance')
   board.write_bytes(incompatible)

@@ -38,11 +38,11 @@ for name in ('cpufreq.init', 'cpufreq.uci', 'xg2010g-cpu-policy'):
     shutil.copyfile(repo / 'CPU/runtime' / name, pkg / 'files' / name)
     (pkg / 'files' / name).chmod(0o755)
 make = pkg / 'Makefile'
-text = re.sub(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=3', make.read_text(), flags=re.M)
+text = re.sub(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=4', make.read_text(), flags=re.M)
 if '$(1)/usr/libexec/xg2010g-cpu-policy' not in text:
-    marker = '\t$(INSTALL_BIN) $(CURDIR)/files/cpufreq.init $(1)/etc/init.d/'
-    assert marker in text, 'cpufreq install recipe changed'
-    text = text.replace(marker, marker + '\n\t$(INSTALL_DIR) $(1)/usr/libexec\n\t$(INSTALL_BIN) $(CURDIR)/files/xg2010g-cpu-policy $(1)/usr/libexec/xg2010g-cpu-policy')
+    marker = '\t$(INSTALL_BIN) $(CURDIR)/files/cpufreq.init $(1)/etc/init.d/cpufreq'
+    assert marker + '\n' in text, 'cpufreq install recipe changed'
+    text = text.replace(marker + '\n', marker + '\n\t$(INSTALL_DIR) $(1)/usr/libexec\n\t$(INSTALL_BIN) $(CURDIR)/files/xg2010g-cpu-policy $(1)/usr/libexec/xg2010g-cpu-policy\n', 1)
 make.write_text(text)
 (root / 'files/etc').mkdir(parents=True, exist_ok=True)
 shutil.copyfile(repo / 'CPU-BOOST-SOURCE.json', root / 'files/etc/xg2010g-cpu-boost-source.json')
