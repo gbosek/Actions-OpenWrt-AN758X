@@ -24,7 +24,8 @@ dest.parent.mkdir(parents=True, exist_ok=True)
 shutil.copytree(app, dest)
 from adapt_npu import adapt
 adapt(dest, a.variant)
-meta["local_adjustments"].extend(["Shared kernel cpufreq policy adapter", "Compatibility boost enumeration and capability fields", "Local package revision .1", "Direct user-space PLL writes removed"])
+meta["local_adjustments"].extend(["Shared kernel cpufreq policy adapter", "Compatibility boost enumeration and capability fields", "Local APK-compatible integer package revision", "Direct user-space PLL writes removed"])
+meta["local_package_release"] = {"naoki": 901, "luanmuc": 101}[a.variant]
 meta["cpu_boost_source"] = "CPU-BOOST-SOURCE.json"
 for file in (dest / 'root').rglob('*'):
     if file.is_file() and ('init.d' in file.parts or 'libexec' in file.parts) and file.suffix != '.awk':

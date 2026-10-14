@@ -15,7 +15,7 @@
 
 仓库脚本 `scripts/apply-compatible-boost.py`（OpenWRT-CI 为 `Scripts/`）需要完整的 OpenWrt 源码目录。它把 kernel-patches 中的 999 补丁装入 AN7581 的 patches-6.18，应用 source-patches 中的板级 DTS 补丁，并安装 CPU/runtime 的 cpufreq 服务。脚本拒绝混用旧 936/937 直接 PLL 补丁。
 
-naoki 和 luanmuc NPU 插件各编一份。选包脚本与 CPU 适配器把 CPU 控制交给同一服务，移除了 luanmuc 的直接 PLL 写寄存器路径；包版本增加 `.1` 以区分这些本地修改。两套插件均保留各自的 NPU 页面。
+naoki 和 luanmuc NPU 插件各编一份。选包脚本与 CPU 适配器把 CPU 控制交给同一服务，移除了 luanmuc 的直接 PLL 写寄存器路径；本地修订号使用 APK 兼容的整数（naoki 为 901、luanmuc 为 101），以区分上游与本地修改。两套插件均保留各自的 NPU 页面。
 
 ## 验证与限制
 

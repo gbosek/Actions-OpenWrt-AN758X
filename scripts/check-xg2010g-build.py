@@ -11,8 +11,8 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('naoki66/luci-app-airoha', '323539cf229bce52754fbb318135c9c56c514d2f', r'^2\.0\.0-(?:r)?9\.1'),
-    'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?1\.1'),
+    'naoki': ('naoki66/luci-app-airoha', '323539cf229bce52754fbb318135c9c56c514d2f', r'^2\.0\.0-(?:r)?901$'),
+    'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?101$'),
 }
 variant = meta['variant']
 upstream, commit, version_pattern = expected[variant]

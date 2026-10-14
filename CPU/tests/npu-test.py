@@ -8,7 +8,10 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-npu-test-') as d:
  for variant in ('naoki','luanmuc'):
   subprocess.run(['python3',str(scripts/'select-npu.py'),d,'--variant',variant],check=True)
   apps=list((root/'package/custom').glob('luci-app-airoha*'));assert len(apps)==1
-  app=apps[0];rpc=app/'root/usr/libexec/rpcd/luci.airoha_npu';s=rpc.read_text()
+  app=apps[0]
+  release=re.search(r'^PKG_RELEASE:=(.+)$',(app/'Makefile').read_text(),re.M).group(1)
+  assert release.isdigit() and release=={'naoki':'901','luanmuc':'101'}[variant], 'APK revision must be an integer'
+  rpc=app/'root/usr/libexec/rpcd/luci.airoha_npu';s=rpc.read_text()
   subprocess.run(['sh','-n',str(rpc)],check=True)
   for js in app.rglob('*.js'):subprocess.run(['node','--check',str(js)],check=True)
   assert not re.search(r'\bdevmem\s+0x1(?:fa20|efbe)[0-9a-f]+\s+32\s',s)
