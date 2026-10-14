@@ -1,7 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# XG2010G 概览页：显示汇总 USR/SYS 和 CPU0–CPU3 四个核心。
 
 PROC_STAT="${PROC_STAT:-/proc/stat}"
 SAMPLE_DELAY="${SAMPLE_DELAY:-0.2}"
@@ -68,16 +67,13 @@ render() {
 			if (u < 0) u = 0
 			if (s < 0) s = 0
 
-			if (k == "cpu") {
+			if (i == 0) {
 				total = sprintf("USR: %d%% SYS: %d%%", u, s)
 			}
-			else if (k ~ /^cpu[0-9]+$/) {
-				core = substr(k, 4) + 0
-				if (core < 4) {
-					tot = int(((ub[k] - ua[k]) + (sb[k] - sa[k])) * 100 / d + 0.5)
-					if (tot > 100) tot = 100
-					cores = cores sprintf("%s CPU%d %d%%", (cores == "" ? " ·" : ""), core, tot)
-				}
+			else {
+				tot = int(((ub[k] - ua[k]) + (sb[k] - sa[k])) * 100 / d + 0.5)
+				if (tot > 100) tot = 100
+				cores = cores sprintf("%s CPU%d %d%%", (i == 1 ? " ·" : ""), i - 1, tot)
 			}
 		}
 

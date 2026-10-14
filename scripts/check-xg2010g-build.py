@@ -13,8 +13,8 @@ meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 assert meta['commit'] == '323539cf229bce52754fbb318135c9c56c514d2f', 'Airoha source SHA mismatch'
 backend = root / 'feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci'
 page = root / 'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js'
-assert 'cpucores: cores' in backend.read_text(), 'Per-core CPU RPC absent'
-assert 'renderCPUCoreUsage(cpuusage)' in page.read_text(), 'Per-core CPU overview absent'
+assert "popen('/sbin/cpuusage')" in backend.read_text(), 'Native CPU helper RPC absent'
+assert 'cpuusage.cpuusage' in page.read_text(), 'Native CPU overview absent'
 manifest_dir = root / 'bin/targets/airoha/an7581'
 for manifest in manifest_dir.glob('*.manifest'):
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
@@ -29,8 +29,14 @@ roots = list((root / 'build_dir').glob('target-*/root-airoha'))
 assert len(roots) == 1, f'Expected one staged rootfs, got {len(roots)}'
 installed = roots[0]
 assert json.loads((installed / 'etc/airoha-build-source.json').read_text()) == meta
-assert b'cpucores' in (installed / 'usr/share/rpcd/ucode/luci').read_bytes()
-assert 'cpucores' in (installed / 'www/luci-static/resources/view/status/include/10_system.js').read_text()
+assert b"popen('/sbin/cpuusage')" in (installed / 'usr/share/rpcd/ucode/luci').read_bytes()
+assert 'cpuusage.cpuusage' in (installed / 'www/luci-static/resources/view/status/include/10_system.js').read_text()
+expected_cpu = Path(__file__).resolve().parents[1] / 'files/sbin/cpuusage'
+cpu = installed / 'sbin/cpuusage'
+assert cpu.is_file() and cpu.stat().st_mode & 0o111, 'Missing executable native CPU usage helper'
+assert cpu.read_bytes() == expected_cpu.read_bytes(), 'CPU usage helper differs from repository source'
+assert not (installed / 'files/sbin/cpuusage').exists(), 'Nested CPU usage overlay found'
+assert 'CPU%d' in cpu.read_text(), 'Per-core labels missing from native helper'
 expected_temp = Path(__file__).resolve().parents[1] / 'files/sbin/tempinfo'
 temp = installed / 'sbin/tempinfo'
 assert temp.is_file() and temp.stat().st_mode & 0o111, 'Missing executable /sbin/tempinfo in rootfs'

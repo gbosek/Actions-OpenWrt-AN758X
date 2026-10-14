@@ -778,6 +778,7 @@ jobs:
         run: |
           cd "$BUILD_ROOT"/openwrt/bin/targets/*/*
           cp "$GITHUB_WORKSPACE/AIROHA-SOURCE.json" AIROHA-SOURCE.json
+          cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
           rm -rf packages
           echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
           echo "status=success" >> "$GITHUB_OUTPUT"
@@ -805,7 +806,7 @@ jobs:
           # 固定 tag：机型 + 分支，不含时间戳、不含作者
           # 同一机型/分支再次编译时，softprops/action-gh-release 会更新
           # 这个已存在的 Release（同名固件自动覆盖），不会新建版本。
-          RELEASE_TAG=$(echo "${DEVICE_NAME}-${REPO_BRANCH}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          RELEASE_TAG=$(echo "${DEVICE_NAME}-${REPO_BRANCH}-nativecpu" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
           touch release.txt
@@ -829,7 +830,7 @@ jobs:
             echo '```'
             echo ""
             echo "---"
-            echo "Airoha 来源：naoki66/luci-app-airoha@323539c；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；CPU0–CPU3 独立使用率；RPS 重启恢复。"
+            echo "Airoha 来源：naoki66/luci-app-airoha@323539c；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 重启恢复。"
             echo "> 本 Release 为滚动发布页，仅保留最新一次编译产物。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

@@ -3,6 +3,8 @@
   "commit": "323539cf229bce52754fbb318135c9c56c514d2f",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
-  "local_adjustments": ["Chinese catalog filenames use airoha-npu basename"],
-  "cpu_overview": "CPU0, CPU1, CPU2 and CPU3 each show their own utilization"
+  "local_adjustments": [
+    "Chinese catalog filenames use airoha-npu basename"
+  ],
+  "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0\u2013CPU3"
 }

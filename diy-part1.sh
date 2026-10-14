@@ -203,6 +203,7 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
 fi
 mkdir -p files/etc
 cp "$GITHUB_WORKSPACE/AIROHA-SOURCE.json" files/etc/airoha-build-source.json
+cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" files/etc/cpuusage-source.json
 
 # --- passwall ---
 if [ "$ADD_PASSWALL" = "true" ]; then
