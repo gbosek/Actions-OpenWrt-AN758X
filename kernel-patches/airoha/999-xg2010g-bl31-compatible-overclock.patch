@@ -1,0 +1,470 @@
+From: Codex <codex@openai.com>
+Subject: [PATCH] pmdomain: airoha: add XG2010G BL31-compatible 1400MHz boost
+
+Reimplementation from the supplied design and reviewed PLL register code.
+Ordinary OPPs stay with BL31; only 1200/1400 MHz uses the kernel helper.
+No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
+
+--- a/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c
++++ b/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c
+@@ -4,6 +4,8 @@
+ #include <linux/bitfield.h>
+ #include <linux/clk-provider.h>
+ #include <linux/module.h>
++#include <linux/of_address.h>
++#include "xg2010g-cpu-boost.h"
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+ #include <linux/slab.h>
+@@ -19,6 +21,7 @@
+ struct airoha_cpu_pmdomain_priv {
+ 	struct clk_hw hw;
+ 	struct generic_pm_domain pd;
++	struct xg2010g_boost boost;
+ };
+ 
+ static int airoha_cpu_pmdomain_clk_determine_rate(struct clk_hw *hw,
+@@ -30,8 +33,19 @@
+ static unsigned long airoha_cpu_pmdomain_clk_get(struct clk_hw *hw,
+ 						 unsigned long parent_rate)
+ {
++	struct airoha_cpu_pmdomain_priv *priv =
++		container_of(hw, struct airoha_cpu_pmdomain_priv, hw);
+ 	struct arm_smccc_res res;
+-
++	unsigned int mhz;
++
++	if (priv->boost.mapped) {
++		/* Report the last completed OPP while temporarily running on PLL2. */
++		if (READ_ONCE(priv->boost.parked))
++			return (unsigned long)READ_ONCE(priv->boost.last_stable_mhz) * 1000000UL;
++		mhz = xg2010g_pll_mhz(&priv->boost);
++		if (mhz && xg2010g_pll_valid(&priv->boost))
++			return (unsigned long)mhz * 1000000UL;
++	}
+ 	arm_smccc_1_1_invoke(AIROHA_SIP_AVS_HANDLE, AIROHA_AVS_OP_GET_FREQ,
+ 			     0, 0, 0, 0, 0, 0, &res);
+ 
+@@ -51,16 +65,104 @@
+ 	.determine_rate = airoha_cpu_pmdomain_clk_determine_rate,
+ };
+ 
++static int airoha_cpu_smc_set_state(unsigned int state)
++{
++	struct arm_smccc_res res;
++
++	arm_smccc_1_1_invoke(AIROHA_SIP_AVS_HANDLE, AIROHA_AVS_OP_FREQ_DYN_ADJ,
++			     0, state, 0, 0, 0, 0, &res);
++
++	/* SMC signal correct apply by unsetting BIT 0 */
++	return res.a0 & BIT(0) ? -EINVAL : 0;
++}
++
+ static int airoha_cpu_pmdomain_set_performance_state(struct generic_pm_domain *domain,
+ 						     unsigned int state)
+ {
+-	struct arm_smccc_res res;
+-
+-	arm_smccc_1_1_invoke(AIROHA_SIP_AVS_HANDLE, AIROHA_AVS_OP_FREQ_DYN_ADJ,
+-			     0, state, 0, 0, 0, 0, &res);
+-
+-	/* SMC signal correct apply by unsetting BIT 0 */
+-	return res.a0 & BIT(0) ? -EINVAL : 0;
++	struct airoha_cpu_pmdomain_priv *priv =
++		container_of(domain, struct airoha_cpu_pmdomain_priv, pd);
++
++	return xg2010g_boost_set_state(&priv->boost, state, airoha_cpu_smc_set_state);
++}
++
++static ssize_t boost_capable_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct airoha_cpu_pmdomain_priv *priv = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%u\n", (unsigned int)READ_ONCE(priv->boost.capable));
++}
++static DEVICE_ATTR_RO(boost_capable);
++
++static ssize_t boost_backend_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct airoha_cpu_pmdomain_priv *priv = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%s\n", READ_ONCE(priv->boost.capable) ?
++			  "kernel-pll" : "unavailable");
++}
++static DEVICE_ATTR_RO(boost_backend);
++
++static ssize_t boost_transitioning_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct airoha_cpu_pmdomain_priv *priv = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%u\n", (unsigned int)READ_ONCE(priv->boost.parked));
++}
++static DEVICE_ATTR_RO(boost_transitioning);
++
++static struct attribute *xg2010g_boost_attrs[] = {
++	&dev_attr_boost_capable.attr,
++	&dev_attr_boost_backend.attr,
++	&dev_attr_boost_transitioning.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(xg2010g_boost);
++
++/* No undocumented BL31 capability opcode is queried or invented. */
++static void xg2010g_boost_init(struct platform_device *pdev,
++			       struct xg2010g_boost *b)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *scu;
++	struct resource resource, *mcu;
++	int ret;
++
++	b->dev = dev;
++	mutex_init(&b->lock);
++	b->enabled = of_machine_is_compatible("gemtek,xg2010g") &&
++		of_property_read_bool(dev->of_node, "gemtek,1400mhz-boost");
++	if (!b->enabled)
++		return;
++	scu = of_parse_phandle(dev->of_node, "airoha,chip-scu", 0);
++	if (!scu)
++		goto unavailable;
++	ret = of_address_to_resource(scu, 0, &resource);
++	of_node_put(scu);
++	if (ret || resource.start != 0x1fa20000 ||
++	    resource_size(&resource) < XG_PLL_CHG + sizeof(u32))
++		goto unavailable;
++	/* chip-scu is shared with the syscon driver; do not claim it exclusively. */
++	b->pll = devm_ioremap(dev, resource.start, resource_size(&resource));
++	if (!b->pll)
++		goto unavailable;
++	mcu = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mcucfg");
++	if (!mcu || mcu->start != 0x1efbe000 ||
++	    resource_size(mcu) < XG_MCU_SOURCE + sizeof(u32))
++		goto unavailable;
++	b->mcu = devm_ioremap(dev, mcu->start, resource_size(mcu));
++	if (!b->mcu)
++		goto unavailable;
++	b->mapped = true;
++	b->capable = xg2010g_pll_valid(b);
++	if (!b->capable)
++		goto unavailable;
++	dev_info(dev, "XG2010G compatibility boost backend: kernel-pll\n");
++	return;
++unavailable:
++	dev_warn(dev, "XG2010G compatibility boost unavailable; keep ordinary BL31 OPPs\n");
+ }
+ 
+ static int airoha_cpu_pmdomain_probe(struct platform_device *pdev)
+@@ -80,6 +182,8 @@
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	xg2010g_boost_init(pdev, &priv->boost);
++
+ 	/* Init and register a get-only clk for Cpufreq */
+ 	priv->hw.init = &init;
+ 	ret = devm_clk_hw_register(dev, &priv->hw);
+@@ -106,6 +210,11 @@
+ 		goto err_add_provider;
+ 
+ 	platform_set_drvdata(pdev, priv);
++	ret = devm_device_add_groups(dev, xg2010g_boost_groups);
++	if (ret) {
++		of_genpd_del_provider(dev->of_node);
++		goto err_add_provider;
++	}
+ 
+ 	return 0;
+ 
+@@ -119,6 +228,12 @@
+ {
+ 	struct airoha_cpu_pmdomain_priv *priv = platform_get_drvdata(pdev);
+ 
++	if (priv->boost.mapped && xg2010g_pll_mhz(&priv->boost) == 1400) {
++		int ret = xg2010g_boost_set_state(&priv->boost, XG_BASE_STATE,
++					       airoha_cpu_smc_set_state);
++		if (ret)
++			dev_err(&pdev->dev, "boost restore during remove failed (%d)\n", ret);
++	}
+ 	of_genpd_del_provider(pdev->dev.of_node);
+ 	pm_genpd_remove(&priv->pd);
+ }
+--- /dev/null
++++ b/drivers/pmdomain/mediatek/xg2010g-cpu-boost.h
+@@ -0,0 +1,274 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/* XG2010G compatibility boost: ordinary OPPs remain with BL31. */
++#ifndef _XG2010G_CPU_BOOST_H
++#define _XG2010G_CPU_BOOST_H
++
++#ifndef XG2010G_BOOST_TEST
++#include <linux/bitfield.h>
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/errno.h>
++#include <linux/io.h>
++#include <linux/mutex.h>
++#include <linux/stop_machine.h>
++#endif
++
++#define XG_CLK_MUX 0x1e0
++#define XG_PLL_PROTECT 0x268
++#define XG_PLL_PCW 0x2b4
++#define XG_PLL_CHG 0x2b8
++#define XG_MCU_UNLOCK 0x640
++#define XG_MCU_SOURCE 0x7c0
++#define XG_PCW_MASK GENMASK(30, 24)
++#define XG_FRAC_MASK GENMASK(23, 0)
++#define XG_DIV_MASK GENMASK(6, 4)
++#define XG_SOURCE_MASK GENMASK(10, 9)
++#define XG_BOOST_STATE 15
++#define XG_BASE_STATE 14
++
++struct xg2010g_boost {
++	void __iomem *pll;
++	void __iomem *mcu;
++	struct device *dev;
++	struct mutex lock;
++	bool enabled;
++	bool mapped;
++	bool capable;
++	bool unsafe;
++	bool parked;
++	unsigned int last_stable_mhz;
++};
++
++struct xg2010g_pll_regs {
++	u32 mux, protect, pcw, chg, unlock, source;
++};
++
++struct xg2010g_pll_change {
++	struct xg2010g_boost *boost;
++	struct xg2010g_pll_regs saved;
++	unsigned int target;
++	bool saved_valid;
++	bool restore;
++};
++
++static unsigned int xg2010g_pll_mhz(struct xg2010g_boost *b)
++{
++	u32 pcw, chg;
++
++	if (!b->mapped)
++		return 0;
++	pcw = readl(b->pll + XG_PLL_PCW);
++	chg = readl(b->pll + XG_PLL_CHG);
++	/* This compatibility path only supports integer PCW encodings. */
++	if (pcw & XG_FRAC_MASK)
++		return 0;
++	return (FIELD_GET(XG_PCW_MASK, pcw) * 50) >>
++		FIELD_GET(XG_DIV_MASK, chg);
++}
++
++static bool xg2010g_pll_valid(struct xg2010g_boost *b)
++{
++	unsigned int mhz = xg2010g_pll_mhz(b);
++
++	return ((mhz >= 500 && mhz <= 1200 && !(mhz % 50)) ||
++		mhz == 1400) &&
++		FIELD_GET(XG_SOURCE_MASK, readl(b->mcu + XG_MCU_SOURCE)) == 1 &&
++		(readl(b->pll + XG_CLK_MUX) & BIT(0));
++}
++
++static void xg2010g_clock_source(struct xg2010g_boost *b, unsigned int sel)
++{
++	u32 value;
++
++	value = readl(b->mcu + XG_MCU_UNLOCK);
++	writel((value & ~0x1f) | 0x12, b->mcu + XG_MCU_UNLOCK);
++	value = readl(b->mcu + XG_MCU_SOURCE);
++	writel((value & ~XG_SOURCE_MASK) | FIELD_PREP(XG_SOURCE_MASK, sel),
++	       b->mcu + XG_MCU_SOURCE);
++}
++
++/* Caller has stopped the other CPUs. Never sleep in this callback. */
++static int xg2010g_pll_program(void *data)
++{
++	struct xg2010g_pll_change *c = data;
++	struct xg2010g_boost *b = c->boost;
++	struct xg2010g_pll_regs *r = &c->saved;
++	u32 pcw, chg;
++
++	if (!c->restore) {
++		if (!xg2010g_pll_valid(b))
++			return -EIO;
++		r->mux = readl(b->pll + XG_CLK_MUX);
++		r->protect = readl(b->pll + XG_PLL_PROTECT);
++		r->pcw = readl(b->pll + XG_PLL_PCW);
++		r->chg = readl(b->pll + XG_PLL_CHG);
++		r->unlock = readl(b->mcu + XG_MCU_UNLOCK);
++		r->source = readl(b->mcu + XG_MCU_SOURCE);
++		c->saved_valid = true;
++	}
++
++	writel(readl(b->pll + XG_CLK_MUX) | BIT(2), b->pll + XG_CLK_MUX);
++	xg2010g_clock_source(b, 3);
++	writel((readl(b->pll + XG_PLL_PROTECT) & ~0xff) | 0x12,
++	       b->pll + XG_PLL_PROTECT);
++
++	pcw = c->restore ? r->pcw :
++		(r->pcw & ~(XG_PCW_MASK | XG_FRAC_MASK)) |
++		FIELD_PREP(XG_PCW_MASK, c->target / 50);
++	writel(pcw, b->pll + XG_PLL_PCW);
++	chg = c->restore ? r->chg : (r->chg & ~XG_DIV_MASK);
++	/* Toggle the current latch bit, including on rollback. */
++	chg = (chg & ~BIT(0)) | ((readl(b->pll + XG_PLL_CHG) ^ BIT(0)) & BIT(0));
++	writel(chg, b->pll + XG_PLL_CHG);
++	udelay(20);
++
++	/* Keep running on PLL2 until the sleepable stabilization has completed. */
++	writel(r->protect, b->pll + XG_PLL_PROTECT);
++	WRITE_ONCE(b->parked, true);
++	if (readl(b->pll + XG_PLL_PCW) != pcw ||
++	    ((readl(b->pll + XG_PLL_CHG) ^ chg) & (XG_DIV_MASK | BIT(0))) ||
++	    FIELD_GET(XG_SOURCE_MASK, readl(b->mcu + XG_MCU_SOURCE)) != 3)
++		return -EIO;
++	return 0;
++}
++
++/* Return to ARMPLL only after its encoding has been verified and it has settled. */
++static int xg2010g_pll_finish(void *data)
++{
++	struct xg2010g_pll_change *c = data;
++	struct xg2010g_boost *b = c->boost;
++	struct xg2010g_pll_regs *r = &c->saved;
++	unsigned int target = c->restore ?
++		(FIELD_GET(XG_PCW_MASK, r->pcw) * 50) >> FIELD_GET(XG_DIV_MASK, r->chg) :
++		c->target;
++
++	if (xg2010g_pll_mhz(b) != target)
++		return -EIO;
++	writel(readl(b->pll + XG_CLK_MUX) | BIT(0), b->pll + XG_CLK_MUX);
++	xg2010g_clock_source(b, 1);
++	writel(r->mux, b->pll + XG_CLK_MUX);
++	writel(r->unlock, b->mcu + XG_MCU_UNLOCK);
++	writel(r->source, b->mcu + XG_MCU_SOURCE);
++	writel(r->protect, b->pll + XG_PLL_PROTECT);
++	if (!xg2010g_pll_valid(b) || xg2010g_pll_mhz(b) != target)
++		return -EIO;
++	WRITE_ONCE(b->last_stable_mhz, target);
++	WRITE_ONCE(b->parked, false);
++	return 0;
++}
++
++static int xg2010g_pll_switch(struct xg2010g_boost *b, unsigned int target)
++{
++	struct xg2010g_pll_change c = { .boost = b, .target = target };
++	unsigned int original;
++	int ret, restore_ret;
++
++	if (!b->mapped || (target != 1200 && target != 1400))
++		return -EINVAL;
++	if (!xg2010g_pll_valid(b))
++		return -EIO;
++	original = xg2010g_pll_mhz(b);
++	if (original == target)
++		return 0;
++	/* Only the 1200 <-> 1400 transition belongs to this helper. */
++	if ((original != 1200 && original != 1400))
++		return -EINVAL;
++	WRITE_ONCE(b->last_stable_mhz, original);
++	ret = stop_machine(xg2010g_pll_program, &c, NULL);
++	if (!ret) {
++		/* Stabilization occurs after stop_machine; CPUs are not paused here. */
++		msleep(1000);
++		if (xg2010g_pll_mhz(b) != target)
++			ret = -EIO;
++		else
++			ret = stop_machine(xg2010g_pll_finish, &c, NULL);
++	}
++	if (!ret) {
++		dev_dbg(b->dev, "XG2010G CPU PLL set to %u MHz\n", target);
++		return 0;
++	}
++	if (c.saved_valid) {
++		c.restore = true;
++		restore_ret = stop_machine(xg2010g_pll_program, &c, NULL);
++		msleep(1000);
++		if (!restore_ret)
++			restore_ret = stop_machine(xg2010g_pll_finish, &c, NULL);
++		if (restore_ret || xg2010g_pll_mhz(b) != original ||
++		    !xg2010g_pll_valid(b))
++			dev_err(b->dev, "XG2010G PLL rollback failed (%d)\n",
++				restore_ret ? restore_ret : -EIO);
++	}
++	return ret;
++}
++
++/* Also used by host tests: this is the actual driver transition logic. */
++static int xg2010g_boost_set_state(struct xg2010g_boost *b, unsigned int state,
++				 int (*smc_set)(unsigned int))
++{
++	unsigned int before;
++	int ret, restore_ret;
++
++	if (!b->enabled)
++		return smc_set(state);
++	if (state > XG_BOOST_STATE)
++		return -EINVAL;
++	mutex_lock(&b->lock);
++	before = xg2010g_pll_mhz(b);
++	if (state == XG_BOOST_STATE) {
++		if (!b->capable) {
++			ret = -EOPNOTSUPP;
++			goto out;
++		}
++		if (before == 1400 && xg2010g_pll_valid(b)) {
++			ret = 0;
++			goto out;
++		}
++		ret = smc_set(XG_BASE_STATE);
++		if (ret)
++			goto fault;
++		if (xg2010g_pll_mhz(b) != 1200 || !xg2010g_pll_valid(b)) {
++			ret = -EIO;
++			goto restore;
++		}
++		ret = xg2010g_pll_switch(b, 1400);
++		if (!ret)
++			goto out;
++restore:
++		/* Restore the prior ordinary BL31 OPP after a failed boost. */
++		/* A failed rollback must not be followed by an unsafe SMC downshift. */
++		if (xg2010g_pll_mhz(b) == 1400)
++			xg2010g_pll_switch(b, 1200);
++		if (xg2010g_pll_mhz(b) >= 500 &&
++		    xg2010g_pll_mhz(b) <= 1200 && xg2010g_pll_valid(b) &&
++		    before >= 500 && before <= 1200 && !(before % 50)) {
++			restore_ret = smc_set((before - 500) / 50);
++			if (restore_ret)
++				dev_err(b->dev, "XG2010G BL31 restore failed (%d)\n", restore_ret);
++		}
++		goto fault;
++	}
++	/* Never ask BL31 to switch downward while its PLL is at boost. */
++	if (b->mapped && b->unsafe && before != 1400 &&
++	    !(before >= 500 && before <= 1200 && xg2010g_pll_valid(b))) {
++		ret = -EIO;
++		goto out;
++	}
++	if (b->mapped && before == 1400) {
++		ret = xg2010g_pll_switch(b, 1200);
++		if (ret)
++			goto fault;
++	}
++	b->unsafe = false;
++	ret = smc_set(state);
++	goto out;
++fault:
++	WRITE_ONCE(b->capable, false);
++	b->unsafe = b->mapped &&
++		!(xg2010g_pll_mhz(b) >= 500 && xg2010g_pll_mhz(b) <= 1200 &&
++		  xg2010g_pll_valid(b));
++	dev_err(b->dev, "XG2010G compatibility boost failed (%d); boost disabled\n", ret);
++out:
++	mutex_unlock(&b->lock);
++	return ret;
++}
++#endif

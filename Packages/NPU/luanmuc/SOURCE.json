@@ -1,0 +1,12 @@
+{
+  "variant": "luanmuc",
+  "upstream": "luanmuc/luci-app-airoha-npu",
+  "commit": "5c6e9e079ad9ecb1446c674e964f797842675856",
+  "package": "luci-app-airoha-npu",
+  "upstream_version": "1.2.1-1",
+  "local_adjustments": [
+    "Chinese catalog filenames use airoha-npu basename",
+    "Omit upstream screenshots; package sources and license retained"
+  ],
+  "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0\u2013CPU3"
+}

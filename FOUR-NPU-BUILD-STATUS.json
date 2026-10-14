@@ -1,0 +1,8 @@
+{
+  "user_confirmed_four_variants": true,
+  "include_overclock": true,
+  "overclock_method": "document-based BL31 + kernel PLL compatibility reimplementation",
+  "status": "Compatibility reimplementation verified locally; four variant branches ready for build",
+  "publish_or_compile": true,
+  "hardware_tested": false
+}

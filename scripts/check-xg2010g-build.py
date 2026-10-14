@@ -10,7 +10,13 @@ parser.add_argument('source', type=Path)
 args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
-assert meta['commit'] == '323539cf229bce52754fbb318135c9c56c514d2f', 'Airoha source SHA mismatch'
+expected = {
+    'naoki': ('naoki66/luci-app-airoha', '323539cf229bce52754fbb318135c9c56c514d2f', r'^2\.0\.0-(?:r)?9\.1'),
+    'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?1\.1'),
+}
+variant = meta['variant']
+upstream, commit, version_pattern = expected[variant]
+assert meta['upstream'] == upstream and meta['commit'] == commit, 'NPU provider SHA mismatch'
 backend = root / 'feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci'
 page = root / 'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js'
 assert "popen('/sbin/cpuusage')" in backend.read_text(), 'Native CPU helper RPC absent'
@@ -23,7 +29,10 @@ for manifest in manifest_dir.glob('*.manifest'):
         assert name in pkgs, f'{manifest.name}: missing {name}'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
-    assert pkgs['luci-app-airoha-npu'].startswith('2.0.0-r9'), 'Unexpected upstream package version'
+    assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
+    assert not any(n in pkgs for n in ('luci-app-nlbwmon','luci-app-statistics')), 'Removed monitor/statistics plugin present'
+    for name in ('cpufreq','luci-app-cpufreq','luci-i18n-cpufreq-zh-cn'):
+        assert name in pkgs, f'Missing CPU policy package: {name}'
 # Validate installed files before releasing any sysupgrade image.
 roots = list((root / 'build_dir').glob('target-*/root-airoha'))
 assert len(roots) == 1, f'Expected one staged rootfs, got {len(roots)}'
@@ -45,7 +54,7 @@ for label in ('CPU:', 'PON:', 'LAN1:', 'LAN2:'):
     assert label in temp.read_text(), f'Missing temperature sensor: {label}'
 assert "popen('/sbin/tempinfo')" in (installed / 'usr/share/rpcd/ucode/luci').read_text(), 'RPC temperature path differs'
 assert not (installed / 'files/sbin/tempinfo').exists(), 'Nested /files overlay found in rootfs'
-for name in ('airoha-npu', 'xg2010g-rps'):
+for name in (('airoha-npu', 'xg2010g-rps') if variant == 'naoki' else ('xg2010g-rps',)):
     path = installed / 'etc/init.d' / name
     assert path.is_file() and path.stat().st_mode & 0o111, f'Service not executable: {name}'
-print('Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
+print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')

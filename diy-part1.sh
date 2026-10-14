@@ -195,14 +195,13 @@ fi
 
 # --- Latest verified naoki66 Airoha source snapshot ---
 if [ "$ADD_AIROHA_NPU" = "true" ]; then
-  cp -a "$GITHUB_WORKSPACE/Packages/luci-app-airoha-npu" "$PKG_DIR/"
+  python3 "$GITHUB_WORKSPACE/scripts/select-npu.py" . --variant "${NPU_VARIANT:-naoki}"
   normalize_custom_luci_makefile "$PKG_DIR/luci-app-airoha-npu/Makefile"
 fi
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   cp -a "$GITHUB_WORKSPACE/Packages/xg2010g-rps" "$PKG_DIR/"
 fi
 mkdir -p files/etc
-cp "$GITHUB_WORKSPACE/AIROHA-SOURCE.json" files/etc/airoha-build-source.json
 cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" files/etc/cpuusage-source.json
 
 # --- passwall ---
@@ -382,3 +381,7 @@ else
 fi
 
 echo "🎉 diy-part1.sh 执行完毕"
+
+if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  python3 "$GITHUB_WORKSPACE/scripts/apply-compatible-boost.py" . || exit 1
+fi

@@ -1,0 +1,18 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
+# Every newly flashed image starts with a dynamic range, never min=max=1400.
+uci -q get cpufreq.cpufreq >/dev/null || uci set cpufreq.cpufreq=cpufreq
+uci -q get cpufreq.global >/dev/null || uci set cpufreq.global=global
+uci set cpufreq.cpufreq.governor0=ondemand
+uci set cpufreq.cpufreq.minfreq0=500000
+uci set cpufreq.cpufreq.maxfreq0=1400000
+uci set cpufreq.global.set=1
+uci commit cpufreq
+if [ -f /etc/config/airoha_npu ]; then
+ uci set 'airoha_npu.@cpu[0].governor=ondemand'
+ uci set 'airoha_npu.@cpu[0].max_freq=1400000'
+ uci commit airoha_npu
+fi
+/etc/init.d/cpufreq enable
+exit 0
