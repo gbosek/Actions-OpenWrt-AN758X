@@ -36,8 +36,8 @@
  *
  * 来源按端口缓存；临时失败后允许重新探测，避免一个端口影响其他端口。
  *
- * 采样点按 device 分开存。第一次渲染时没有历史采样，就隔 500 ms 再采
- * 一次，让首屏就有读数；之后每次轮询直接用上次的采样。
+ * 采样点按 device 分开存。第一次没有历史采样，速率显示不可用；
+ * 下次轮询再用真实时间差计算，不为速率延迟首屏。
  *
  * 计数回绕 / 接口重启会让差值变成负数，那种情况判定为无效读数
  * （返回 null），不显示一个假的尖峰。
@@ -206,21 +206,8 @@ function readRate(device) {
 				return r;
 		}
 
-		/* 首次渲染（或上一次采样已失效）：补一次短间隔采样 */
-		return new Promise(function(resolve) {
-			window.setTimeout(function() {
-				sampleNet(device).then(function(cur2) {
-					if (cur2 == null) {
-						delete prevNet[device];
-						resolve({ error: true });
-						return;
-					}
-
-					prevNet[device] = cur2;
-					resolve(netRate(cur, cur2));
-				});
-			}, 500);
-		});
+		/* 无历史样本时不等待；下一轮用实际经过的时间计算速率。 */
+		return null;
 	});
 }
 

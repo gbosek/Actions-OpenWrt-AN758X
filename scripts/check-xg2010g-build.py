@@ -26,7 +26,8 @@ for manifest in manifest_dir.glob('*.manifest'):
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
     for name in ('mwan4', 'luci-app-mwan4', 'luci-i18n-mwan4-zh-cn',
                  'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn', 'xg2010g-rps',
-                 'luci-app-wol', 'luci-i18n-wol-zh-cn', 'etherwake', 'flock'):
+                 'luci-app-wol', 'luci-i18n-wol-zh-cn', 'etherwake', 'flock',
+                 'luci-theme-argon', 'luci-app-argon-config', 'luci-i18n-argon-config-zh-cn'):
         assert name in pkgs, f'{manifest.name}: missing {name}'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?2$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
@@ -74,5 +75,11 @@ defaults = installed / 'etc/uci-defaults/98-xg2010g-mwan4-defaults'
 assert defaults.stat().st_mode & 0o111 and defaults.read_bytes() == (repo / 'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').read_bytes(), 'Fresh dual-WAN preset missing'
 assert (installed / 'www/luci-static/resources/view/wol.js').is_file(), 'WOL page missing'
 assert (installed / 'usr/bin/etherwake').stat().st_mode & 0o111, 'WOL packet sender missing'
+assert (installed / 'www/luci-static/resources/view/status/index.js').read_bytes() == (repo / 'UI/status-index.js').read_bytes(), 'Independent overview card loading missing'
+assert (installed / 'www/luci-static/resources/view/argon-config.js').is_file(), 'Argon wallpaper configuration missing'
+assert "option online_wallpaper 'bing'" in (installed / 'etc/config/argon').read_text(), 'Bing wallpaper default missing'
+wallpaper = installed / 'usr/libexec/rpcd/luci.argon_wallpaper'
+assert wallpaper.is_file() and wallpaper.stat().st_mode & 0o111, 'Argon wallpaper provider missing'
 print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
 print('Verified MWAN4 stop/native-init fixes, RPS singleton/read fix, full-width PON, WOL and default LAN 192.168.10.1')
+print('Verified independent overview rendering and Argon Chinese wallpaper configuration with Bing default')

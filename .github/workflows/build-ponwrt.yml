@@ -180,6 +180,7 @@ jobs:
           python3 Packages/xg2010g-rps/tests/rps-test.py
           python3 CPU/tests/network-defaults-test.py
           python3 CPU/tests/pon-selection-test.py
+          node UI/tests/overview-test.js
 
       - name: Cancel superseded boost builds
         if: endsWith(github.ref_name, '-boost')
@@ -450,6 +451,7 @@ jobs:
                      luci-app-aurora-config luci-theme-aurora \
                      luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
                      luci-app-wol luci-i18n-wol-zh-cn etherwake flock \
+                     luci-theme-argon luci-app-argon-config luci-i18n-argon-config-zh-cn \
                      block-mount ttyd luci-app-ttyd; do
               if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
                 MENU_MISS="$MENU_MISS $p"
@@ -868,7 +870,7 @@ jobs:
             echo '```'
             echo ""
             echo "---"
-            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 单实例与误报修复；WOL 中文网络唤醒；默认 LAN 192.168.10.1；MWAN4 停止状态修复；PON 卡片铺满并显示 PON；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
+            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 单实例与误报修复；WOL 中文网络唤醒；Argon 中文壁纸配置与 Bing 每日登录壁纸；概览卡片独立加载；默认 LAN 192.168.10.1；MWAN4 停止状态修复；PON 卡片铺满并显示 PON；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
             echo "> 本 Release 为滚动发布页，仅保留最新一次编译产物。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

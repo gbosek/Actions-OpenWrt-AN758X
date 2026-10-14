@@ -29,6 +29,12 @@ def paths(root):
 def refresh_luci_cache_version(root):
     backend, page = paths(root)
     digest = hashlib.sha256(backend.read_bytes() + page.read_bytes())
+    overview = root / 'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/index.js'
+    if overview.exists():
+        digest.update(overview.read_bytes())
+    pon = root / 'package/custom/luci-app-pon-status/htdocs/luci-static/resources/view/status/include/15_pon.js'
+    if pon.exists():
+        digest.update(pon.read_bytes())
     app = root / 'package/custom/luci-app-airoha-npu/htdocs'
     for path in sorted(app.glob('**/*.js')):
         digest.update(path.relative_to(app).as_posix().encode())

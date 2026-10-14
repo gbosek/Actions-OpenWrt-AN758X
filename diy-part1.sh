@@ -196,7 +196,7 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
 
   if [ -f "$PKG_DIR/luci-app-pon-status/Makefile" ]; then
     cp "$GITHUB_WORKSPACE/UI/15_pon.js" "$PKG_DIR/luci-app-pon-status/htdocs/luci-static/resources/view/status/include/15_pon.js"
-    sed -i 's/^PKG_RELEASE:=.*/PKG_RELEASE:=5/' "$PKG_DIR/luci-app-pon-status/Makefile"
+    sed -i 's/^PKG_RELEASE:=.*/PKG_RELEASE:=6/' "$PKG_DIR/luci-app-pon-status/Makefile"
     sed -i '/^include .*luci.mk/i LUCI_MINIFY_JS:=0' "$PKG_DIR/luci-app-pon-status/Makefile"
     echo 'PON overview uses a full-width card and PON display name'
   fi
@@ -374,7 +374,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
+    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-argon-config luci-theme-argon luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do

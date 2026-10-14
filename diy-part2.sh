@@ -194,6 +194,9 @@ fi
 # ---------------------------------------------------------
 # 5. Overview RPC and renderer must both show all four cores.
 PATCH_CPUUSAGE="$(dirname "$0")/scripts/patch-luci-cpuusage.sh"
+if [ "${PROFILE:-}" = gemtek_xg2010g ]; then
+  python3 "$(dirname "$0")/scripts/patch-fast-overview.py" .
+fi
 PONWRT_DIR=. bash "$PATCH_CPUUSAGE" || exit 1
 
 [ -z "$FW_BUILD_TIME" ] && FW_BUILD_TIME="$(TZ="${TZ:-Asia/Shanghai}" date '+%Y-%m-%d %H:%M')"
