@@ -2,13 +2,13 @@
   "implementation": "XG2010G compatibility boost reimplementation",
   "basis": "Uploaded XG2010G 1400MHz design and reviewed PLL code",
   "kernel_patch": "999-xg2010g-bl31-compatible-overclock.patch",
-  "kernel_patch_sha256": "743c11d96892e0f0b61cad69c3a4ecc4511d60349ea6fdc172fa78929dade8c0",
+  "kernel_patch_sha256": "51b422c8a0dd55f2a8435e4e1a1085b010f0d195aa4d2e61c25c4f7711f1cee7",
   "supported_backends": [
     "kernel-pll",
     "unavailable"
   ],
   "native_bl31_boost_query": "Not implemented: original private ABI was not supplied",
-  "ordinary_frequencies_MHz": "500\u20131200 via existing BL31",
+  "ordinary_frequencies_MHz": "500–1200 via existing BL31",
   "boost_frequency_MHz": 1400,
   "boost_state": 15,
   "governor": "ondemand",

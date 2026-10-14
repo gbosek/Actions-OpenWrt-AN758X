@@ -1,0 +1,26 @@
+{
+  "scope": "Standalone CPU driver ARM64 compilation, with upstream AN7583 compatibility patch and delivered CPU boost patch; full firmware build remains required",
+  "kernel_patch_sha256": "51b422c8a0dd55f2a8435e4e1a1085b010f0d195aa4d2e61c25c4f7711f1cee7",
+  "cases": [
+    {
+      "kernel": "6.18.52",
+      "architecture": "ARM64/AArch64",
+      "compiler": "Debian GCC 14.2.0 cross1",
+      "config": "arm64 defconfig plus ARCH_AIROHA, CPU domain, ondemand and WERROR",
+      "result": "pass",
+      "kernel_archive_sha256": "2b69564f7d4fea0c859b1959ba33709ee6e9139bd100e30a853b57159a8221b8",
+      "driver_object_sha256": "fc1a4389ec7572bbeae1b19cfa364d46e79c4ef692e92dfde36c31cbb4c9df64",
+      "hardware_tested": false
+    },
+    {
+      "kernel": "6.18.54",
+      "architecture": "ARM64/AArch64",
+      "compiler": "Debian GCC 14.2.0 cross1",
+      "config": "arm64 defconfig plus ARCH_AIROHA, CPU domain, ondemand and WERROR",
+      "result": "pass",
+      "kernel_archive_sha256": "9df30b02dd8102bbd0be52556288ef6889ddbe7f1ddb96fbf847d0becf3eacac",
+      "driver_object_sha256": "9916057763bfbc087e1990d6217f949fe8c781eeefb51505cc4603d514e97781",
+      "hardware_tested": false
+    }
+  ]
+}

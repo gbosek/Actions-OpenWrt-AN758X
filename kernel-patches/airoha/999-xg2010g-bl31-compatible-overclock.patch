@@ -45,7 +45,7 @@ No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
  	arm_smccc_1_1_invoke(AIROHA_SIP_AVS_HANDLE, AIROHA_AVS_OP_GET_FREQ,
  			     0, 0, 0, 0, 0, 0, &res);
  
-@@ -51,16 +65,104 @@
+@@ -51,16 +65,106 @@
  	.determine_rate = airoha_cpu_pmdomain_clk_determine_rate,
  };
  
@@ -110,7 +110,9 @@ No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
 +	&dev_attr_boost_transitioning.attr,
 +	NULL,
 +};
-+ATTRIBUTE_GROUPS(xg2010g_boost);
++static const struct attribute_group xg2010g_boost_group = {
++	.attrs = xg2010g_boost_attrs,
++};
 +
 +/* No undocumented BL31 capability opcode is queried or invented. */
 +static void xg2010g_boost_init(struct platform_device *pdev,
@@ -157,7 +159,7 @@ No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
  }
  
  static int airoha_cpu_pmdomain_probe(struct platform_device *pdev)
-@@ -80,6 +182,8 @@
+@@ -80,6 +184,8 @@
  	if (!priv)
  		return -ENOMEM;
  
@@ -166,11 +168,11 @@ No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
  	/* Init and register a get-only clk for Cpufreq */
  	priv->hw.init = &init;
  	ret = devm_clk_hw_register(dev, &priv->hw);
-@@ -106,6 +210,11 @@
+@@ -106,6 +212,11 @@
  		goto err_add_provider;
  
  	platform_set_drvdata(pdev, priv);
-+	ret = devm_device_add_groups(dev, xg2010g_boost_groups);
++	ret = devm_device_add_group(dev, &xg2010g_boost_group);
 +	if (ret) {
 +		of_genpd_del_provider(dev->of_node);
 +		goto err_add_provider;
@@ -178,7 +180,7 @@ No undocumented BL31 boost ABI is invoked. Hardware validation is pending.
  
  	return 0;
  
-@@ -119,6 +228,12 @@
+@@ -119,6 +230,12 @@
  {
  	struct airoha_cpu_pmdomain_priv *priv = platform_get_drvdata(pdev);
  

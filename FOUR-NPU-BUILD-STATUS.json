@@ -2,7 +2,7 @@
   "user_confirmed_four_variants": true,
   "include_overclock": true,
   "overclock_method": "document-based BL31 + kernel PLL compatibility reimplementation",
-  "status": "Fixed DTS EOF context and disabled automatic reverse application; exact upstream source regression checks enabled",
+  "status": "Corrected device-managed sysfs API; CPU driver ARM64 compilation passed against both Linux 6.18.52 and 6.18.54",
   "publish_or_compile": true,
   "hardware_tested": false
 }
