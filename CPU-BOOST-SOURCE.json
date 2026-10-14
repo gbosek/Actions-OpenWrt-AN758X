@@ -8,11 +8,13 @@
     "unavailable"
   ],
   "native_bl31_boost_query": "Not implemented: original private ABI was not supplied",
-  "ordinary_frequencies_MHz": "500–1200 via existing BL31",
+  "ordinary_frequencies_MHz": "500\u20131200 via existing BL31",
   "boost_frequency_MHz": 1400,
   "boost_state": 15,
   "governor": "ondemand",
   "minimum_kHz": 500000,
   "maximum_kHz": 1400000,
-  "hardware_tested": false
+  "hardware_tested": false,
+  "source_dts_patch": "999-xg2010g-compatible-boost-dts.patch",
+  "source_dts_patch_sha256": "a4ed5381b29bbfae6e20e3f53a38a9e615ff3f4f0ee96e92c64f940f633abb67"
 }

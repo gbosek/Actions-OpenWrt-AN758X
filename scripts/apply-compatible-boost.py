@@ -21,12 +21,13 @@ patchname = '999-xg2010g-bl31-compatible-overclock.patch'
 shutil.copyfile(repo / 'kernel-patches/airoha' / patchname, queue / patchname)
 board_patch = repo / 'source-patches/airoha/999-xg2010g-compatible-boost-dts.patch'
 cmd = ['patch', '--batch', '--fuzz=0', '-p1', '-d', str(root), '-i', str(board_patch)]
-forward = subprocess.run(cmd + ['--dry-run'], capture_output=True)
+forward = subprocess.run(cmd + ['--forward', '--dry-run'], capture_output=True)
 if forward.returncode == 0:
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd + ['--forward'], check=True)
 else:
     reverse = subprocess.run(cmd + ['--dry-run', '-R'], capture_output=True)
-    assert reverse.returncode == 0, 'CPU board patch does not match this source'
+    if reverse.returncode != 0:
+        p.error('CPU board patch does not match this source:\n' + forward.stdout.decode() + forward.stderr.decode() + reverse.stdout.decode() + reverse.stderr.decode())
 text = config.read_text()
 for key in ('CONFIG_AIROHA_CPU_PM_DOMAIN', 'CONFIG_CPU_FREQ', 'CONFIG_CPU_FREQ_GOV_ONDEMAND', 'CONFIG_CPU_FREQ_GOV_POWERSAVE', 'CONFIG_SMP'):
     assert re.search(rf'^{key}=y$', text, re.M), f'Missing kernel prerequisite: {key}'

@@ -109,6 +109,8 @@ def check(root):
     meta=json.loads((installed/'etc/xg2010g-cpu-boost-source.json').read_text())
     patch=root/'target/linux/airoha/patches-6.18'/meta['kernel_patch']
     assert hashlib.sha256(patch.read_bytes()).hexdigest()==meta['kernel_patch_sha256']
+    dts_patch=Path(__file__).resolve().parents[1]/'source-patches/airoha'/meta['source_dts_patch']
+    assert hashlib.sha256(dts_patch.read_bytes()).hexdigest()==meta['source_dts_patch_sha256']
     print(f'Compatibility boost verified in {kernel.name}, CPU driver object, actual FIT {frequencies} MHz, and staged runtime')
 
 if __name__=='__main__':

@@ -1,0 +1,38 @@
+{
+  "pon-board.dts": {
+    "url": "https://raw.githubusercontent.com/pbs05/ponwrt/a57faf93c6c3638ba3651690228aabaa51d3f235/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts",
+    "sha256": "35701f10a887c39649a1d5c693bc98e8915e3721f1f76abeaccfe313897b7439"
+  },
+  "pon-config": {
+    "url": "https://raw.githubusercontent.com/pbs05/ponwrt/a57faf93c6c3638ba3651690228aabaa51d3f235/target/linux/airoha/an7581/config-6.18",
+    "sha256": "818a01b395aa3b4d5e4e686aac9664d1bff1516744fcfd921e3fd83e9545d158"
+  },
+  "pon-cpufreq-Makefile": {
+    "url": "https://raw.githubusercontent.com/pbs05/ponwrt/a57faf93c6c3638ba3651690228aabaa51d3f235/package/emortal/cpufreq/Makefile",
+    "sha256": "48c954aff374d10281d7eb64f1efb9478f83b044862da3c2c0297f756d508130"
+  },
+  "ci-board.dts": {
+    "url": "https://raw.githubusercontent.com/VIKINGYFY/immortalwrt/a38520034ee4bdd25dd6e88c4c59261f289ee17e/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts",
+    "sha256": "35701f10a887c39649a1d5c693bc98e8915e3721f1f76abeaccfe313897b7439"
+  },
+  "ci-config": {
+    "url": "https://raw.githubusercontent.com/VIKINGYFY/immortalwrt/a38520034ee4bdd25dd6e88c4c59261f289ee17e/target/linux/airoha/an7581/config-6.18",
+    "sha256": "775f47a0ffe924d37f43164f2f516ab04f94cb99acf9fd3a6247a5cdd7942c14"
+  },
+  "ci-cpufreq-Makefile": {
+    "url": "https://raw.githubusercontent.com/VIKINGYFY/immortalwrt/a38520034ee4bdd25dd6e88c4c59261f289ee17e/package/emortal/cpufreq/Makefile",
+    "sha256": "48c954aff374d10281d7eb64f1efb9478f83b044862da3c2c0297f756d508130"
+  },
+  "driver-6.18.52.c": {
+    "url": "https://raw.githubusercontent.com/gregkh/linux/v6.18.52/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c",
+    "sha256": "40283148da17b0b5c89c1241dd0dbe98f6997f24b7ea463f54d7a1aeeac7418f"
+  },
+  "driver-6.18.54.c": {
+    "url": "https://raw.githubusercontent.com/gregkh/linux/v6.18.54/drivers/pmdomain/mediatek/airoha-cpu-pmdomain.c",
+    "sha256": "40283148da17b0b5c89c1241dd0dbe98f6997f24b7ea463f54d7a1aeeac7418f"
+  },
+  "221-02-pmdomain-airoha-Add-AN7583-cpufreq-compatible.patch": {
+    "url": "https://raw.githubusercontent.com/VIKINGYFY/immortalwrt/a38520034ee4bdd25dd6e88c4c59261f289ee17e/target/linux/airoha/patches-6.18/221-02-pmdomain-airoha-Add-AN7583-cpufreq-compatible.patch",
+    "sha256": "d2d7432506ad84124771fb1ceda459ed330966e06c42959f0e5b0ee9d6cd36ac"
+  }
+}

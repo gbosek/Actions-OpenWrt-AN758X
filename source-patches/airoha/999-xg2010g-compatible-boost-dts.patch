@@ -9,10 +9,10 @@
  		rootdisk = <&ubi_fit>;
  		stdout-path = "serial0:115200n8";
  	};
-@@ -400,3 +400,26 @@
+@@ -399,3 +399,26 @@
+ 	label = "lan4";
  	status = "okay";
  };
- 
 +
 +/* 1400 MHz is a compatibility boost OPP, not a new ordinary BL31 state. */
 +&cpufreq {

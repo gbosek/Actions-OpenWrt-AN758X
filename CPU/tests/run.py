@@ -12,3 +12,4 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-boost-test-') as d:
  subprocess.run([str(root/'boost-test')],check=True)
 subprocess.run(['python3',str(repo/'CPU/tests/policy-test.py')],check=True)
 subprocess.run(['python3',str(repo/'CPU/tests/npu-test.py')],check=True)
+subprocess.run(['python3',str(repo/'CPU/tests/integration-test.py')],check=True)
