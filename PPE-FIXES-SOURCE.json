@@ -1,0 +1,17 @@
+{
+  "base_repository": "gbosek/Actions-OpenWrt-AN758X",
+  "base_commit": "3d009733635105521c253a0e8b48b50f21840615",
+  "branch": "work/xg2010g-1456-ppe-20261014",
+  "ponwrt_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+  "npu_firmware": "2.1.1-TLB7.3.283.1456-62",
+  "variants": [
+    "naoki",
+    "luanmuc"
+  ],
+  "patch_sha256": {
+    "931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch": "493822d2cec4a61c115c08066da1b60ca5af6fe68ef0b1f16cff46a3314df2dc",
+    "932-net-airoha-return-sram-flush-failures.patch": "0854cb1b5a3f2364cab24b2bc9311b0ed8b3335a27ab2681386fc2fae8a017cb",
+    "933-net-airoha-preserve-tc-template-on-idle-refresh.patch": "707382c29f97979b16fa3955427289e95d0c87e8aeacb53f1ed4d6216c9fd29d"
+  },
+  "scope": "Local PPE candidates; no full ACK/SID lifecycle or hardware validation"
+}
