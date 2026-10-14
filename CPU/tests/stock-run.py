@@ -9,10 +9,12 @@ for flavor in ['pon','ci']:
   for source,target in [(flavor+'-board.dts','target/linux/airoha/dts/an7581-gemtek-xg2010g.dts'),(flavor+'-config','target/linux/airoha/an7581/config-6.18'),(flavor+'-cpufreq-Makefile','package/emortal/cpufreq/Makefile')]:
    f=root/target;f.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(fixtures/source,f)
   queue=root/'target/linux/airoha/patches-6.18';queue.mkdir();(root/'package/emortal/cpufreq/files').mkdir()
+  (root/'package/emortal/cpufreq/files/cpufreq.config').write_text("config cpufreq 'cpufreq'\n")
   board=root/'target/linux/airoha/dts/an7581-gemtek-xg2010g.dts';before=board.read_bytes()
   for _ in range(2):subprocess.run(['python3',str(scripts/'apply-stock-cpu.py'),d],check=True)
   assert board.read_bytes()==before and not list(queue.iterdir())
   make=(root/'package/emortal/cpufreq/Makefile').read_text();assert make.count('$(1)/usr/libexec/xg2010g-cpu-policy')==1 and '\n\t$(INSTALL_DIR) $(1)/usr/libexec\n' in make
+  subprocess.run(['python3',str(repo/'CPU/tests/cpufreq-install-test.py'),str(root/'package/emortal/cpufreq/Makefile')],check=True)
   policy=root/'cpu/policy0';policy.mkdir(parents=True)
   values={'scaling_governor':'powersave','scaling_available_governors':'ondemand performance powersave','scaling_min_freq':'500000','scaling_max_freq':'1200000','scaling_available_frequencies':'500000 600000 800000 1000000 1200000'}
   for name,value in values.items():(policy/name).write_text(value+'\n')
