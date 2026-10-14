@@ -1,0 +1,15 @@
+{
+  "variant": "XG2010G-MOSSDEF-MAIN",
+  "backend": {
+    "fork": "gbosek/mwan4",
+    "branch": "main",
+    "fork_commit": "c3cc7f50b4658d881fd33452056363fdaf2cc08c",
+    "version": "0.1.1-r6"
+  },
+  "frontend": {
+    "fork": "gbosek/luci-app-mwan4",
+    "branch": "main",
+    "fork_commit": "281aa575c2cd12c364817f25082cc40088a3e1b0",
+    "version": "1.0.0-r11"
+  }
+}

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xg2010g-rps
 PKG_VERSION:=20261013
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=MIT
 
 include $(INCLUDE_DIR)/package.mk
@@ -11,7 +11,7 @@ define Package/xg2010g-rps
   SECTION:=net
   CATEGORY:=Network
   TITLE:=XG2010G persistent four-core RPS tuning
-  DEPENDS:=+netifd
+  DEPENDS:=+netifd +flock
 endef
 
 define Build/Compile

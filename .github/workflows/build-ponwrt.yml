@@ -175,7 +175,11 @@ jobs:
       # 1. 释放空间 + 初始化编译环境
       # =========================================================
       - name: Check compatibility boost and NPU adapters
-        run: python3 CPU/tests/run.py
+        run: |
+          python3 CPU/tests/run.py
+          python3 Packages/xg2010g-rps/tests/rps-test.py
+          python3 CPU/tests/network-defaults-test.py
+          python3 CPU/tests/pon-selection-test.py
 
       - name: Cancel superseded boost builds
         if: endsWith(github.ref_name, '-boost')
@@ -288,6 +292,7 @@ jobs:
           if [ -n "${FEEDS_CONF}" ] && [ -e "$GITHUB_WORKSPACE/${FEEDS_CONF}" ]; then
             cp "$GITHUB_WORKSPACE/${FEEDS_CONF}" feeds.conf.default
           fi
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase feed
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
@@ -388,15 +393,20 @@ jobs:
           cd "$BUILD_ROOT/openwrt"
 
           # diffconfig(精简配置) 必须 defconfig 展开；保留末尾输出便于排查
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase config
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase verify
           echo "===== make defconfig ====="
           make defconfig 2>&1 | tail -5
+          python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT" --config-only
 
           # =========================================================
           # 关键包校验：defconfig 会把 feeds 里不存在的包静默剔除，
           # 这里显式确认 PON 核心链路还在，否则编出来光口不通
           # =========================================================
           MISSING=""
-          for p in kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl luci-app-pon; do
+          PON_PACKAGES="luci-app-pon"
+          [ "$NPU_VARIANT" = naoki ] && PON_PACKAGES="luci-app-onu luci-i18n-onu-zh-cn airoha-pon-debug"
+          for p in kmod-airoha-xpon kmod-airoha-pon-frontend airoha-pond airoha-ponctl $PON_PACKAGES; do
             if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
               MISSING="$MISSING $p"
             fi
@@ -439,6 +449,7 @@ jobs:
             for p in mwan4 luci-app-mwan4 luci-i18n-mwan4-zh-cn xg2010g-rps luci-i18n-airoha-npu-zh-cn \
                      luci-app-aurora-config luci-theme-aurora \
                      luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp \
+                     luci-app-wol luci-i18n-wol-zh-cn etherwake flock \
                      block-mount ttyd luci-app-ttyd; do
               if ! grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
                 MENU_MISS="$MENU_MISS $p"
@@ -767,6 +778,7 @@ jobs:
           if [ "$PROFILE" = 'gemtek_xg2010g' ]; then
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
+          python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT"
             python3 "$GITHUB_WORKSPACE/scripts/check-compatible-boost.py" .
           fi
           echo "status=success" >> "$GITHUB_OUTPUT"
@@ -802,6 +814,8 @@ jobs:
           cd "$BUILD_ROOT"/openwrt/bin/targets/*/*
           cp "$BUILD_ROOT/openwrt/files/etc/airoha-build-source.json" AIROHA-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-BOOST-SOURCE.json" CPU-BOOST-SOURCE.json
+          cp "$GITHUB_WORKSPACE/MWAN4-SOURCE.json" MWAN4-SOURCE.json
+          [ ! -f "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" ] || cp "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" PON-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
           rm -rf packages
           echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
@@ -854,7 +868,7 @@ jobs:
             echo '```'
             echo ""
             echo "---"
-            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 重启恢复；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
+            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 单实例与误报修复；WOL 中文网络唤醒；默认 LAN 192.168.10.1；MWAN4 停止状态修复；PON 卡片铺满并显示 PON；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
             echo "> 本 Release 为滚动发布页，仅保留最新一次编译产物。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

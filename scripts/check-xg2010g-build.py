@@ -25,9 +25,13 @@ manifest_dir = root / 'bin/targets/airoha/an7581'
 for manifest in manifest_dir.glob('*.manifest'):
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
     for name in ('mwan4', 'luci-app-mwan4', 'luci-i18n-mwan4-zh-cn',
-                 'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn', 'xg2010g-rps'):
+                 'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn', 'xg2010g-rps',
+                 'luci-app-wol', 'luci-i18n-wol-zh-cn', 'etherwake', 'flock'):
         assert name in pkgs, f'{manifest.name}: missing {name}'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
+    assert re.match(r'^20261013-(?:r)?2$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
+    assert re.match(r'^0\.1\.1-(?:r)?6$', pkgs['mwan4']), 'Native MWAN4 startup rule fix missing'
+    assert re.match(r'^1\.0\.0-(?:r)?11$', pkgs['luci-app-mwan4']), 'MWAN4 service-control fix missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
     assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
     assert not any(n in pkgs for n in ('luci-app-nlbwmon','luci-app-statistics')), 'Removed monitor/statistics plugin present'
@@ -57,4 +61,18 @@ assert not (installed / 'files/sbin/tempinfo').exists(), 'Nested /files overlay 
 for name in (('airoha-npu', 'xg2010g-rps') if variant == 'naoki' else ('xg2010g-rps',)):
     path = installed / 'etc/init.d' / name
     assert path.is_file() and path.stat().st_mode & 0o111, f'Service not executable: {name}'
+repo = Path(__file__).resolve().parents[1]
+for name in ('rps-guard.sh', 'rps-watch.sh'):
+    path = installed / 'usr/bin' / name
+    assert path.stat().st_mode & 0o111 and path.read_bytes() == (repo / 'Packages/xg2010g-rps/files' / name).read_bytes(), f'Old RPS runtime: {name}'
+assert (installed / 'www/luci-static/resources/view/status/include/15_pon.js').read_bytes() == (repo / 'UI/15_pon.js').read_bytes(), 'Full-width PON display fix missing'
+overview = (installed / 'www/luci-static/resources/view/mwan4/network/overview.js').read_text()
+assert 'Service stopped' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
+assert '192.168.10.1' in (installed / 'bin/config_generate').read_text(), 'Default LAN IP missing'
+assert 'create_iface_rules(iface, l3_device)' in (installed / 'lib/mwan4/mwan4.uc').read_text(), 'Native MWAN4 init rules missing'
+defaults = installed / 'etc/uci-defaults/98-xg2010g-mwan4-defaults'
+assert defaults.stat().st_mode & 0o111 and defaults.read_bytes() == (repo / 'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').read_bytes(), 'Fresh dual-WAN preset missing'
+assert (installed / 'www/luci-static/resources/view/wol.js').is_file(), 'WOL page missing'
+assert (installed / 'usr/bin/etherwake').stat().st_mode & 0o111, 'WOL packet sender missing'
 print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
+print('Verified MWAN4 stop/native-init fixes, RPS singleton/read fix, full-width PON, WOL and default LAN 192.168.10.1')

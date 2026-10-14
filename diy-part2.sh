@@ -36,6 +36,9 @@ echo "配置：FW_AUTHOR=$FW_AUTHOR (固定)"
 # 1. 修改 config_generate 的默认值（首次开机生成的 /etc/config/system）
 # ---------------------------------------------------------
 CFG="package/base-files/files/bin/config_generate"
+if [ "${PROFILE:-}" = gemtek_xg2010g ]; then
+  python3 "$GITHUB_WORKSPACE/scripts/apply-lan-ip.py" .
+fi
 
 if [ -f "$CFG" ]; then
   # 兼容 @system[-1]（旧）与 @system[0]（OpenWrt 21+）

@@ -1,0 +1,46 @@
+#!/bin/sh
+# Apply the dual-WAN preset only to an untouched package template.
+# Retained user policies, network devices, PPP credentials and DNS stay intact.
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
+reference=/usr/share/xg2010g/mwan4-stock.config
+[ -f "$reference" ] && cmp -s /etc/config/mwan4 "$reference" || exit 0
+
+changed=0
+for interface in wan wanb; do
+	[ "$(uci -q get "network.$interface")" = interface ] || continue
+	uci set "mwan4.$interface.enabled=1"
+	uci -q delete "mwan4.$interface.track_ip"
+	for target in 223.5.5.5 119.29.29.29 114.114.114.114; do
+		uci add_list "mwan4.$interface.track_ip=$target"
+	done
+	uci set "mwan4.$interface.reliability=2"
+	# Distinct default metrics prevent two PPPoE defaults from replacing each other.
+	existing_metric="$(uci -q get "network.$interface.metric")"
+	if [ -z "$existing_metric" ] || [ "$existing_metric" = 0 ]; then
+		metric=10; [ "$interface" = wanb ] && metric=20
+		uci set "network.$interface.metric=$metric"
+	fi
+	old="${interface}6"
+	v6=
+	if [ "$(uci -q get "network.$old")" = interface ]; then
+		v6="$old"
+	elif [ "$(uci -q get "network.$interface.proto")" = pppoe ] &&
+	     [ "$(uci -q get "network.$interface.ipv6")" != 0 ]; then
+		v6="${interface}_6"
+	fi
+	if [ -n "$v6" ]; then
+		[ "$v6" = "$old" ] || uci rename "mwan4.$old=$v6"
+		uci set "mwan4.$v6.enabled=1"
+		uci -q delete "mwan4.$v6.track_ip"
+		uci add_list "mwan4.$v6.track_ip=2400:3200::1"
+		uci add_list "mwan4.$v6.track_ip=2400:3200:baba::1"
+		uci set "mwan4.$v6.reliability=1"
+	fi
+	changed=1
+done
+[ "$changed" = 1 ] || exit 0
+uci set mwan4.wan_m1_w3.weight=1
+uci set mwan4.wanb_m1_w2.weight=1
+uci commit mwan4
+uci commit network
+exit 0

@@ -109,8 +109,12 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   fi
   echo "✅ 已启用 AN7581 Airoha PPE flow stats，以使用补丁中的 NPU 拒绝回退逻辑"
 
-  clone_at https://github.com/gbosek/mwan4 fc7d2aa8e52ad1473c8e29b66e2165943d527cae "$PKG_DIR/mwan4" || exit 1
-  clone_at https://github.com/gbosek/luci-app-mwan4 ee5e0ce5fb854749d6d7786fba6df44439f442cd "$PKG_DIR/luci-app-mwan4" || exit 1
+  clone_at https://github.com/gbosek/mwan4 c3cc7f50b4658d881fd33452056363fdaf2cc08c "$PKG_DIR/mwan4" || exit 1
+  clone_at https://github.com/gbosek/luci-app-mwan4 281aa575c2cd12c364817f25082cc40088a3e1b0 "$PKG_DIR/luci-app-mwan4" || exit 1
+  mkdir -p files/usr/share/xg2010g
+  cp "$PKG_DIR/mwan4/files/etc/config/mwan4" files/usr/share/xg2010g/mwan4-stock.config
+  mkdir -p files/etc
+  cp "$GITHUB_WORKSPACE/MWAN4-SOURCE.json" files/etc/xg2010g-mwan4-source.json
   for p in mwan4 luci-app-mwan4; do
     if [ ! -f "$PKG_DIR/$p/Makefile" ]; then
       echo "::error::$PKG_DIR/$p/Makefile 不存在，包无法被索引"
@@ -190,6 +194,12 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
     echo "✅ 已拷贝: $p  (版本 $(grep -m1 '^PKG_VERSION' "$PKG_DIR/$p/Makefile" 2>/dev/null | sed 's/PKG_VERSION:=//'))"
   done
 
+  if [ -f "$PKG_DIR/luci-app-pon-status/Makefile" ]; then
+    cp "$GITHUB_WORKSPACE/UI/15_pon.js" "$PKG_DIR/luci-app-pon-status/htdocs/luci-static/resources/view/status/include/15_pon.js"
+    sed -i 's/^PKG_RELEASE:=.*/PKG_RELEASE:=5/' "$PKG_DIR/luci-app-pon-status/Makefile"
+    sed -i '/^include .*luci.mk/i LUCI_MINIFY_JS:=0' "$PKG_DIR/luci-app-pon-status/Makefile"
+    echo 'PON overview uses a full-width card and PON display name'
+  fi
   rm -rf "$LUCI_APP_TMP"
 fi
 
@@ -364,7 +374,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
+    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do

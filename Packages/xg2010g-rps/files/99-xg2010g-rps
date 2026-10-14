@@ -1,5 +1,5 @@
 #!/bin/sh
-IFS= read -r board < /tmp/sysinfo/board_name 2>/dev/null || exit 0
+board="$(cat /tmp/sysinfo/board_name 2>/dev/null)"
 [ "$board" = "gemtek,xg2010g" ] || exit 0
 uci -q get 'network.@globals[0]' >/dev/null || uci add network globals >/dev/null
 # Preserve a configured off/single-CPU mode during sysupgrade.
