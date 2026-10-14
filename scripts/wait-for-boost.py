@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Block stock builds until all latest boost branch runs succeed."""
-import argparse,json,os,time,urllib.request,urllib.error
+import argparse,json,os,time,urllib.request,urllib.error,http.client
 from pathlib import Path
 
 def choose_run(head,runs,workflow):
@@ -35,7 +35,7 @@ def main():
    if all(s['ready'] for s in states):
     print('All four latest boost firmware builds succeeded. Stock builds may start.',flush=True);return
    if a.once:raise SystemExit(2)
-  except (urllib.error.URLError,TimeoutError,KeyError,json.JSONDecodeError) as e:
+  except (OSError,http.client.HTTPException,urllib.error.URLError,KeyError,json.JSONDecodeError) as e:
    print('Dependency check unavailable: '+str(e),flush=True)
    if a.once:raise SystemExit(3)
   time.sleep(60)
