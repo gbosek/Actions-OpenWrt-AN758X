@@ -1,8 +1,9 @@
 {
-  "user_confirmed_four_variants": true,
-  "include_overclock": true,
-  "overclock_method": "document-based BL31 + kernel PLL compatibility reimplementation",
-  "status": "Fixed DTS EOF context and disabled automatic reverse application; exact upstream source regression checks enabled",
-  "publish_or_compile": true,
-  "hardware_tested": false
+  "include_overclock": false,
+  "status": "Stock variants queued after all four latest boost branch builds succeed",
+  "maximum_MHz": 1200,
+  "variants": [
+    "naoki",
+    "luanmuc"
+  ]
 }

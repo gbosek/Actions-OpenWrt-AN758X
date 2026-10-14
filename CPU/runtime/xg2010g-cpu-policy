@@ -14,17 +14,8 @@ policy() {
  done
  return 1
 }
-capable() {
- local f cap backend
- for f in "$PLATFORM_ROOT"/*/boost_capable; do
-  [ -r "$f" ] || continue
-  IFS= read -r cap < "$f" || cap=0
-  IFS= read -r backend < "${f%/*}/boost_backend" || backend=unavailable
-  [ "$cap" = 1 ] && [ "$backend" = kernel-pll ] && { echo 1; return; }
- done
- echo 0
-}
-backend() { [ "$(capable)" = 1 ] && echo kernel-pll || echo unavailable; }
+capable() { echo 0; }
+backend() { echo bl31; }
 frequencies() {
  local p cap
  p="$(policy)" || return 1
@@ -35,7 +26,7 @@ frequency_ok() {
  local value f
  value="$1"
  case "$value" in ''|*[!0-9]*) return 1;; esac
- [ "$value" -ge 500000 ] && [ "$value" -le 1400000 ] || return 1
+ [ "$value" -ge 500000 ] && [ "$value" -le 1200000 ] || return 1
  for f in $(frequencies); do [ "$f" = "$value" ] && return 0; done
  return 1
 }
@@ -51,9 +42,9 @@ apply_policy() {
  cap="$(capable)"
  gov="$("$UCI" -q get cpufreq.cpufreq.governor0)"; gov="${gov:-ondemand}"
  min="$("$UCI" -q get cpufreq.cpufreq.minfreq0)"; min="${min:-500000}"
- max="$("$UCI" -q get cpufreq.cpufreq.maxfreq0)"; max="${max:-1400000}"
+ max="$("$UCI" -q get cpufreq.cpufreq.maxfreq0)"; max="${max:-1200000}"
  case "$max" in ''|*[!0-9]*) max=1200000;; esac
- [ "$max" -le 1400000 ] || max=1400000
+ [ "$max" -le 1200000 ] || max=1200000
  if [ "$cap" != 1 ] && [ "$max" -gt 1200000 ]; then
   max=1200000
   save_value maxfreq0 1200000 || return 1

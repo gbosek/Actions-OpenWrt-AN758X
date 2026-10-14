@@ -15,11 +15,11 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-npu-test-') as d:
   assert 'xg2010g-cpu-policy set-max' in s and 'xg2010g-cpu-policy set-governor' in s
   # Verify appended status fields preserve a nested upstream JSON response.
   wrapper=re.search(r'^get_status\(\) \{.*?^\}',s,re.M|re.S).group()
-  helper=root/'policy';helper.write_text('#!/bin/sh\ncase "$1" in cap) echo 1;; backend) echo kernel-pll;; esac\n');helper.chmod(0o755)
+  helper=root/'policy';helper.write_text('#!/bin/sh\ncase "$1" in cap) echo 0;; backend) echo bl31;; esac\n');helper.chmod(0o755)
   code="upstream_get_status() { echo '"+json.dumps({'cpu':{'freq':500},'flows':[]})+"'; }\n"+wrapper.replace('/usr/libexec/xg2010g-cpu-policy',str(helper))+'\nget_status\n'
   out=subprocess.run(['sh','-c',code],capture_output=True,text=True,check=True)
-  status=json.loads(out.stdout);assert status['boost_capable']==1 and status['boost_backend']=='kernel-pll' and status['cpu']['freq']==500 and status['flows']==[]
+  status=json.loads(out.stdout);assert status['boost_capable']==0 and status['boost_backend']=='bl31' and status['cpu']['freq']==500 and status['flows']==[]
   if variant=='luanmuc':
    js=(app/'htdocs/luci-static/resources/view/airoha_npu/status.js').read_text()
-   assert "'max':'1400'" in js and 'Governor locked to performance' not in js and 'r.actual_mhz' not in js
+   assert "'max':'1200'" in js and 'Governor locked to performance' not in js and 'r.actual_mhz' not in js and 'renderOcControls())' not in js
  print('PASS: exclusive NPU providers, shared CPU controls, JSON capability fields and shell/JS syntax')

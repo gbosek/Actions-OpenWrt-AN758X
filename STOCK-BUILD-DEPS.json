@@ -1,0 +1,24 @@
+{
+  "dependencies": [
+    {
+      "repository": "gbosek/Actions-OpenWrt-AN758X",
+      "branch": "xg2010g-mwan4-naoki-boost",
+      "workflow": ".github/workflows/build-ponwrt.yml"
+    },
+    {
+      "repository": "gbosek/Actions-OpenWrt-AN758X",
+      "branch": "xg2010g-mwan4-luanmuc-boost",
+      "workflow": ".github/workflows/build-ponwrt.yml"
+    },
+    {
+      "repository": "gbosek/OpenWRT-CI",
+      "branch": "xg2010g-mwan4-naoki-boost",
+      "workflow": ".github/workflows/OWRT-ALL.yml"
+    },
+    {
+      "repository": "gbosek/OpenWRT-CI",
+      "branch": "xg2010g-mwan4-luanmuc-boost",
+      "workflow": ".github/workflows/OWRT-ALL.yml"
+    }
+  ]
+}

@@ -52,7 +52,7 @@ start() { /usr/libexec/xg2010g-cpu-policy apply; }
 reload() { start; }
 ''')
         config = app / 'root/etc/config/airoha_npu'
-        config.write_text(config.read_text().replace("option max_freq '1200000'", "option max_freq '1400000'"))
+        config.write_text(config.read_text().replace("option max_freq '1200000'", "option max_freq '1200000'"))
     else:
         old = 'cpu_avail_freqs=$(cat "$cpufreq_path/scaling_available_frequencies" 2>/dev/null || echo "")'
         if text.count(old) != 1:
@@ -62,16 +62,17 @@ reload() { start; }
 	local target_mhz
 	target_mhz=$(printf '%s' "$1" | jsonfilter -e '@.freq_mhz' 2>/dev/null)
 	case "$target_mhz" in ''|*[!0-9]*) echo '{"error":"Invalid frequency"}'; return 1;; esac
-	[ "$target_mhz" -ge 500 ] && [ "$target_mhz" -le 1400 ] || {
-		echo '{"error":"Frequency must be 500–1400 MHz"}'; return 1
+	[ "$target_mhz" -ge 500 ] && [ "$target_mhz" -le 1200 ] || {
+		echo '{"error":"Frequency must be 500–1200 MHz"}'; return 1
 	}
 	/usr/libexec/xg2010g-cpu-policy set-max "$((target_mhz * 1000))"
 }''')
         js = app / 'htdocs/luci-static/resources/view/airoha_npu/status.js'
-        s = js.read_text().replace("'max':'1600'", "'max':'1400'").replace('f>1600', 'f>1400').replace('Frequency must be 500-1600 MHz', 'Frequency must be 500-1400 MHz')
-        s = s.replace("if(f>1400&&!confirm(_('Frequencies above 1400 MHz may be unstable. Continue?'))) return;", '')
+        s = js.read_text().replace("'max':'1600'", "'max':'1200'").replace('f>1600', 'f>1200').replace('Frequency must be 500-1600 MHz', 'Frequency must be 500-1200 MHz')
+        s = s.replace("if(f>1200&&!confirm(_('Frequencies above 1200 MHz may be unstable. Continue?'))) return;", '')
         s = s.replace("_('CPU set to ')+r.actual_mhz+' MHz'", "_('Maximum frequency ceiling applied')")
         s = s.replace('Direct PLL programming. Governor locked to performance. Stock max: 1200 MHz. Tested stable up to 1500 MHz.', 'CPU frequency is managed by the kernel; governor is preserved.')
+        s = "\n".join(line for line in s.splitlines() if "renderOcControls())" not in line and "Frequencies above 1400 MHz" not in line) + "\n"
         js.write_text(s)
         po = app / 'po/zh_Hans/airoha-npu.po'
         po.write_text(po.read_text()+'''\nmsgid "Maximum frequency ceiling applied"
@@ -80,8 +81,8 @@ msgstr "最高频率上限已应用"
 msgid "CPU frequency is managed by the kernel; governor is preserved."
 msgstr "CPU 频率由内核管理，保留当前调速器设置。"
 
-msgid "Frequency must be 500-1400 MHz"
-msgstr "频率必须在 500–1400 MHz 范围内"
+msgid "Frequency must be 500-1200 MHz"
+msgstr "频率必须在 500–1200 MHz 范围内"
 ''')
     # Keep NPU status fields intact while exposing the compatibility capability.
     text = text.replace('get_status() {', 'upstream_get_status() {', 1)

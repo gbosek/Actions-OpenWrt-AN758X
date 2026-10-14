@@ -383,5 +383,5 @@ fi
 echo "🎉 diy-part1.sh 执行完毕"
 
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  python3 "$GITHUB_WORKSPACE/scripts/apply-compatible-boost.py" . || exit 1
+  python3 "$GITHUB_WORKSPACE/scripts/apply-stock-cpu.py" . || exit 1
 fi

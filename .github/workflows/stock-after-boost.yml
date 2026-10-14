@@ -1,0 +1,30 @@
+name: XG2010G stock after boost
+run-name: XG2010G MWAN4 stock 500–1200MHz (after four boost builds)
+on:
+  push:
+    branches: [xg2010g-mwan4-stock-after-boost]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  wait:
+    name: Wait for all four boost firmware builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v5
+      - name: Wait for successful latest boost branch runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/wait-for-boost.py --manifest STOCK-BUILD-DEPS.json
+  stock:
+    name: Stock ${{ matrix.NPU }}
+    needs: wait
+    strategy:
+      fail-fast: false
+      matrix:
+        NPU: [naoki, luanmuc]
+    uses: ./.github/workflows/build-ponwrt.yml
+    with:
+      npu: ${{ matrix.NPU }}

@@ -1,12 +1,12 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G MWAN4 ${{ contains(github.ref_name, 'luanmuc') && 'luanmuc' || 'naoki' }} compatibility boost
+run-name: XG2010G MWAN4 ${{ inputs.npu || (contains(github.ref_name, 'luanmuc') && 'luanmuc' || 'naoki') }} stock 1200MHz
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
 #   FW_AUTHOR 是唯一真相源，改动请只改 env.FW_AUTHOR 这一处。
 # =========================================================
 env:
-  NPU_VARIANT: ${{ contains(github.ref_name, 'luanmuc') && 'luanmuc' || 'naoki' }}
+  NPU_VARIANT: ${{ inputs.npu || (contains(github.ref_name, 'luanmuc') && 'luanmuc' || 'naoki') }}
   BUILD_ROOT: /workdir
   SOURCE: ${{ github.event.inputs.source || 'pbs05/ponwrt' }}
   # 唯一真相源：固件版本后缀的作者名（LuCI 概览页「固件版本」）
@@ -32,8 +32,12 @@ env:
 
 on:
   push:
-    branches: [xg2010g-mwan4-naoki-boost, xg2010g-mwan4-luanmuc-boost]
-  repository_dispatch:
+    branches: [xg2010g-mwan4-stock-manual]
+  workflow_call:
+    inputs:
+      npu:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       source:
@@ -120,6 +124,7 @@ permissions:
 
 jobs:
   build:
+    name: Stock ${{ inputs.npu || 'naoki' }}
     runs-on: ubuntu-24.04
     # 350 分钟接近 GitHub-hosted 6 小时上限；首次冷构建（工具链+全量 kmod）
     # 在 4 核 16G runner 上可能超时，建议拆出 toolchain-only 预热 job。
@@ -174,8 +179,8 @@ jobs:
       # =========================================================
       # 1. 释放空间 + 初始化编译环境
       # =========================================================
-      - name: Check compatibility boost and NPU adapters
-        run: python3 CPU/tests/run.py
+      - name: Check stock 1200MHz and NPU adapters
+        run: python3 CPU/tests/stock-run.py
 
       - name: Free disk space & init build environment
         env:
@@ -750,7 +755,7 @@ jobs:
           if [ "$PROFILE" = 'gemtek_xg2010g' ]; then
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
-            python3 "$GITHUB_WORKSPACE/scripts/check-compatible-boost.py" .
+            python3 "$GITHUB_WORKSPACE/scripts/check-stock-cpu.py" .
           fi
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
@@ -813,7 +818,7 @@ jobs:
           # 固定 tag：机型 + 分支，不含时间戳、不含作者
           # 同一机型/分支再次编译时，softprops/action-gh-release 会更新
           # 这个已存在的 Release（同名固件自动覆盖），不会新建版本。
-          RELEASE_TAG=$(echo "${DEVICE_NAME}-${REPO_BRANCH}-${NPU_VARIANT}-compat1400" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          RELEASE_TAG=$(echo "${DEVICE_NAME}-${REPO_BRANCH}-${NPU_VARIANT}-stock1200" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
           touch release.txt
@@ -837,7 +842,7 @@ jobs:
             echo '```'
             echo ""
             echo "---"
-            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 重启恢复；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
+            echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 重启恢复；原生 BL31 500–1200MHz 动态调频（不超频）。"
             echo "> 本 Release 为滚动发布页，仅保留最新一次编译产物。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt
