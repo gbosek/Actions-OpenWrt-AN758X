@@ -130,10 +130,12 @@ return view.extend({
 
 			includes[i].pending = false;
 			includes[i].ready = false;
-			var container = E('div', { 'style': includes[i].hide ? 'display: none' : '' },
+			var fullwidth = includes[i].fullwidth
+				? 'width: 100% !important; max-width: none !important; min-width: 0; align-self: stretch; box-sizing: border-box;' : '';
+			var container = E('div', { 'style': fullwidth + (includes[i].hide ? 'display: none' : '') },
 				E('p', {}, E('em', { 'class': 'spinning' }, _('Collecting data...'))));
 
-			rv.appendChild(E('div', { 'class': 'cbi-section' }, [
+			rv.appendChild(E('div', { 'class': 'cbi-section', 'style': fullwidth }, [
 				E('div', { 'class': 'cbi-title' },[
 					E('h3', { 'style': 'display: flex; justify-content: space-between' }, [
 						title || '-',

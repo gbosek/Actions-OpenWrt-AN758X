@@ -1,5 +1,5 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 1456 PPE fixes - naoki and luanmuc
+run-name: XG2010G 1456 PPE + PON full-width fix - naoki and luanmuc
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -119,7 +119,7 @@ permissions:
 
 jobs:
   build:
-    name: XG2010G 1456 PPE - ${{ matrix.npu }}
+    name: XG2010G 1456 PPE + PON full-width - ${{ matrix.npu }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -188,6 +188,7 @@ jobs:
           python3 CPU/tests/network-defaults-test.py
           python3 CPU/tests/pon-selection-test.py
           python3 tests/ppe-prepare-test.py
+          python3 UI/tests/pon-install-test.py
           node UI/tests/overview-test.js
 
       - name: Cancel superseded boost builds
@@ -801,6 +802,26 @@ jobs:
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
 
+      - name: Verify PON layout with firmware Aurora and Argon themes
+        id: pon-layout
+        if: steps.compile.outputs.status == 'success' && env.PROFILE == 'gemtek_xg2010g'
+        run: |
+          npm ci --prefix "$GITHUB_WORKSPACE/UI/tests" --ignore-scripts --no-audit --no-fund
+          node "$GITHUB_WORKSPACE/UI/tests/node_modules/playwright/cli.js" install --with-deps --only-shell chromium
+          PON_ROOT="$(python3 -c 'import os; from pathlib import Path; roots=list((Path(os.environ["BUILD_ROOT"])/"openwrt/build_dir").glob("target-*/root-airoha")); assert len(roots)==1, roots; print(roots[0])')"
+          PON_TEST_ROOT="$PON_ROOT" \
+          PON_TEST_SCREENSHOTS="$RUNNER_TEMP/pon-layout/screenshots" \
+          PON_TEST_OUTPUT="$RUNNER_TEMP/pon-layout/results" \
+            node "$GITHUB_WORKSPACE/UI/tests/node_modules/playwright/cli.js" test --config="$GITHUB_WORKSPACE/UI/tests/playwright.config.js"
+
+      - name: Upload PON layout verification
+        if: always() && (steps.pon-layout.outcome == 'success' || steps.pon-layout.outcome == 'failure')
+        uses: actions/upload-artifact@v5
+        with:
+          name: PON-layout-${{ env.NPU_VARIANT }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/pon-layout
+          retention-days: 14
+
       # =========================================================
       # 19. 空间检查
       # =========================================================
@@ -833,6 +854,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/CPU-BOOST-SOURCE.json" CPU-BOOST-SOURCE.json
           cp "$GITHUB_WORKSPACE/MWAN4-SOURCE.json" MWAN4-SOURCE.json
           cp "$GITHUB_WORKSPACE/PPE-FIXES-SOURCE.json" PPE-FIXES-SOURCE.json
+          cp "$BUILD_ROOT/openwrt/files/etc/pon-status-layout.json" PON-STATUS-LAYOUT.json
           [ ! -f "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" ] || cp "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" PON-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
           rm -rf packages
@@ -890,6 +912,7 @@ jobs:
             echo "---"
             echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 单实例与误报修复；WOL 中文网络唤醒；Argon 中文壁纸配置与 Bing 每日登录壁纸；概览卡片独立加载；默认 LAN 192.168.10.1；MWAN4 停止状态修复；PON 卡片铺满并显示 PON；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
             echo "PPE 新增 932 SRAM flush 错误传递及 933 TC 模板时间戳候选；继续使用 1456-62 配对固件，SHA 和驱动对象核对见 PPE-BUILD-VERIFICATION.json。"
+            echo "PON fullwidth-v2：独立布局、正常字号、Aurora/Argon 桌面和手机实样式验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
             echo "> 此预发布固件完成构建和离线函数检查后提供下载；设备重拨、ACK 故障恢复、SID 隔离及超频稳定性尚未验收。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

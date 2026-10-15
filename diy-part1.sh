@@ -199,10 +199,7 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   done
 
   if [ -f "$PKG_DIR/luci-app-pon-status/Makefile" ]; then
-    cp "$GITHUB_WORKSPACE/UI/15_pon.js" "$PKG_DIR/luci-app-pon-status/htdocs/luci-static/resources/view/status/include/15_pon.js"
-    sed -i 's/^PKG_RELEASE:=.*/PKG_RELEASE:=6/' "$PKG_DIR/luci-app-pon-status/Makefile"
-    sed -i '/^include .*luci.mk/i LUCI_MINIFY_JS:=0' "$PKG_DIR/luci-app-pon-status/Makefile"
-    echo 'PON overview uses a full-width card and PON display name'
+    python3 "$GITHUB_WORKSPACE/scripts/patch-pon-status.py" .
   fi
   rm -rf "$LUCI_APP_TMP"
 fi

@@ -32,8 +32,9 @@ def refresh_luci_cache_version(root):
     overview = root / 'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/index.js'
     if overview.exists():
         digest.update(overview.read_bytes())
-    pon = root / 'package/custom/luci-app-pon-status/htdocs/luci-static/resources/view/status/include/15_pon.js'
-    if pon.exists():
+    pon_dir = root / 'package/custom/luci-app-pon-status/htdocs/luci-static/resources/view/status/include'
+    for pon in sorted(pon_dir.glob('*.js')):
+        digest.update(pon.name.encode())
         digest.update(pon.read_bytes())
     app = root / 'package/custom/luci-app-airoha-npu/htdocs'
     for path in sorted(app.glob('**/*.js')):

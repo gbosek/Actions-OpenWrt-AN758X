@@ -226,30 +226,28 @@ function css(name, fallback) {
 	return 'var(--' + name + ', ' + fallback + ')';
 }
 
-var cBorder = css('border-color-low', '#eeeeee');
-var cMuted  = css('text-color-medium', '#808080');
-var cStrong = css('text-color-highest', '#000000');
+var cBorder = css('hairline', css('border-color-low', '#eeeeee'));
+var cMuted  = css('text-muted', css('text-color-medium', '#808080'));
+var cStrong = css('text', css('text-color-highest', '#000000'));
 var cCool   = css('success-color-high', 'rgb(0, 172, 89)');
 
 var S_RATE_BLOCK = 'margin-top: 8px; padding-top: 8px; border-top: 1px solid ' + cBorder;
-/* 上部一行两列：左边光模块 itemlist（标签窄、右侧留白），右边就是
- * 上行/下行两行速率 —— 正好填进 itemlist 的空白区。
- * align-items: center 让速率列相对左侧 itemlist 垂直居中（而不是顶在上面）。
- * 所有文字 nowrap，禁止窄屏逐字竖排断行。 */
-var S_TOP        = 'display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; flex-wrap: wrap';
-var S_RATE_COL   = 'flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-end';
+/* 专用布局：左侧读数行、右侧速率面板；窄屏自动换行，避免主题通用
+ * ifacebox/grid 样式把整个区域压成一个小卡片。 */
+var S_TOP        = 'display: flex; align-items: stretch; gap: 24px; min-width: 0; flex-wrap: wrap';
+var S_RATE_COL   = 'flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 12px; box-sizing: border-box; background: ' + css('surface-sunken', css('background-color-low', '#f4f7fa')) + '; border-radius: 8px';
 var S_RATE_ROW   = 'display: flex; align-items: baseline; gap: 5px; white-space: nowrap';
-var S_RATE_LABEL = 'font-size: 12px; color: ' + cMuted + '; white-space: nowrap';
-var S_RATE_VALUE = 'font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
-var S_RATE_UNIT  = 'font-size: 10px; color: ' + cMuted + '; margin-left: 2px; white-space: nowrap';
-var S_EMPTY      = 'font-size: 13px; color: ' + cMuted + '; white-space: nowrap';
+var S_RATE_LABEL = 'font-size: 1em; color: ' + cMuted + '; white-space: nowrap';
+var S_RATE_VALUE = 'font-size: 1.15em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
+var S_RATE_UNIT  = 'font-size: 0.85em; color: ' + cMuted + '; margin-left: 2px; white-space: nowrap';
+var S_EMPTY      = 'font-size: 1em; color: ' + cMuted + '; overflow-wrap: anywhere';
 /* 连接数行：协议标签 + 总数 + 硬件卸载计数（绿色，好消息的颜色）。
  * TCP/UDP 两组并排一行，宽度不够时允许换行。 */
-var S_CONN_ROW   = 'display: flex; align-items: baseline; gap: 3px; white-space: nowrap';
-var S_CONN_LABEL = 'font-size: 11px; font-weight: 600; color: ' + cMuted + '; white-space: nowrap';
-var S_CONN_VALUE = 'font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
-var S_CONN_NPU   = 'font-size: 10px; color: ' + cMuted + '; white-space: nowrap';
-var S_CONN_NPU_V = 'font-size: 12px; font-weight: 600; color: ' + cCool + '; white-space: nowrap';
+var S_CONN_ROW   = 'display: flex; flex: 1 1 220px; min-width: 0; align-items: baseline; gap: 8px; flex-wrap: wrap';
+var S_CONN_LABEL = 'font-size: 1em; font-weight: 600; color: ' + cMuted + '; white-space: nowrap';
+var S_CONN_VALUE = 'font-size: 1.1em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
+var S_CONN_NPU   = 'font-size: 0.9em; color: ' + cMuted + '; white-space: nowrap';
+var S_CONN_NPU_V = 'font-size: 1em; font-weight: 600; color: ' + cCool + '; white-space: nowrap';
 
 function rateLine(label, value) {
 	return E('div', { 'style': S_RATE_ROW }, [
@@ -277,8 +275,8 @@ function buildRateCol(rate) {
 			rateLine(_('下行'), rate.rx)
 		]);
 
-	return E('div', { 'style': S_EMPTY },
-		[ rate ? _('读取失败') : _('不可用') ]);
+	return E('aside', { 'style': S_RATE_COL },
+		E('span', { 'style': S_EMPTY }, [ rate ? _('读取失败') : _('不可用') ]));
 }
 
 /* 底部分隔线下的一行：TCP / UDP 两组并排，宽度不够时换行 */
@@ -300,20 +298,27 @@ function buildConnRow(conns) {
 	return E('div', { 'style': S_EMPTY }, [ _('连接数不可用') ]);
 }
 
+function opticsRow(label, value) {
+	return E('div', { 'class': 'pon-optics-row', 'style': 'display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 0; border-bottom: 1px solid ' + cBorder }, [
+		E('strong', { 'style': 'flex: 1 1 140px; min-width: 0; font-weight: 600' }, label),
+		E('span', { 'style': 'flex: 1 1 120px; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums' }, value)
+	]);
+}
+
 function renderBox(item) {
 	var frontend = item.frontend || {};
 
-	return E('div', { 'class': 'pon-optics-card', 'style': 'display: block; width: 100% !important; min-width: 0; max-width: none !important; margin: 0; box-sizing: border-box; flex: 1 1 100%; border: 1px solid ' + cBorder + '; border-radius: 12px; overflow: hidden' }, [
-		E('div', { 'class': 'ifacebox-head center active', 'style': 'width: 100%; max-width: none; box-sizing: border-box; padding: 10px 16px' },
+	return E('article', { 'class': 'pon-optics-card', 'data-pon-layout': 'fullwidth-v2', 'style': 'display: block; width: 100% !important; min-width: 0; max-width: none !important; margin: 0; box-sizing: border-box; align-self: stretch; border: 1px solid ' + cBorder + '; border-radius: 12px; overflow: hidden; font-size: 1rem; line-height: 1.6; color: ' + cStrong + '; background: ' + css('surface', '#ffffff') }, [
+		E('header', { 'class': 'pon-optics-head', 'style': 'display: block; width: 100%; max-width: none; box-sizing: border-box; padding: 10px 16px; text-align: center; color: ' + css('on-brand', '#ffffff') + '; background: ' + css('brand', css('primary', '#008fbb')) },
 			E('strong', 'PON')),
-		E('div', { 'class': 'ifacebox-body left', 'style': 'width: 100%; max-width: none; box-sizing: border-box; padding: 16px' }, [
+		E('div', { 'class': 'pon-optics-body', 'style': 'display: block; width: 100%; min-width: 0; max-width: none; box-sizing: border-box; padding: 16px; text-align: left' }, [
 			E('div', { 'style': S_TOP }, [
-				L.itemlist(E('span'), [
-					_('收光功率'), metric(frontend, 'rx_power_dbm', 'dBm', 2),
-					_('发光功率'), metric(frontend, 'tx_power_dbm', 'dBm', 2),
-					_('光模块温度'), metric(frontend, 'temperature_celsius', '°C', 2),
-					_('偏置电流'), metric(frontend, 'tx_bias_ma', 'mA', 2),
-					_('供电电压'), metric(frontend, 'voltage_volts', 'V', 4)
+				E('div', { 'class': 'pon-optics-values', 'style': 'flex: 2 1 280px; min-width: 0' }, [
+					opticsRow(_('收光功率'), metric(frontend, 'rx_power_dbm', 'dBm', 2)),
+					opticsRow(_('发光功率'), metric(frontend, 'tx_power_dbm', 'dBm', 2)),
+					opticsRow(_('光模块温度'), metric(frontend, 'temperature_celsius', '°C', 2)),
+					opticsRow(_('偏置电流'), metric(frontend, 'tx_bias_ma', 'mA', 2)),
+					opticsRow(_('供电电压'), metric(frontend, 'voltage_volts', 'V', 4))
 				]),
 				buildRateCol(item.rate)
 			]),
@@ -324,6 +329,7 @@ function renderBox(item) {
 
 return baseclass.extend({
 	title: _('PON 光模块'),
+	fullwidth: true,
 
 	load: function() {
 		return L.resolveDefault(uci.load('pon'), null).then(function() {
@@ -372,7 +378,7 @@ return baseclass.extend({
 		if (!data || !data.length)
 			return null;
 
-		return E('div', { 'id': 'pon_optics_table', 'class': 'pon-optics-table', 'style': 'display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 100% !important; max-width: none !important; min-width: 0; box-sizing: border-box' },
+		return E('section', { 'id': 'xg2010g_pon_optics', 'class': 'pon-optics-table', 'style': 'display: flex; flex-direction: column; align-items: stretch; gap: 16px; width: 100% !important; max-width: none !important; min-width: 0; box-sizing: border-box' },
 			data.map(renderBox));
 	}
 });

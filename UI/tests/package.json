@@ -1,0 +1,7 @@
+{
+  "name": "xg2010g-pon-layout-tests",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
