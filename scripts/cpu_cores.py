@@ -5,18 +5,8 @@ import hashlib
 import re
 from pathlib import Path
 
-RPC = r'''	getCPUUsage: {
-		call: function() {
-			if (!access('/sbin/cpuusage'))
-				return { cpuusage: '?' };
-			const fd = popen('/sbin/cpuusage');
-			if (!fd)
-				return { cpuusage: '?' };
-			const value = fd.read('all');
-			fd.close();
-			return { cpuusage: trim(value || '') || '?' };
-		}
-	},'''
+RPC = "\tgetCPUUsage: {\n        call: function() {\n            let reason = 'cpu_sampler_unavailable';\n            const fd = popen('/usr/libexec/xg2010g-cpuusage');\n            if (fd) {\n                const text = fd.read('all');\n                const status = fd.close();\n                if (!text) reason = 'cpu_sampler_empty_output';\n                else try {\n                    const value = json(text);\n                    if (type(value) == 'object' && type(value.cpuusage) == 'string' &&\n                        value.cpuusage != '?' && (value.last_success_at != null || value.error != null))\n                        return value;\n                    reason = 'cpu_sampler_invalid_response';\n                } catch (e) { reason = 'cpu_sampler_invalid_json'; }\n            } else reason = 'cpu_sampler_popen_failed';\n            try {\n                const cached = json(readfile('/tmp/xg2010g-cpuusage.last.json') || 'null');\n                if (type(cached) == 'object' && type(cached.cpuusage) == 'string') {\n                    cached.stale = true;\n                    cached.error = reason;\n                    return cached;\n                }\n            } catch (e) {}\n            return { cpuusage: 'Unavailable', stale: true, error: reason,\n                     sampled_at: null, last_success_at: null, sample_ms: null };\n        }\n    },\n"
+DISPLAY = "function cpuSampleDisplay(sample) {\n    sample = sample || {};\n    var stamp = sample.last_success_at ? new Date(sample.last_success_at * 1000).toLocaleString() : '无有效样本';\n    var detail = 'SYS 含 system / IRQ / softirq；采样 ' + (sample.sample_ms == null ? '未知' : sample.sample_ms + ' ms') + '；更新时间 ' + (sample.sampled_at ? new Date(sample.sampled_at * 1000).toLocaleString() : '未知') + '；最后有效样本 ' + stamp;\n    if (sample.stale || sample.error) detail += '；样本已过期 / 读取失败：' + (sample.error || 'unknown');\n    return E('div', {}, [ E('span', {}, sample.cpuusage || 'Unavailable'), E('br'),\n        E('small', { style: sample.stale ? 'color:#b45309' : 'opacity:.75' }, detail) ]);\n}\n\n"
 
 
 def paths(root):
@@ -53,18 +43,23 @@ def apply_cpu_core_view(root):
     backend, page = paths(root)
     text = backend.read_text()
     start = text.index('\tgetCPUUsage: {')
-    end = text.index('\n\tget', start + 1)
+    end = text.index('\tgetTempInfo: {', start)
     backend.write_text(text[:start] + RPC + text[end:])
     text = page.read_text()
-    # The native helper already formats all four core values in one string.
-    pattern = r'// BEGIN XG2010G FOUR-CORE CPU\n.*?// END XG2010G FOUR-CORE CPU\n'
-    text = re.sub(pattern, '', text, flags=re.S)
+    text = re.sub(r'// BEGIN XG2010G FOUR-CORE CPU\n.*?// END XG2010G FOUR-CORE CPU\n', '', text, flags=re.S)
     text = text.replace('renderCPUCoreUsage(cpuusage)', "cpuusage.cpuusage || _('Unavailable')")
-    if 'cpuusage.cpuusage' not in text:
-        raise ValueError('Cannot identify the CPU usage row')
+    if 'function cpuSampleDisplay(' not in text:
+        assert 'return baseclass.extend({' in text
+        text = text.replace('return baseclass.extend({', DISPLAY + 'return baseclass.extend({', 1)
+    # Both upstream overview variants have the same row, with different spacing.
+    text, n = re.subn(r"(_\('CPU usage \(%\)'\),\s*)(?:cpuusage\.cpuusage(?:\s*\|\|\s*_\('Unavailable'\))?|cpuSampleDisplay\(cpuusage\))", r'\1cpuSampleDisplay(cpuusage)', text)
+    if n != 1:
+        raise ValueError('Cannot uniquely identify the CPU usage row')
+    text, n = re.subn(r'L\.resolveDefault\(callCPUUsage\(\),\s*\{\}\)', "callCPUUsage().catch(function(error) { return { cpuusage: 'Unavailable', stale: true, error: 'RPC: ' + String(error) }; })", text)
+    assert n == 1 or "error: 'RPC: '" in text, 'CPU RPC error handling absent'
     page.write_text(text)
     refresh_luci_cache_version(root)
-    print('CPU overview uses the unchanged repository /sbin/cpuusage helper (CPU0–CPU3)')
+    print('CPU overview: structured sample, SYS includes IRQ/softirq, explicit errors and last-success time')
 
 
 if __name__ == '__main__':

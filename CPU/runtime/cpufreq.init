@@ -1,6 +1,6 @@
 #!/bin/sh /etc/rc.common
 # SPDX-License-Identifier: GPL-2.0
-START=25
+START=89
 STOP=10
 USE_PROCD=1
 extra_command "get_policies" "Get CPU scaling governors and frequencies"
@@ -25,10 +25,24 @@ get_policies() {
  json_dump
 }
 start_service() {
- procd_open_instance
- procd_set_param command /usr/libexec/xg2010g-cpu-policy watch
- procd_set_param respawn
- procd_close_instance
+ local waited=0 ready policy
+ while :; do
+  ready=0
+  for policy in /sys/devices/system/cpu/cpufreq/policy[0-9]*; do
+   [ -w "$policy/scaling_governor" ] && ready=1 && break
+  done
+  [ "$ready" = 1 ] && break
+  if [ "$waited" -ge 15 ]; then
+   logger -t xg2010g-cpufreq -p user.warn 'CPU policy unavailable after 15s; startup apply failed'
+   return 1
+  fi
+  sleep 1
+  waited=$((waited + 1))
+ done
+ /usr/libexec/xg2010g-cpu-policy apply || {
+  logger -t xg2010g-cpufreq -p user.warn 'CPU policy apply failed'
+  return 1
+ }
 }
 reload_service() { /usr/libexec/xg2010g-cpu-policy apply; }
 service_triggers() { procd_add_reload_trigger cpufreq; }

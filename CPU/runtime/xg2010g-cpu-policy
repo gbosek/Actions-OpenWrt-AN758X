@@ -39,7 +39,7 @@ frequency_ok() {
  for f in $(frequencies); do [ "$f" = "$value" ] && return 0; done
  return 1
 }
-read_value() { local value; IFS= read -r value < "$1" 2>/dev/null || value=; printf '%s' "$value"; }
+read_value() { local value=""; IFS= read -r value < "$1" 2>/dev/null || [ -n "$value" ] || return 1; printf '%s' "$value"; }
 write_value() {
  [ "$(read_value "$1")" = "$2" ] && return 0
  printf '%s\n' "$2" > "$1"
@@ -116,11 +116,6 @@ case "${1:-apply}" in
  backend) backend;;
  frequencies) frequencies | tr ' ' '\n' | sed '/^$/d' | sort -n -u;;
  apply) apply_policy;;
- watch)
-  while :; do
-   apply_policy || logger -t xg2010g-cpufreq 'CPU policy not applied; see kernel boost errors or policy readiness'
-   sleep 5
-  done;;
  set-governor)
   board_ok || error 'Unsupported board'
   p="$(policy)" || error 'CPU frequency scaling unavailable'

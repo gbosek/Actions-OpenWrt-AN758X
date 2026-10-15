@@ -46,8 +46,8 @@ def adapt(app, variant):
 }''')
         init = app / 'root/etc/init.d/airoha-npu'
         init.write_text('''#!/bin/sh /etc/rc.common
-# CPU policy is shared with the standard cpufreq service.
-START=89
+# Manual compatibility alias. The standard cpufreq service is the boot owner.
+# No START entry: this helper does not apply a second boot policy.
 start() { /usr/libexec/xg2010g-cpu-policy apply; }
 reload() { start; }
 ''')
@@ -101,8 +101,10 @@ case "$1" in
     if 'boost_backend' not in text or '/usr/libexec/xg2010g-cpu-policy set-max' not in text:
         raise ValueError('CPU adapter did not apply')
     rpc.write_text(text)
+    from observability import adapt_observability
+    adapt_observability(app, variant)
     make = app / 'Makefile'
     s = make.read_text()
-    s, n = re.subn(r'^PKG_RELEASE:=(\d+)$', lambda m: 'PKG_RELEASE:='+str(int(m[1])*100+1), s, flags=re.M)
+    s, n = re.subn(r'^PKG_RELEASE:=(\d+)$', lambda m: 'PKG_RELEASE:='+str(int(m[1])*100+2), s, flags=re.M)
     if n != 1: raise ValueError('Cannot assign a distinct local package revision')
     make.write_text(s)

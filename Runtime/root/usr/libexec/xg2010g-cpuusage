@@ -1,0 +1,45 @@
+#!/bin/sh
+# Structured CPU samples. A failed sample is explicit and may carry the last valid value.
+umask 077
+cache=${CPUUSAGE_CACHE:-/tmp/xg2010g-cpuusage.last.json}
+stat_file=${CPUUSAGE_PROC_STAT:-/proc/stat}
+parser=${CPUUSAGE_PARSER:-/usr/libexec/xg2010g-cpuusage.awk}
+sample_delay=${CPUUSAGE_DELAY:-0.25}
+error=sample_failed
+for attempt in 1 2; do
+    started=$(awk '{print $1}' /proc/uptime)
+    if [ -n "$CPUUSAGE_FIRST" ] && [ -n "$CPUUSAGE_SECOND" ]; then
+        first=$(cat "$CPUUSAGE_FIRST" 2>/dev/null); second=$(cat "$CPUUSAGE_SECOND" 2>/dev/null)
+    else
+        first=$(awk '/^cpu[0-9]* /' "$stat_file" 2>/dev/null)
+        sleep "$sample_delay" 2>/dev/null || sleep 1
+        second=$(awk '/^cpu[0-9]* /' "$stat_file" 2>/dev/null)
+    fi
+    ended=$(awk '{print $1}' /proc/uptime)
+    if [ -z "$first" ] || [ -z "$second" ]; then
+        error=proc_stat_unreadable
+        continue
+    fi
+    value=$(printf '%s\n__SECOND__\n%s\n' "$first" "$second" | awk -f "$parser" 2>/dev/null)
+    rc=$?
+    if [ "$rc" != 0 ] || [ -z "$value" ]; then
+        error=invalid_or_reset_cpu_counters
+        continue
+    fi
+    now=$(date +%s)
+    ms=$(awk -v a="$started" -v b="$ended" 'BEGIN{printf "%.0f",(b-a)*1000}')
+    base="${value%\}},\"sampled_at\":$now,\"last_success_at\":$now,\"sample_ms\":$ms}"
+    tmp=$(mktemp "${cache}.XXXXXX" 2>/dev/null)
+    if [ -n "$tmp" ] && printf '%s\n' "$base" > "$tmp" 2>/dev/null; then
+        mv -f "$tmp" "$cache" 2>/dev/null || rm -f "$tmp"
+    fi
+    printf '%s,"stale":false,"error":null}\n' "${base%\}}"
+    exit 0
+done
+base=""
+[ -r "$cache" ] && base=$(cat "$cache" 2>/dev/null)
+case "$base" in
+    \{*\}) printf '%s,"stale":true,"error":"%s"}\n' "${base%\}}" "$error" ;;
+    *) printf '{"cpuusage":"Unavailable","sampled_at":null,"last_success_at":null,"sample_ms":null,"stale":true,"error":"%s"}\n' "$error" ;;
+esac
+exit 0

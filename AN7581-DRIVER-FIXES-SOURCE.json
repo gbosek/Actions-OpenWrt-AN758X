@@ -1,5 +1,5 @@
 {
-  "description": "Upstream AN7581 reliability fixes; retain each project kernel and acceleration stack",
+  "description": "AN7581 6.18.54 reliability fixes, PPE fallback and explicit statistics capability",
   "patches": [
     {
       "file": "934-net-airoha-retry-trtcm-configuration.patch",
@@ -22,11 +22,13 @@
   ],
   "baselines": {
     "pon": {
-      "kernel": "6.18.52",
+      "kernel": "6.18.54",
       "source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
       "apply": [
         "934-net-airoha-retry-trtcm-configuration.patch",
-        "935-net-airoha-order-npu-watchdog-cleanup.patch",
+        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+      ],
+      "already_in_base": [
         "936-net-airoha-enable-rx-queue31-interrupt.patch"
       ]
     },
@@ -42,5 +44,9 @@
       ]
     }
   },
-  "hardware_tested": false
+  "hardware_tested": false,
+  "capability_patch": {
+    "file": "937-net-airoha-expose-flow-stats-capability.patch",
+    "sha256": "0eb320f0670c814b005c0eee8063e92baa1cafb2ca699306bb1cdf463920c0da"
+  }
 }

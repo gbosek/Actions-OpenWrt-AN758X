@@ -4,7 +4,11 @@
     "fork": "gbosek/mwan4",
     "branch": "main",
     "fork_commit": "c3cc7f50b4658d881fd33452056363fdaf2cc08c",
-    "version": "0.1.1-r6"
+    "version": "0.1.1-r7",
+    "upstream_package_version": "0.1.1-r6",
+    "local_adjustments": [
+      "Family-aware DNS guard called at native startup, and owned DNS cleanup on native stop"
+    ]
   },
   "frontend": {
     "fork": "gbosek/luci-app-mwan4",

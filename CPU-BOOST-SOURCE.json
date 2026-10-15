@@ -16,5 +16,7 @@
   "maximum_kHz": 1400000,
   "hardware_tested": false,
   "source_dts_patch": "999-xg2010g-compatible-boost-dts.patch",
-  "source_dts_patch_sha256": "a4ed5381b29bbfae6e20e3f53a38a9e615ff3f4f0ee96e92c64f940f633abb67"
+  "source_dts_patch_sha256": "a4ed5381b29bbfae6e20e3f53a38a9e615ff3f4f0ee96e92c64f940f633abb67",
+  "policy_owner": "cpufreq at boot once (START=89), and explicit UCI reload only; no periodic watcher",
+  "rps_owner": "native packet_steering boot/interface event service"
 }

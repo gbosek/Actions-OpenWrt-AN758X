@@ -260,9 +260,9 @@ function rateLine(label, value) {
 function connCell(label, c) {
 	/* 不给 E() 传 null 子节点（旧版 LuCI 不跳过 null），这里全部非空 */
 	return E('div', { 'style': S_CONN_ROW }, [
-		E('span', { 'style': S_CONN_LABEL }, [ label ]),
+		E('span', { 'style': S_CONN_LABEL }, [ label + ' · 全局连接' ]),
 		E('span', { 'style': S_CONN_VALUE }, [ String(c.total) ]),
-		E('span', { 'style': S_CONN_NPU }, [ _('卸载') ]),
+		E('span', { 'style': S_CONN_NPU }, [ 'HW_OFFLOAD 标记连接' ]),
 		E('span', { 'style': S_CONN_NPU_V }, [ String(c.npu) ])
 	]);
 }

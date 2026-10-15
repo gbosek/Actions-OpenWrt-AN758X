@@ -14,5 +14,7 @@ if [ -f /etc/config/airoha_npu ]; then
  uci set 'airoha_npu.@cpu[0].max_freq=1400000'
  uci commit airoha_npu
 fi
+# Remove a legacy second boot owner, keeping the helper callable manually.
+[ ! -x /etc/init.d/airoha-npu ] || /etc/init.d/airoha-npu disable
 /etc/init.d/cpufreq enable
 exit 0

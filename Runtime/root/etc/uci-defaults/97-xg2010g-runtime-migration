@@ -1,0 +1,28 @@
+#!/bin/sh
+# One-time XG2010G migration, also runs after a retained-settings upgrade.
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
+for service in npu-jitter xg2010g-rps airoha-npu wpad; do
+    if [ -x "/etc/init.d/$service" ]; then
+        case "$service" in airoha-npu) ;; *) /etc/init.d/"$service" stop ;; esac
+        /etc/init.d/"$service" disable
+    fi
+done
+rm -f /etc/init.d/npu-jitter /usr/libexec/npu-jitter-daemon /etc/coremark.sh \
+    /etc/init.d/xg2010g-rps /usr/bin/rps-watch.sh /usr/bin/rps-guard.sh \
+    /etc/hotplug.d/iface/99-rps-guard /etc/uci-defaults/96-wifi-5g-cn
+# Delete only known owned boot calls and cron commands, preserving user jobs.
+if [ -f /etc/rc.local ]; then
+    sed -i '\@^\[ -x /usr/bin/rps-tune.sh \] && /usr/bin/rps-tune.sh$@d; \@^\[ -x /usr/bin/mwan4-rule-guard.sh \] && /usr/bin/mwan4-rule-guard.sh$@d' /etc/rc.local
+fi
+if [ -f /etc/crontabs/root ]; then
+    sed -i '\@^[^#].*/usr/bin/rps-guard\.sh\([[:space:]]\|$\)@d; \@^[^#].*/etc/coremark\.sh\([[:space:]]\|$\)@d' /etc/crontabs/root
+    [ ! -x /etc/init.d/cron ] || /etc/init.d/cron reload
+fi
+# No radio exists on this board. Do not delete unrelated network/UCI settings.
+for link in /etc/rc.d/S*wpad /etc/rc.d/K*wpad /etc/rc.d/S*npu-jitter /etc/rc.d/K*npu-jitter; do
+    [ ! -L "$link" ] || rm -f "$link"
+done
+# User explicitly requests the web terminal on boot, including retained settings.
+[ ! -x /etc/init.d/ttyd ] || /etc/init.d/ttyd enable
+[ ! -x /etc/init.d/cpufreq ] || /etc/init.d/cpufreq enable
+exit 0

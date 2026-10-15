@@ -76,6 +76,7 @@ fi
 
 # ---------------------------------------------------------
 # 4. 5G WiFi：国家码 CN / 信道 auto / 频宽 160MHz
+if [ "${PROFILE:-}" != gemtek_xg2010g ]; then
 #
 #    分两层落地：
 #      a) 编译期：改无线 detect 脚本的默认值（best effort，找不到就跳过）
@@ -192,12 +193,17 @@ if [ -f .config ]; then
 fi
 
 # ---------------------------------------------------------
+fi
+
 # 5. Overview RPC and renderer must both show all four cores.
 PATCH_CPUUSAGE="$(dirname "$0")/scripts/patch-luci-cpuusage.sh"
 if [ "${PROFILE:-}" = gemtek_xg2010g ]; then
   python3 "$(dirname "$0")/scripts/patch-fast-overview.py" .
 fi
 PONWRT_DIR=. bash "$PATCH_CPUUSAGE" || exit 1
+if [ "${PROFILE:-}" = gemtek_xg2010g ]; then
+  python3 "$(dirname "$0")/scripts/apply-runtime-fixes.py" .
+fi
 
 [ -z "$FW_BUILD_TIME" ] && FW_BUILD_TIME="$(TZ="${TZ:-Asia/Shanghai}" date '+%Y-%m-%d %H:%M')"
 

@@ -1,7 +1,8 @@
 {
-  "repository": "gbosek/Actions-OpenWrt-AN758X",
-  "commit": "7a7c72e8a138c4dfe4f43d1801a408f45036069a",
-  "path": "files/sbin/cpuusage",
-  "sampling": "Original repository shell/awk implementation, unchanged",
-  "overview": "Repository USR/SYS and CPU0\u2013CPU3 output"
+  "path": "Runtime/root/usr/libexec/xg2010g-cpuusage",
+  "sampling": "two /proc/stat samples, nominal 250 ms, no daemon",
+  "sys": "system + irq + softirq",
+  "failure": "explicit error and last valid sample timestamp",
+  "compatibility_path": "files/sbin/cpuusage",
+  "package_date": "20261016"
 }

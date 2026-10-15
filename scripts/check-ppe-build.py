@@ -21,6 +21,7 @@ MARKERS = {
         "ppe->flow_stats_cap = false;", "!airoha_is_7583(eth)",
         "airoha_fe_clear(eth, PSE_FC_CFG, PSE_PORT6_SHARE_DIS)",
     ),
+    "airoha_ppe_debugfs.c": ('flow_stats_cap: %u',),
     "airoha_regs.h": ("#define PSE_PORT6_SHARE_DIS",),
 }
 
@@ -34,8 +35,8 @@ def check(manifest_dir, build_dir):
         for name in ("airoha-en7581-npu-firmware", "kmod-nf-flow", "kmod-nft-offload"):
             if name not in packages:
                 raise ValueError(f"{manifest.name}: missing {name}")
-        if not re.match(r"^6\.18\.\d+(?:[.~+-]|$)", packages.get("kernel", "")):
-            raise ValueError(f"{manifest.name}: expected kernel 6.18.x")
+        if not re.match(r"^6\.18\.54(?:[.~+-]|$)", packages.get("kernel", "")):
+            raise ValueError(f"{manifest.name}: expected kernel 6.18.54")
     kernels = [p.parent for p in build_dir.glob("target-*/linux-*/linux-6.18.*/.config")
                if (p.parent / "drivers/net/ethernet/airoha/airoha_ppe.c").is_file()]
     if len(kernels) != 1:
@@ -59,6 +60,7 @@ def check(manifest_dir, build_dir):
             raise ValueError(f"compiled driver object missing: {binary}")
     if b"NPU refused flow stats (%d)" not in (driver / "airoha_ppe.o").read_bytes():
         raise ValueError("the compiled PPE object lacks the NPU-refusal fallback diagnostic")
+    assert b'flow_stats_cap: %u' in (driver / 'airoha_ppe_debugfs.o').read_bytes(), 'Compiled capability diagnostic absent'
     regression = check_functions(kernel)
     roots = list(build_dir.glob('target-*/root-airoha'))
     if len(roots) != 1:

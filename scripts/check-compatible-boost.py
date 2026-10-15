@@ -105,7 +105,9 @@ def check(root):
         assert (installed/rel).read_bytes()==(repo/'CPU/runtime'/original).read_bytes(), 'Stale shared CPU runtime: '+rel
     policy=(installed/'usr/libexec/xg2010g-cpu-policy').read_text()
     assert '1200000' in policy and '1400000' in policy and 'capable' in policy
-    assert 'xg2010g-cpu-policy watch' in (installed/'etc/init.d/cpufreq').read_text()
+    init=(installed/'etc/init.d/cpufreq').read_text()
+    assert 'START=89' in init and 'xg2010g-cpu-policy apply' in init
+    assert 'xg2010g-cpu-policy watch' not in init and 'procd_set_param respawn' not in init
     rpc=(installed/'usr/libexec/rpcd/luci.airoha_npu').read_text()
     assert 'xg2010g-cpu-policy set-max' in rpc and 'boost_backend' in rpc
     assert not re.search(r'\bdevmem\s+0x1(?:fa20|efbe)[0-9a-f]+\s+32\s',rpc), 'Direct userspace CPU PLL writes remain'

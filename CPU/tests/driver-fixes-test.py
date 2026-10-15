@@ -8,7 +8,7 @@ import json
 repo = Path(__file__).resolve().parents[2]
 scripts = repo / ('scripts' if (repo / 'scripts/apply-driver-fixes.py').exists() else 'Scripts')
 metadata = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
-for project, patchlevel in [('pon', 52), ('ci', 54)]:
+for project, patchlevel in [('pon', 54), ('ci', 54)]:
     with tempfile.TemporaryDirectory(prefix='airoha-driver-install-') as temporary:
         root = Path(temporary)
         generic = root / 'target/linux/generic'

@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+UI/tests/node_modules/
+test-results/

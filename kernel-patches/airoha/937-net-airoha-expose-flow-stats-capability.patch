@@ -1,0 +1,25 @@
+From: XG2010G integration <noreply@localhost>
+Subject: [PATCH] net: airoha: expose flow statistics capability in debugfs
+
+Report the capability negotiated with the NPU. Zero packet counters alone
+cannot distinguish idle flows from unavailable statistics. No datapath change.
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -198,6 +198,7 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+ 	seq_printf(m, "npu_attached: %u\n",
+ 		   !!rcu_access_pointer(eth->npu));
++	seq_printf(m, "flow_stats_cap: %u\n", ppe->flow_stats_cap);
+ 	seq_printf(m, "gdm2_fwd_cfg: %08x\n",
+ 		   airoha_fe_rr(eth, REG_GDM_FWD_CFG(AIROHA_GDM2_IDX)));
+ 	seq_printf(m, "fe_wan_port: %08x\n",
+ 		   airoha_fe_rr(eth, REG_FE_WAN_PORT));
+@@ -214,7 +215,7 @@ static int airoha_ppe_debugfs_config_show(struct seq_file *m, void *private)
+ 		seq_printf(m, "ppe%u_table_cfg: %08x\n", i,
+ 			   airoha_fe_rr(eth, REG_PPE_TB_CFG(i)));
+ 		seq_printf(m, "ppe%u_gdm2_default_cpu_port: %u\n", i,
+-			   FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
++			   (u32)FIELD_GET(DFT_CPORT_MASK(AIROHA_GDM2_IDX), cport));
+ 	}
+ 
+ 	return 0;

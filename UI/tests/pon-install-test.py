@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-pon-install-') as directory:
         assert data == (repo / 'UI/15_pon.js').read_bytes()
         makefile = (package / 'Makefile').read_text()
         assert makefile.count('LUCI_MINIFY_JS:=0') == 1
-        assert makefile.count('PKG_RELEASE:=8') == 1
+        assert makefile.count('PKG_RELEASE:=9') == 1
         meta = json.loads((root / 'files/etc/pon-status-layout.json').read_text())
         assert meta['sha256'] == hashlib.sha256(data).hexdigest()
         assert meta['layout'] == 'fullwidth-v3'

@@ -6,5 +6,5 @@
   "local_adjustments": [
     "Chinese catalog filenames use airoha-npu basename"
   ],
-  "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0\u2013CPU3"
+  "cpu_overview": "Structured /proc/stat delta samples, SYS includes IRQ/softirq; explicit failure and last-success time"
 }

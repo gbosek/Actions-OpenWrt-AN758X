@@ -9,11 +9,15 @@ uci -q get 'network.@globals[0].steering_flows' >/dev/null ||
 	uci set 'network.@globals[0].steering_flows=4096'
 uci commit network
 /etc/init.d/packet_steering enable
-# Migrate the package's old once-per-minute guard, keeping other cron jobs.
-if [ -f /etc/crontabs/root ]; then
-	sed -i '\@^\* \* \* \* \* /usr/bin/rps-guard.sh$@d' /etc/crontabs/root
-	/etc/init.d/cron reload
+# The standard packet_steering service owns boot and interface events.
+# Remove only the legacy paths owned by this package.
+if [ -x /etc/init.d/xg2010g-rps ]; then
+ /etc/init.d/xg2010g-rps stop
+ /etc/init.d/xg2010g-rps disable
 fi
-/etc/init.d/xg2010g-rps enable
-/etc/init.d/xg2010g-rps start
+rm -f /usr/bin/rps-watch.sh /usr/bin/rps-guard.sh /etc/init.d/xg2010g-rps /etc/hotplug.d/iface/99-rps-guard
+if [ -f /etc/crontabs/root ]; then
+ sed -i '\@^\* \* \* \* \* /usr/bin/rps-guard.sh$@d' /etc/crontabs/root
+ /etc/init.d/cron reload
+fi
 exit 0
