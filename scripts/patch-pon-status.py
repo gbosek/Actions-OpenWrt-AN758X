@@ -23,7 +23,7 @@ if old.exists():
 (directory / module).write_bytes(data)
 makefile = package / 'Makefile'
 text = makefile.read_text()
-text, count = re.subn(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=7', text, flags=re.M)
+text, count = re.subn(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=8', text, flags=re.M)
 assert count == 1, 'Unsupported PON status package release definition'
 text = re.sub(r'^LUCI_MINIFY_JS:=.*\n', '', text, flags=re.M)
 text, count = re.subn(r'^(include .*luci\.mk)$', r'LUCI_MINIFY_JS:=0\n\1', text, flags=re.M)
@@ -32,9 +32,9 @@ makefile.write_text(text)
 metadata = root / 'files/etc/pon-status-layout.json'
 metadata.parent.mkdir(parents=True, exist_ok=True)
 metadata.write_text(json.dumps({
-    'layout': 'fullwidth-v2', 'package_release': 7,
+    'layout': 'fullwidth-v3', 'package_release': 8,
     'module': 'view.status.include.15_xg2010g_pon',
     'display_name': 'PON', 'device_name': 'pon0',
     'sha256': hashlib.sha256(data).hexdigest(),
 }, ensure_ascii=False, indent=2) + '\n')
-print('PON fullwidth-v2: dedicated layout, new module name, readable metrics and no legacy include')
+print('PON fullwidth-v3: full-width card with compact transparent rate rows')

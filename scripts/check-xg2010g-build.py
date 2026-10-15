@@ -34,7 +34,7 @@ for manifest in manifest_dir.glob('*.manifest'):
     assert re.match(r'^20261013-(?:r)?2$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
     assert re.match(r'^0\.1\.1-(?:r)?6$', pkgs['mwan4']), 'Native MWAN4 startup rule fix missing'
     assert re.match(r'^1\.0\.0-(?:r)?11$', pkgs['luci-app-mwan4']), 'MWAN4 service-control fix missing'
-    assert re.search(r'-(?:r)?7$', pkgs['luci-app-pon-status']), 'PON fullwidth-v2 package release missing'
+    assert re.search(r'-(?:r)?8$', pkgs['luci-app-pon-status']), 'PON fullwidth-v3 package release missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
     assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
     assert not any(n in pkgs for n in ('luci-app-nlbwmon','luci-app-statistics')), 'Removed monitor/statistics plugin present'
@@ -75,7 +75,7 @@ pon_include = installed / 'www/luci-static/resources/view/status/include/15_xg20
 assert pon_include.read_bytes() == (repo / 'UI/15_pon.js').read_bytes(), 'Dedicated full-width PON view missing'
 assert not (pon_include.parent / '15_pon.js').exists(), 'Legacy PON module would create a duplicate/cached card'
 layout = json.loads((installed / 'etc/pon-status-layout.json').read_text())
-assert layout['layout'] == 'fullwidth-v2' and layout['module'] == 'view.status.include.15_xg2010g_pon'
+assert layout['layout'] == 'fullwidth-v3' and layout['module'] == 'view.status.include.15_xg2010g_pon'
 assert layout['sha256'] == hashlib.sha256(pon_include.read_bytes()).hexdigest(), 'PON layout provenance mismatch'
 overview = (installed / 'www/luci-static/resources/view/mwan4/network/overview.js').read_text()
 assert 'Service stopped' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
@@ -93,4 +93,4 @@ assert wallpaper.is_file() and wallpaper.stat().st_mode & 0o111, 'Argon wallpape
 print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS recovery and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
 print('Verified MWAN4 stop/native-init fixes, RPS singleton/read fix, full-width PON, WOL and default LAN 192.168.10.1')
 print('Verified independent overview rendering and Argon Chinese wallpaper configuration with Bing default')
-print('Verified PON fullwidth-v2, new module name, package r7 and layout provenance; actual-theme browser check required before publish')
+print('Verified PON fullwidth-v3, compact transparent rate rows, package r8 and layout provenance')

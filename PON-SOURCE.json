@@ -14,7 +14,7 @@
   ],
   "kernel_pon_drivers_changed": false,
   "npu_upstream_changed": false,
-  "overview_card": "luci-app-pon-status, full-width PON display",
+  "overview_card": "luci-app-pon-status, full-width PON display with compact transparent rate rows",
   "firewall4_patch": {
     "file": "010-fw4-zone-device-flowtable.patch",
     "sha256": "6fa4d614f6f4f740c30a5b65992ea71aa0ea9ae9a949b1c098f71fdf0629971b",

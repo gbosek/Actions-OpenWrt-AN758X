@@ -15,8 +15,8 @@
  *
  * 端口速率自己采：相邻两次采样的 {rx,tx}_bytes 差值除以实际经过的时间，
  * 单位 MiB/s（1024*1024 bytes/s）。
- * 「Pon 端口速率」卡一致（上行取 tx、下行取 rx）。上行/下行两行显示在
- * 光模块 itemlist 右侧的空白区（卡片右上角、垂直居中）。
+ * 「Pon 端口速率」卡一致（上行取 tx、下行取 rx）。上行/下行两行紧凑显示在
+ * 光模块读数右侧，不再使用大面积底色面板。
  *
  * 连接数（TCP/UDP 总数 + [HW_OFFLOAD] 硬件卸载子集）由 helper 脚本给出，
  * 显示在 itemlist 下方的分隔线下一行。
@@ -235,7 +235,7 @@ var S_RATE_BLOCK = 'margin-top: 8px; padding-top: 8px; border-top: 1px solid ' +
 /* 专用布局：左侧读数行、右侧速率面板；窄屏自动换行，避免主题通用
  * ifacebox/grid 样式把整个区域压成一个小卡片。 */
 var S_TOP        = 'display: flex; align-items: stretch; gap: 24px; min-width: 0; flex-wrap: wrap';
-var S_RATE_COL   = 'flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 12px; box-sizing: border-box; background: ' + css('surface-sunken', css('background-color-low', '#f4f7fa')) + '; border-radius: 8px';
+var S_RATE_COL   = 'flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px; padding: 0; margin-left: auto; box-sizing: border-box; background: transparent; border-radius: 0';
 var S_RATE_ROW   = 'display: flex; align-items: baseline; gap: 5px; white-space: nowrap';
 var S_RATE_LABEL = 'font-size: 1em; color: ' + cMuted + '; white-space: nowrap';
 var S_RATE_VALUE = 'font-size: 1.15em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
@@ -308,7 +308,7 @@ function opticsRow(label, value) {
 function renderBox(item) {
 	var frontend = item.frontend || {};
 
-	return E('article', { 'class': 'pon-optics-card', 'data-pon-layout': 'fullwidth-v2', 'style': 'display: block; width: 100% !important; min-width: 0; max-width: none !important; margin: 0; box-sizing: border-box; align-self: stretch; border: 1px solid ' + cBorder + '; border-radius: 12px; overflow: hidden; font-size: 1rem; line-height: 1.6; color: ' + cStrong + '; background: ' + css('surface', '#ffffff') }, [
+	return E('article', { 'class': 'pon-optics-card', 'data-pon-layout': 'fullwidth-v3', 'style': 'display: block; width: 100% !important; min-width: 0; max-width: none !important; margin: 0; box-sizing: border-box; align-self: stretch; border: 1px solid ' + cBorder + '; border-radius: 12px; overflow: hidden; font-size: 1rem; line-height: 1.6; color: ' + cStrong + '; background: ' + css('surface', '#ffffff') }, [
 		E('header', { 'class': 'pon-optics-head', 'style': 'display: block; width: 100%; max-width: none; box-sizing: border-box; padding: 10px 16px; text-align: center; color: ' + css('on-brand', '#ffffff') + '; background: ' + css('brand', css('primary', '#008fbb')) },
 			E('strong', 'PON')),
 		E('div', { 'class': 'pon-optics-body', 'style': 'display: block; width: 100%; min-width: 0; max-width: none; box-sizing: border-box; padding: 16px; text-align: left' }, [
