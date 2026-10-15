@@ -1,5 +1,5 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 1456 PPE + upstream driver fixes - naoki and luanmuc
+run-name: XG2010G 1456 PPE + reviewed ONU and CPU compatibility - naoki and luanmuc
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -861,6 +861,7 @@ jobs:
           cp "$BUILD_ROOT/openwrt/files/etc/an7581-driver-fixes.json" AN7581-DRIVER-FIXES-SOURCE.json
           [ ! -f "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" ] || cp "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" PON-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
+          cp "$GITHUB_WORKSPACE/PLUGIN-COMPATIBILITY-VALIDATION.json" PLUGIN-COMPATIBILITY-VALIDATION.json
           rm -rf packages
           echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
           echo "status=success" >> "$GITHUB_OUTPUT"
@@ -918,6 +919,7 @@ jobs:
             echo "PPE 新增 932 SRAM flush 错误传递及 933 TC 模板时间戳候选；继续使用 1456-62 配对固件，SHA 和驱动对象核对见 PPE-BUILD-VERIFICATION.json。"
             echo "PON fullwidth-v2：独立布局、正常字号、Aurora/Argon 桌面和手机实样式验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
             echo "新增上游 QDMA 配置重试、NPU 看门狗资源释放顺序和 RX31 完成中断修复；来源及实际驱动检查见 AN7581-DRIVER-FIXES-*.json。"
+            echo "兼容性审查修复：naoki ONU 配套 firewall4 zone-device 卸载补丁与原 FullCone 共存；共享 cpufreq 保留原 ondemand 参数。"
             echo "> 此预发布固件完成构建和离线函数检查后提供下载；设备重拨、ACK 故障恢复、SID 隔离及超频稳定性尚未验收。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"
           } >> release.txt

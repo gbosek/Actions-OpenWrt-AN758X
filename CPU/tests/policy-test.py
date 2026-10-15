@@ -28,6 +28,29 @@ else:sys.exit(1)
   return r
  run('apply');assert (policy/'scaling_min_freq').read_text().strip()=='500000';assert (policy/'scaling_max_freq').read_text().strip()=='1400000';assert (policy/'scaling_governor').read_text().strip()=='ondemand';assert (root/'cpu/boost').read_text().strip()=='1'
  assert '1400000' in run('frequencies').stdout
+ # Preserve the original cpufreq LuCI ondemand controls in the shared owner.
+ tunables=root/'cpu/ondemand';tunables.mkdir()
+ for name,value in [('sampling_down_factor','1'),('up_threshold','95')]:
+  (tunables/name).write_text(value+'\n')
+ config.update({'cpufreq.cpufreq.sdfactor0':'10','cpufreq.cpufreq.upthreshold0':'50'})
+ (root/'config.json').write_text(json.dumps(config))
+ run('apply')
+ assert (tunables/'sampling_down_factor').read_text().strip()=='10'
+ assert (tunables/'up_threshold').read_text().strip()=='50'
+ # Performance mode must not change ondemand parameters.
+ run('set-governor','performance')
+ state=json.loads((root/'config.json').read_text());state['cpufreq.cpufreq.upthreshold0']='60'
+ (root/'config.json').write_text(json.dumps(state));run('apply')
+ assert (tunables/'up_threshold').read_text().strip()=='50'
+ run('set-governor','ondemand');assert (tunables/'up_threshold').read_text().strip()=='60'
+ # Also cover kernels with per-policy governor directories.
+ local_tunables=policy/'ondemand';tunables.rename(local_tunables)
+ (local_tunables/'up_threshold').write_text('95\n');run('apply')
+ assert (local_tunables/'up_threshold').read_text().strip()=='60'
+ state=json.loads((root/'config.json').read_text());state['cpufreq.cpufreq.upthreshold0']='100'
+ (root/'config.json').write_text(json.dumps(state));run('apply',ok=False)
+ assert (local_tunables/'up_threshold').read_text().strip()=='60'
+ state['cpufreq.cpufreq.upthreshold0']='50';(root/'config.json').write_text(json.dumps(state))
  # CPU controls save a ceiling without changing the ondemand governor.
  assert json.loads(run('set-max','1400000').stdout)['result']=='ok'
  assert (policy/'scaling_governor').read_text().strip()=='ondemand'

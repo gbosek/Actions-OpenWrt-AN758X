@@ -16,8 +16,12 @@ if a.variant=='naoki':
    for name in pon.NEW:assert name in packages,'Missing installed ONU package '+name
    for name in pon.OLD:assert name not in packages,'Old PON package in image: '+name
    assert packages['luci-app-onu'] in ['0.1.0-r25','0.1.0-25'],'Wrong ONU UI release'
+   meta=json.loads((Path(__file__).resolve().parents[1]/'PON-SOURCE.json').read_text())['firewall4_patch']
+   assert re.search(r'-(?:r)?'+str(meta['local_release'])+r'$',packages.get('firewall4','')),'Missing ONU-compatible firewall4 release'
   roots=list((root/'build_dir').glob('target-*/root-airoha'));assert len(roots)==1;installed=roots[0]
-  assert json.loads((installed/'etc/pon-build-source.json').read_text())['commit']==pon.SHA
+  assert json.loads((installed/'etc/pon-build-source.json').read_text())==json.loads((Path(__file__).resolve().parents[1]/'PON-SOURCE.json').read_text()),'ONU build provenance mismatch'
+  fw4=(installed/'usr/share/ucode/fw4.uc').read_text()
+  assert fw4.count('function zone_offload_devices(zone)')==1 and fw4.count('for (let device in zone_offload_devices(zone))')==2,'PPPoE zone-device offload support missing in actual rootfs'
   feed=root/'feeds/pon_userspace/luci-app-onu/root'
   for rel in ['usr/share/luci/menu.d/luci-app-onu.json','usr/share/rpcd/acl.d/luci-app-onu.json']:
    assert (installed/rel).read_bytes()==(feed/rel).read_bytes(),rel

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-15",
+  "findings_fixed": [
+    "ONU PPPoE zone-device firewall4 anchor dependency",
+    "Preserve original cpufreq ondemand tuning settings"
+  ],
+  "firewall4_source": "b6e5157527d361f99ad52eaa6da273cb0f2dfd59",
+  "firewall4_actual_function_cases": {
+    "pon": {
+      "cases": 8,
+      "failed": 0
+    },
+    "ci": {
+      "cases": 8,
+      "failed": 0
+    }
+  },
+  "negative_controls": "Original actual firewall4 methods and CPU helper reproduce the omitted-setting/anchor failures",
+  "cpu_policy": "Passed saved parameters, governor changes, global/per-policy tunables, invalid threshold and existing boost/fallback regression",
+  "not_hardware_tested": true
+}

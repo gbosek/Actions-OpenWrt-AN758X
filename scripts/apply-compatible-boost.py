@@ -38,7 +38,7 @@ for name in ('cpufreq.init', 'cpufreq.uci', 'xg2010g-cpu-policy'):
     shutil.copyfile(repo / 'CPU/runtime' / name, pkg / 'files' / name)
     (pkg / 'files' / name).chmod(0o755)
 make = pkg / 'Makefile'
-text = re.sub(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=4', make.read_text(), flags=re.M)
+text = re.sub(r'^PKG_RELEASE:=.*$', 'PKG_RELEASE:=5', make.read_text(), flags=re.M)
 if '$(1)/usr/libexec/xg2010g-cpu-policy' not in text:
     marker = '\t$(INSTALL_BIN) $(CURDIR)/files/cpufreq.init $(1)/etc/init.d/cpufreq'
     assert marker + '\n' in text, 'cpufreq install recipe changed'

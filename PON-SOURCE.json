@@ -14,5 +14,17 @@
   ],
   "kernel_pon_drivers_changed": false,
   "npu_upstream_changed": false,
-  "overview_card": "luci-app-pon-status, full-width PON display"
+  "overview_card": "luci-app-pon-status, full-width PON display",
+  "firewall4_patch": {
+    "file": "010-fw4-zone-device-flowtable.patch",
+    "sha256": "6fa4d614f6f4f740c30a5b65992ea71aa0ea9ae9a949b1c098f71fdf0629971b",
+    "source_version": "b6e5157527d361f99ad52eaa6da273cb0f2dfd59",
+    "local_release": 401,
+    "upstream": "naoki66/OpenWrt_ONU_CONFIG@35e2d676c31f2ff510960fb03a403599d292a535",
+    "scope": "Only naoki ONU images; upstream zone-device offload fix adapted to existing fullcone patch context",
+    "original_sha256": "4791526d80152686cea0c5bea0e0ca1de7540180eac144509fd1efc78687041b",
+    "local_adjustments": [
+      "Reanchor first hunk before module return to coexist with existing fullcone helpers; executable changes unchanged"
+    ]
+  }
 }

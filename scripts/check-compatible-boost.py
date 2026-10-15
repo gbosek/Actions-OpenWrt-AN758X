@@ -100,6 +100,9 @@ def check(root):
     installed=roots[0]
     for rel in ('usr/libexec/xg2010g-cpu-policy','etc/init.d/cpufreq'):
         f=installed/rel;assert f.is_file() and f.stat().st_mode&0o111,rel
+    repo=Path(__file__).resolve().parents[1]
+    for rel,original in (('usr/libexec/xg2010g-cpu-policy','xg2010g-cpu-policy'),('etc/init.d/cpufreq','cpufreq.init')):
+        assert (installed/rel).read_bytes()==(repo/'CPU/runtime'/original).read_bytes(), 'Stale shared CPU runtime: '+rel
     policy=(installed/'usr/libexec/xg2010g-cpu-policy').read_text()
     assert '1200000' in policy and '1400000' in policy and 'capable' in policy
     assert 'xg2010g-cpu-policy watch' in (installed/'etc/init.d/cpufreq').read_text()
