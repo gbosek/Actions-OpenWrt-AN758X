@@ -65,6 +65,9 @@ for name in (('airoha-npu', 'xg2010g-rps') if variant == 'naoki' else ('xg2010g-
     path = installed / 'etc/init.d' / name
     assert path.is_file() and path.stat().st_mode & 0o111, f'Service not executable: {name}'
 repo = Path(__file__).resolve().parents[1]
+driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
+driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
+assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'
 for name in ('rps-guard.sh', 'rps-watch.sh'):
     path = installed / 'usr/bin' / name
     assert path.stat().st_mode & 0o111 and path.read_bytes() == (repo / 'Packages/xg2010g-rps/files' / name).read_bytes(), f'Old RPS runtime: {name}'

@@ -1,0 +1,46 @@
+{
+  "description": "Upstream AN7581 reliability fixes; retain each project kernel and acceleration stack",
+  "patches": [
+    {
+      "file": "934-net-airoha-retry-trtcm-configuration.patch",
+      "commit": "7e170da2edec9fb0717543571cc14b0aabee2b46",
+      "url": "https://github.com/torvalds/linux/commit/7e170da2edec9fb0717543571cc14b0aabee2b46",
+      "sha256": "8e74a058df65aeb3e7ad264b597435a34fe71985c42532139ef08b2a8159fa68"
+    },
+    {
+      "file": "935-net-airoha-order-npu-watchdog-cleanup.patch",
+      "commit": "4bdee8060d1e4581624e68fbd369b1afb14df4bc",
+      "url": "https://github.com/torvalds/linux/commit/4bdee8060d1e4581624e68fbd369b1afb14df4bc",
+      "sha256": "423e3fbb1976f2fbf020684f2a35dbea51b7cf1f423966d7034897e698fc8204"
+    },
+    {
+      "file": "936-net-airoha-enable-rx-queue31-interrupt.patch",
+      "commit": "7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
+      "url": "https://github.com/torvalds/linux/commit/7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
+      "sha256": "be108eff6ea7acc1f35e3e17a3cd520ea0aaa487bcf5c5ac692213d005f86d38"
+    }
+  ],
+  "baselines": {
+    "pon": {
+      "kernel": "6.18.52",
+      "source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+      "apply": [
+        "934-net-airoha-retry-trtcm-configuration.patch",
+        "935-net-airoha-order-npu-watchdog-cleanup.patch",
+        "936-net-airoha-enable-rx-queue31-interrupt.patch"
+      ]
+    },
+    "ci": {
+      "kernel": "6.18.54",
+      "source_commit": "a38520034ee4bdd25dd6e88c4c59261f289ee17e",
+      "apply": [
+        "934-net-airoha-retry-trtcm-configuration.patch",
+        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+      ],
+      "already_in_base": [
+        "936-net-airoha-enable-rx-queue31-interrupt.patch"
+      ]
+    }
+  },
+  "hardware_tested": false
+}

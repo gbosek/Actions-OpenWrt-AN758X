@@ -100,6 +100,7 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
     cp "$KERNEL_PATCH_SOURCE" "$KERNEL_PATCH_DEST"
     echo "✅ 已加入 Airoha PPE 补丁: $KERNEL_PATCH"
   done
+  python3 "$GITHUB_WORKSPACE/scripts/apply-driver-fixes.py" . --project pon
 
   KERNEL_CONFIG="target/linux/airoha/an7581/config-6.18"
   if [ ! -f "$KERNEL_CONFIG" ]; then

@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-15",
+  "validation": "Exact pinned OpenWrt generic and target patches, existing project PPE stack, three upstream fixes; actual ARM64 compile with WERROR",
+  "original_patch_counts": {
+    "pon": 621,
+    "ci": 658
+  },
+  "arm64_driver_objects": [
+    "airoha_eth.o",
+    "airoha_npu.o",
+    "airoha_ppe.o"
+  ],
+  "reports": {
+    "pon": {
+      "kernel": "linux-6.18.52",
+      "trtcm_cases": 7,
+      "rx31_irq": true,
+      "watchdog_cleanup_order": true,
+      "compiled_arm64": true,
+      "source_sha256": {
+        "airoha_eth.c": "6ecd1397c1ecf12626c36e93842912655a515976b83412504363c0a036a6603a",
+        "airoha_eth.h": "277f317b19ba450d07e0d03cb60f7c12aea9570fc7e2827e316338200b689951",
+        "airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+      },
+      "scope": "Actual TRTCM function with host bus/readback fixtures; source and ARM64 object checks; hardware stability requires device testing"
+    },
+    "ci": {
+      "kernel": "linux-6.18.54",
+      "trtcm_cases": 7,
+      "rx31_irq": true,
+      "watchdog_cleanup_order": true,
+      "compiled_arm64": true,
+      "source_sha256": {
+        "airoha_eth.c": "6ecd1397c1ecf12626c36e93842912655a515976b83412504363c0a036a6603a",
+        "airoha_eth.h": "277f317b19ba450d07e0d03cb60f7c12aea9570fc7e2827e316338200b689951",
+        "airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+      },
+      "scope": "Actual TRTCM function with host bus/readback fixtures; source and ARM64 object checks; hardware stability requires device testing"
+    }
+  },
+  "device_tested": false
+}
