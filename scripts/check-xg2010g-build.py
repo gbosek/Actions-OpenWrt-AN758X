@@ -54,6 +54,8 @@ installed = roots[0]
 assert json.loads((installed / 'etc/airoha-build-source.json').read_text()) == meta
 assert b"popen('/usr/libexec/xg2010g-cpuusage')" in (installed / 'usr/share/rpcd/ucode/luci').read_bytes()
 assert 'cpuSampleDisplay(cpuusage)' in (installed / 'www/luci-static/resources/view/status/include/10_system.js').read_text()
+cpu_page = (installed / 'www/luci-static/resources/view/status/include/10_system.js').read_text()
+assert 'cpu-sample-values' in cpu_page and 'SYS 含 system / IRQ / softirq' not in cpu_page, 'Verbose CPU display remains in image'
 expected_cpu = Path(__file__).resolve().parents[1] / 'files/sbin/cpuusage'
 cpu = installed / 'sbin/cpuusage'
 assert cpu.is_file() and cpu.stat().st_mode & 0o111, 'Missing executable native CPU usage helper'

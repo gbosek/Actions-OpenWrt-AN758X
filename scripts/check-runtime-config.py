@@ -28,7 +28,8 @@ for source in (repo/'Runtime/root').rglob('*'):
 rpc=(root/'feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci').read_text()
 assert "popen('/usr/libexec/xg2010g-cpuusage')" in rpc and 'cpu_sampler_invalid_json' in rpc
 page=(root/'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js').read_text()
-assert 'cpuSampleDisplay(cpuusage)' in page and 'SYS 含 system / IRQ / softirq' in page
+assert 'cpuSampleDisplay(cpuusage)' in page and "'cpu-sample-values'" in page
+assert 'SYS 含 system / IRQ / softirq' not in page, 'Verbose CPU diagnostics still shown'
 queue=root/'target/linux/airoha/patches-6.18'
 for number in (931,932,933,934,935,937,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
 assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.54'
