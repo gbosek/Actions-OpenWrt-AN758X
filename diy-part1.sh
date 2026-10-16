@@ -86,7 +86,7 @@ normalize_custom_luci_makefile() {
 # XG2010G MWAN4 + 系统菜单扩展
 # =========================================================
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  python3 "$GITHUB_WORKSPACE/scripts/upgrade-kernel54.py" .
+  python3 "$GITHUB_WORKSPACE/scripts/upgrade-kernel55.py" . --project pon
   for KERNEL_PATCH in \
     931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch \
     932-net-airoha-return-sram-flush-failures.patch \

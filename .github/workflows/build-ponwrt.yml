@@ -1,5 +1,5 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 6.18.54 + PPE + compact CPU and PON - naoki and luanmuc
+run-name: XG2010G 6.18.55 + PPE + compact CPU and PON - naoki and luanmuc
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）

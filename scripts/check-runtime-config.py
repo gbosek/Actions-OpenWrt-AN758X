@@ -6,8 +6,8 @@ p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path
 root=p.parse_args().source.resolve()
 repo=Path(__file__).resolve().parents[1]
 version=(root/'target/linux/generic/kernel-6.18').read_text()
-assert re.search(r'^LINUX_VERSION-6\.18 = \.54$',version,re.M),'Expected Linux 6.18.54'
-assert 'LINUX_KERNEL_HASH-6.18.54 = 9df30b02dd8102bbd0be52556288ef6889ddbe7f1ddb96fbf847d0becf3eacac' in version
+assert re.search(r'^LINUX_VERSION-6\.18 = \.55$',version,re.M),'Expected Linux 6.18.55'
+assert 'LINUX_KERNEL_HASH-6.18.55 = f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9' in version
 config=(root/'.config').read_text()
 selected=set(re.findall(r'^CONFIG_PACKAGE_([^=]+)=[ym]$',config,re.M))
 assert {'ttyd','luci-app-ttyd','cpufreq','xg2010g-rps'}<=selected,'Required runtime packages missing'
@@ -31,6 +31,7 @@ page=(root/'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view
 assert 'cpuSampleDisplay(cpuusage)' in page and "'cpu-sample-values'" in page
 assert 'SYS 含 system / IRQ / softirq' not in page, 'Verbose CPU diagnostics still shown'
 queue=root/'target/linux/airoha/patches-6.18'
-for number in (931,932,933,934,935,937,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
-assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.54'
-print('PASS: Linux 6.18.54, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')
+for number in (931,932,933,934,937,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
+assert not list(queue.glob('935-*patch')),'NPU watchdog fix is native in 6.18.55'
+assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
+print('PASS: Linux 6.18.55, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')

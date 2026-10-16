@@ -1,5 +1,5 @@
 {
-  "description": "AN7581 6.18.54 reliability fixes, PPE fallback and explicit statistics capability",
+  "description": "AN7581 6.18.55 reliability fixes, native watchdog/RX31 and explicit statistics capability",
   "patches": [
     {
       "file": "934-net-airoha-retry-trtcm-configuration.patch",
@@ -22,25 +22,25 @@
   ],
   "baselines": {
     "pon": {
-      "kernel": "6.18.54",
+      "kernel": "6.18.55",
       "source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
       "apply": [
-        "934-net-airoha-retry-trtcm-configuration.patch",
-        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+        "934-net-airoha-retry-trtcm-configuration.patch"
       ],
       "already_in_base": [
-        "936-net-airoha-enable-rx-queue31-interrupt.patch"
+        "936-net-airoha-enable-rx-queue31-interrupt.patch",
+        "935-net-airoha-order-npu-watchdog-cleanup.patch"
       ]
     },
     "ci": {
-      "kernel": "6.18.54",
+      "kernel": "6.18.55",
       "source_commit": "a38520034ee4bdd25dd6e88c4c59261f289ee17e",
       "apply": [
-        "934-net-airoha-retry-trtcm-configuration.patch",
-        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+        "934-net-airoha-retry-trtcm-configuration.patch"
       ],
       "already_in_base": [
-        "936-net-airoha-enable-rx-queue31-interrupt.patch"
+        "936-net-airoha-enable-rx-queue31-interrupt.patch",
+        "935-net-airoha-order-npu-watchdog-cleanup.patch"
       ]
     }
   },

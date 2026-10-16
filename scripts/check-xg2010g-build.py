@@ -27,7 +27,7 @@ manifests=list(manifest_dir.glob('*.manifest'))
 assert manifests, 'No firmware manifest'
 for manifest in manifests:
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
-    assert re.match(r'^6\.18\.54(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.54'
+    assert re.match(r'^6\.18\.55(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.55'
     assert 'ttyd' in pkgs and 'luci-app-ttyd' in pkgs, 'Requested web terminal missing'
     assert not any(n.startswith(('wpad','hostapd','wpa-supplicant')) or n in
         ('coremark','luci-app-coremark','iw','iwinfo','wifi-scripts','wireless-regdb','kmod-mac80211','kmod-cfg80211') for n in pkgs), 'Unused wireless packages remain'
@@ -75,6 +75,10 @@ if variant == 'naoki':
     assert path.is_file() and path.stat().st_mode & 0o111, 'Manual CPU alias missing'
     assert not re.search(r'^START=', path.read_text(), re.M), 'Duplicate CPU boot owner'
 repo = Path(__file__).resolve().parents[1]
+stable = json.loads((installed / 'etc/kernel-stable-backport.json').read_text())
+assert stable['kernel'] == '6.18.55' and stable['project'] == 'pon', 'Installed stable-kernel provenance mismatch'
+assert stable['tarball_sha256'] == 'f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9'
+assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18.54-to-6.18.55.patch').read_bytes()).hexdigest()
 driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
 driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
 assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'

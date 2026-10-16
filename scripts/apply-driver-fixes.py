@@ -22,7 +22,7 @@ def install(root, project):
         assert hashlib.sha256(origin.read_bytes()).hexdigest() == patch['sha256'], 'Upstream patch hash mismatch'
         existing = list(destination.glob(patch['file'][:3] + '-*.patch'))
         if patch['file'] not in baseline['apply']:
-            assert not existing, 'RX31 is already fixed in this kernel base; duplicate patch rejected'
+            assert not existing, 'Fix is native in this kernel base; duplicate patch rejected'
             continue
         for path in existing:
             assert path.name == patch['file'] and path.read_bytes() == origin.read_bytes(), 'Conflicting patch: ' + str(path)
@@ -31,7 +31,7 @@ def install(root, project):
     path = root / 'files/etc/an7581-driver-fixes.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n')
-    print(project + ': upstream driver fixes installed; native RX31 fix retained where present')
+    print(project + ': upstream driver fixes installed; native watchdog/RX31 fixes retained')
 
 
 if __name__ == '__main__':
