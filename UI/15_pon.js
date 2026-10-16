@@ -232,10 +232,10 @@ var cStrong = css('text', css('text-color-highest', '#000000'));
 var cCool   = css('success-color-high', 'rgb(0, 172, 89)');
 
 var S_RATE_BLOCK = 'margin-top: 8px; padding-top: 8px; border-top: 1px solid ' + cBorder;
-/* 专用布局：左侧读数行、右侧速率面板；窄屏自动换行，避免主题通用
+/* 专用布局：左侧读数行、右侧速率面板；窄屏仍保持左右并排，避免主题通用
  * ifacebox/grid 样式把整个区域压成一个小卡片。 */
-var S_TOP        = 'display: flex; align-items: stretch; gap: 24px; min-width: 0; flex-wrap: wrap';
-var S_RATE_COL   = 'flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px; padding: 0; margin-left: auto; box-sizing: border-box; background: transparent; border-radius: 0';
+var S_TOP        = 'display: flex; align-items: stretch; gap: clamp(8px, 2vw, 24px); min-width: 0; flex-wrap: nowrap; font-size: clamp(12px, 3.6vw, 16px)';
+var S_RATE_COL   = 'flex: 0 0 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px; padding: 0; margin-left: auto; box-sizing: border-box; background: transparent; border-radius: 0';
 var S_RATE_ROW   = 'display: flex; align-items: baseline; gap: 5px; white-space: nowrap';
 var S_RATE_LABEL = 'font-size: 1em; color: ' + cMuted + '; white-space: nowrap';
 var S_RATE_VALUE = 'font-size: 1.15em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
@@ -260,9 +260,9 @@ function rateLine(label, value) {
 function connCell(label, c) {
 	/* 不给 E() 传 null 子节点（旧版 LuCI 不跳过 null），这里全部非空 */
 	return E('div', { 'style': S_CONN_ROW }, [
-		E('span', { 'style': S_CONN_LABEL }, [ label + ' · 全局连接' ]),
+		E('span', { 'style': S_CONN_LABEL }, [ label ]),
 		E('span', { 'style': S_CONN_VALUE }, [ String(c.total) ]),
-		E('span', { 'style': S_CONN_NPU }, [ 'HW_OFFLOAD 标记连接' ]),
+		E('span', { 'style': S_CONN_NPU }, [ _('卸载') ]),
 		E('span', { 'style': S_CONN_NPU_V }, [ String(c.npu) ])
 	]);
 }
@@ -299,9 +299,9 @@ function buildConnRow(conns) {
 }
 
 function opticsRow(label, value) {
-	return E('div', { 'class': 'pon-optics-row', 'style': 'display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 0; border-bottom: 1px solid ' + cBorder }, [
-		E('strong', { 'style': 'flex: 1 1 140px; min-width: 0; font-weight: 600' }, label),
-		E('span', { 'style': 'flex: 1 1 120px; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums' }, value)
+	return E('div', { 'class': 'pon-optics-row', 'style': 'display: flex; flex-wrap: nowrap; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 0; border-bottom: 1px solid ' + cBorder }, [
+		E('strong', { 'style': 'flex: 0 0 auto; min-width: 0; font-weight: 600; white-space: nowrap' }, label),
+		E('span', { 'style': 'flex: 1 1 auto; min-width: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums' }, value)
 	]);
 }
 
@@ -312,8 +312,8 @@ function renderBox(item) {
 		E('header', { 'class': 'pon-optics-head', 'style': 'display: block; width: 100%; max-width: none; box-sizing: border-box; padding: 10px 16px; text-align: center; color: ' + css('on-brand', '#ffffff') + '; background: ' + css('brand', css('primary', '#008fbb')) },
 			E('strong', 'PON')),
 		E('div', { 'class': 'pon-optics-body', 'style': 'display: block; width: 100%; min-width: 0; max-width: none; box-sizing: border-box; padding: 16px; text-align: left' }, [
-			E('div', { 'style': S_TOP }, [
-				E('div', { 'class': 'pon-optics-values', 'style': 'flex: 2 1 280px; min-width: 0' }, [
+			E('div', { 'class': 'pon-optics-top', 'style': S_TOP }, [
+				E('div', { 'class': 'pon-optics-values', 'style': 'flex: 1 1 auto; min-width: 0' }, [
 					opticsRow(_('收光功率'), metric(frontend, 'rx_power_dbm', 'dBm', 2)),
 					opticsRow(_('发光功率'), metric(frontend, 'tx_power_dbm', 'dBm', 2)),
 					opticsRow(_('光模块温度'), metric(frontend, 'temperature_celsius', '°C', 2)),

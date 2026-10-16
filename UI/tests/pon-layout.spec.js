@@ -8,7 +8,7 @@ const ponSource = fs.readFileSync(process.env.PON_TEST_SOURCE || path.join(root,
 const statusSource = fs.readFileSync(process.env.PON_TEST_STATUS || path.join(root, 'www/luci-static/resources/view/status/index.js'), 'utf8');
 
 for (const theme of ['aurora', 'argon']) {
-  for (const width of [1440, 390]) {
+  for (const width of [1440, 390, 320]) {
     for (const compact of [false, true]) {
       test(`${theme} ${width}px ${compact ? 'compact' : 'spaced'} styles stay full width`, async ({ page }) => {
         await page.setViewportSize({ width, height: 1000 });
@@ -62,7 +62,9 @@ for (const theme of ['aurora', 'argon']) {
             card: card.getBoundingClientRect().width,
             available: section.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth),
             font: parseFloat(getComputedStyle(card).fontSize),
-            overflow: document.documentElement.scrollWidth > innerWidth
+            overflow: document.documentElement.scrollWidth > innerWidth,
+            optics: card.querySelector('.pon-optics-values').getBoundingClientRect().toJSON(),
+            rates: card.querySelector('.pon-optics-top').lastElementChild.getBoundingClientRect().toJSON()
           };
         });
         async function assertLayout() {
@@ -70,6 +72,9 @@ for (const theme of ['aurora', 'argon']) {
           expect(Math.abs(size.card - size.available)).toBeLessThan(2);
           expect(size.font).toBeGreaterThanOrEqual(14);
           expect(size.overflow).toBe(false);
+          expect(size.rates.left).toBeGreaterThanOrEqual(size.optics.right);
+          expect(Math.abs(size.rates.top - size.optics.top)).toBeLessThan(2);
+          expect(size.rates.bottom).toBeLessThanOrEqual(size.optics.bottom + 2);
         }
         await assertLayout();
         await expect(card).toContainText('-16.74 dBm');

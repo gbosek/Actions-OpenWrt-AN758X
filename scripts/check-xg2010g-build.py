@@ -85,8 +85,8 @@ for src in (repo/'Runtime/root').rglob('*'):
     rel=src.relative_to(repo/'Runtime/root'); dest=installed/rel
     assert dest.is_file() and dest.read_bytes()==src.read_bytes(), 'Runtime migration/sample differs: '+str(rel)
     if src.suffix != '.awk': assert dest.stat().st_mode & 0o111, 'Nonexecutable runtime: '+str(rel)
-assert 'HW_OFFLOAD 标记连接' in (repo/'UI/15_pon.js').read_text()
-assert '全局连接' in (repo/'UI/15_pon.js').read_text()
+assert "[ _('卸载') ]" in (repo/'UI/15_pon.js').read_text()
+assert 'HW_OFFLOAD 标记连接' not in (repo/'UI/15_pon.js').read_text()
 assert 'packet_steering' in (installed/'etc/init.d/packet_steering').read_text()
 ppe_rpc=(installed/'usr/libexec/rpcd/luci.airoha_npu').read_text()
 assert 'getPpeExport' in ppe_rpc and '/usr/libexec/airoha-ppe-snapshot.sh' in ppe_rpc
