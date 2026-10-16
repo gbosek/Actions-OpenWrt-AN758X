@@ -100,8 +100,9 @@ for rel, filename in [('usr/libexec/airoha-ppe.awk','airoha-ppe.awk'),
     assert (installed/rel).read_bytes()==(repo/'Runtime'/filename).read_bytes(), 'PPE runtime differs: '+rel
 sampler=(installed/'usr/libexec/xg2010g-cpuusage').read_text()
 assert 'last_success_at' in sampler and 'proc_stat_unreadable' in sampler
-cpu_page=(installed/'www/luci-static/resources/view/status/include/10_system.js').read_text()
-assert 'IRQ / softirq' in cpu_page and '最后有效样本' in cpu_page
+assert all(token in cpu_page for token in ('sample.stale', 'sample.error',
+    'sample.last_success_at', 'cpu-sample-warning', '（旧数据）')), 'CPU stale-sample warning missing'
+assert '最后有效样本' not in cpu_page, 'Hidden CPU sampling details remain in image'
 mwan_init=(installed/'etc/init.d/mwan4').read_text()
 assert 'mwan4-rule-guard.sh --cleanup' in mwan_init and 'mwan4-rule-guard.sh --routes-only' in mwan_init
 pon_include = installed / 'www/luci-static/resources/view/status/include/15_xg2010g_pon.js'
