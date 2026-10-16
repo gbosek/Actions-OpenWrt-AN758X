@@ -301,7 +301,7 @@ function buildConnRow(conns) {
 function opticsRow(label, value) {
 	return E('div', { 'class': 'pon-optics-row', 'style': 'display: flex; flex-wrap: nowrap; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 0; border-bottom: 1px solid ' + cBorder }, [
 		E('strong', { 'style': 'flex: 0 0 auto; min-width: 0; font-weight: 600; white-space: nowrap' }, label),
-		E('span', { 'style': 'flex: 1 1 auto; min-width: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums' }, value)
+		E('span', { 'style': 'flex: 1 1 auto; min-width: 0; text-align: right; white-space: normal; overflow-wrap: anywhere; font-variant-numeric: tabular-nums' }, value)
 	]);
 }
 
