@@ -17,13 +17,20 @@ def install(root, project):
     assert match and '6.18.' + match[1] == baseline['kernel'], 'Unreviewed kernel base'
     destination = root / 'target/linux/airoha/patches-6.18'
     assert destination.is_dir(), 'Airoha patch directory missing'
+    # Native fixes have provenance records, not deployable patch payloads.
+    native = {fix['id']: fix for fix in metadata['native_fixes']}
+    assert set(baseline['already_in_base']) == set(native), 'Unreviewed native fix selection'
+    for fix_id in baseline['already_in_base']:
+        fix = native[fix_id]
+        assert fix['kernel'] == baseline['kernel'], 'Unreviewed native kernel fix'
+        assert not list(destination.glob(fix['replaces_patch_prefix'] + '-*.patch')), \
+            'Fix is native in this kernel base; duplicate patch rejected: ' + fix_id
+    assert set(baseline['apply']) == {patch['file'] for patch in metadata['patches']}, \
+        'Unreviewed backport selection'
     for patch in metadata['patches']:
         origin = repo / 'kernel-patches/airoha' / patch['file']
         assert hashlib.sha256(origin.read_bytes()).hexdigest() == patch['sha256'], 'Upstream patch hash mismatch'
         existing = list(destination.glob(patch['file'][:3] + '-*.patch'))
-        if patch['file'] not in baseline['apply']:
-            assert not existing, 'Fix is native in this kernel base; duplicate patch rejected'
-            continue
         for path in existing:
             assert path.name == patch['file'] and path.read_bytes() == origin.read_bytes(), 'Conflicting patch: ' + str(path)
         shutil.copyfile(origin, destination / patch['file'])

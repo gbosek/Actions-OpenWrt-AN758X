@@ -6,18 +6,6 @@
       "commit": "7e170da2edec9fb0717543571cc14b0aabee2b46",
       "url": "https://github.com/torvalds/linux/commit/7e170da2edec9fb0717543571cc14b0aabee2b46",
       "sha256": "8e74a058df65aeb3e7ad264b597435a34fe71985c42532139ef08b2a8159fa68"
-    },
-    {
-      "file": "935-net-airoha-order-npu-watchdog-cleanup.patch",
-      "commit": "4bdee8060d1e4581624e68fbd369b1afb14df4bc",
-      "url": "https://github.com/torvalds/linux/commit/4bdee8060d1e4581624e68fbd369b1afb14df4bc",
-      "sha256": "423e3fbb1976f2fbf020684f2a35dbea51b7cf1f423966d7034897e698fc8204"
-    },
-    {
-      "file": "936-net-airoha-enable-rx-queue31-interrupt.patch",
-      "commit": "7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
-      "url": "https://github.com/torvalds/linux/commit/7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
-      "sha256": "be108eff6ea7acc1f35e3e17a3cd520ea0aaa487bcf5c5ac692213d005f86d38"
     }
   ],
   "baselines": {
@@ -28,8 +16,8 @@
         "934-net-airoha-retry-trtcm-configuration.patch"
       ],
       "already_in_base": [
-        "936-net-airoha-enable-rx-queue31-interrupt.patch",
-        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+        "npu-watchdog-cleanup",
+        "rx-queue31-interrupt"
       ]
     },
     "ci": {
@@ -39,8 +27,8 @@
         "934-net-airoha-retry-trtcm-configuration.patch"
       ],
       "already_in_base": [
-        "936-net-airoha-enable-rx-queue31-interrupt.patch",
-        "935-net-airoha-order-npu-watchdog-cleanup.patch"
+        "npu-watchdog-cleanup",
+        "rx-queue31-interrupt"
       ]
     }
   },
@@ -48,5 +36,22 @@
   "capability_patch": {
     "file": "937-net-airoha-expose-flow-stats-capability.patch",
     "sha256": "0eb320f0670c814b005c0eee8063e92baa1cafb2ca699306bb1cdf463920c0da"
-  }
+  },
+  "native_fixes": [
+    {
+      "id": "npu-watchdog-cleanup",
+      "replaces_patch_prefix": "935",
+      "kernel": "6.18.55",
+      "commit": "4bdee8060d1e4581624e68fbd369b1afb14df4bc",
+      "url": "https://github.com/torvalds/linux/commit/4bdee8060d1e4581624e68fbd369b1afb14df4bc",
+      "stable_commit": "aca91d8fa0ecbc990ebf9a688c684dda78a43c00"
+    },
+    {
+      "id": "rx-queue31-interrupt",
+      "replaces_patch_prefix": "936",
+      "kernel": "6.18.55",
+      "commit": "7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
+      "url": "https://github.com/torvalds/linux/commit/7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994"
+    }
+  ]
 }
