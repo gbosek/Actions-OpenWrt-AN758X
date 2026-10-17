@@ -12,6 +12,8 @@ with tempfile.TemporaryDirectory(prefix='xg-routes-test-') as temp:
  (p/'rules.json').write_text(json.dumps(rules))
  (p/'online.json').write_text(json.dumps({'wan':True,'wanb':True,'wan_6':True,'wanb_6':True}))
  (p/'resolv').write_text('# Interface wan\nnameserver 223.5.5.5\nnameserver 2400:3200::1\n# Interface wanb_6\nnameserver 2400:3200:baba::1\n')
+ ready=p/'service-running';ready.touch()
+ service=bin/'mwan-init';service.write_text('#!/bin/sh\n[ -f "$FIXTURE/service-running" ]\n');service.chmod(0o755)
  (p/'functions').write_text('''config_load() { :; }
 config_get() {
  local value="$4"
@@ -49,7 +51,8 @@ elif cmd=='jsonfilter':
   path=bin/name;path.write_text(stub);path.chmod(0o755)
  text=(repo/'Runtime/root/usr/bin/mwan4-rule-guard.sh').read_text()
  for old,new in [('/tmp/sysinfo/board_name',str(p/'board')),('/lib/functions.sh',str(p/'functions')),
-                 ('/var/run',str(state)),('/tmp/resolv.conf.d/resolv.conf.auto',str(p/'resolv'))]:text=text.replace(old,new)
+                 ('/var/run',str(state)),('/etc/init.d/mwan4',str(service)),
+                 ('/tmp/resolv.conf.d/resolv.conf.auto',str(p/'resolv'))]:text=text.replace(old,new)
  guard=p/'guard';guard.write_text(text)
  env=os.environ|{'PATH':str(bin)+':'+os.environ['PATH'],'FIXTURE':str(p)}
  def call(*args):
@@ -74,6 +77,14 @@ elif cmd=='jsonfilter':
  assert not any('to 2400:' in x for x in current['6'])
  assert '9009: from all to 203.0.113.8 lookup 10' in current['4']
  assert '10050: from 2001:db8:1::/64 lookup main' in current['6']
+ # Across a reboot the stop marker is gone; a CLI-created directory is not a service.
+ ready.unlink();before=(p/'rules.json').read_bytes();call('--routes-only')
+ assert before==(p/'rules.json').read_bytes(),'Stale status directory revived routing while stopped'
+ # Native startup owns a deliberate exception until procd registers processes.
+ env['MWAN4_STARTUP']='init';call('--routes-only');env.pop('MWAN4_STARTUP')
+ assert any('to 2400:3200:baba::1' in x for x in json.loads((p/'rules.json').read_text())['6'])
+ call('--routes-only');current=json.loads((p/'rules.json').read_text())
+ assert not any('to 2400:' in x for x in current['6'])
  (state/'mwan4').rmdir();call('--routes-only')
  assert current==json.loads((p/'rules.json').read_text()),'Stopped MWAN4 was resurrected'
 print('PASS: family table 1/2 vs 3/4, DNS pinning, idempotence, down-event reconciliation, stop cleanup, preserved source-prefix/user rules')

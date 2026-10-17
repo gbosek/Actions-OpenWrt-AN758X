@@ -1,5 +1,5 @@
 #!/bin/sh
-# Apply the dual-WAN preset only to an untouched package template.
+# On explicit service start, apply the dual-WAN preset only to a stock template.
 # Retained user policies, network devices, PPP credentials and DNS stay intact.
 [ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
 reference=/usr/share/xg2010g/mwan4-stock.config

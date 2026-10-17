@@ -61,3 +61,11 @@ if init.exists():
     if ': > /var/run/mwan4-rule-guard.stopped' not in text:
         text=text.replace('stop_service() {', 'stop_service() {\n\t: > /var/run/mwan4-rule-guard.stopped',1)
     init.write_text(text)
+
+# Run after the runtime r7 adjustments on every invocation.
+import importlib.util
+spec = importlib.util.spec_from_file_location('mwan4_default_off', repo/'scripts/apply-mwan4-default-off.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+module.install(root)
+shutil.copyfile(repo/'UPSTREAM-059895-SOURCE.json', root/'files/etc/upstream-059895-source.json')

@@ -26,7 +26,8 @@ cleanup_owned_dns() {
     return 0
 }
 # Native MWAN4 owns its fallback rules. Never resurrect a stopped service.
-if [ "$1" = --cleanup ] || [ ! -d /var/run/mwan4 ] || [ -e /var/run/mwan4-rule-guard.stopped ]; then
+if [ "$1" = --cleanup ] || [ ! -d /var/run/mwan4 ] || [ -e /var/run/mwan4-rule-guard.stopped ] ||
+   { [ "${MWAN4_STARTUP:-}" != init ] && ! /etc/init.d/mwan4 running; }; then
     cleanup_owned_dns
     exit 0
 fi

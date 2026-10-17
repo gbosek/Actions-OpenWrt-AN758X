@@ -34,4 +34,11 @@ queue=root/'target/linux/airoha/patches-6.18'
 for number in (931,932,933,934,937,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
 assert not list(queue.glob('935-*patch')),'NPU watchdog fix is native in 6.18.55'
 assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
+init=(root/'package/custom/mwan4/files/etc/init.d/mwan4').read_text()
+assert 'enabled || return 0' in init and 'service_running || return 0' in init
+assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in init
+assert 'PKG_RELEASE:=8' in (root/'package/custom/mwan4/Makefile').read_text()
+assert 'PKG_RELEASE:=12' in (root/'package/custom/luci-app-mwan4/Makefile').read_text()
+assert not (root/'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
+assert (root/'files/etc/uci-defaults/99-xg2010g-mwan4-default-off').stat().st_mode & 0o111
 print('PASS: Linux 6.18.55, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')

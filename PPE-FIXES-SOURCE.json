@@ -10,8 +10,13 @@
   ],
   "patch_sha256": {
     "931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch": "493822d2cec4a61c115c08066da1b60ca5af6fe68ef0b1f16cff46a3314df2dc",
-    "932-net-airoha-return-sram-flush-failures.patch": "0854cb1b5a3f2364cab24b2bc9311b0ed8b3335a27ab2681386fc2fae8a017cb",
+    "932-net-airoha-return-sram-flush-failures.patch": "bcd015c4e67fe0d8c2c9ee13eb96d4679f2034df8c91d266146910620bcdc39e",
     "933-net-airoha-preserve-tc-template-on-idle-refresh.patch": "707382c29f97979b16fa3955427289e95d0c87e8aeacb53f1ed4d6216c9fd29d"
   },
-  "scope": "Local PPE candidates; no full ACK/SID lifecycle or hardware validation"
+  "scope": "Local PPE candidates; no full ACK/SID lifecycle or hardware validation",
+  "sram_flush_upstream": {
+    "openwrt_commit": "059895c014bdc4ecb24487b7983c528f1e97822a",
+    "linux_commit": "d7d81b00301398fcd38cf5b5869f0fdb674472ef",
+    "implementation": "Return SRAM commit failure immediately; exact upstream patch payload"
+  }
 }

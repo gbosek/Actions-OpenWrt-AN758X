@@ -39,8 +39,8 @@ for manifest in manifests:
         assert name in pkgs, f'{manifest.name}: missing {name}'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
-    assert re.match(r'^0\.1\.1-(?:r)?7$', pkgs['mwan4']), 'Native MWAN4 startup rule fix missing'
-    assert re.match(r'^1\.0\.0-(?:r)?11$', pkgs['luci-app-mwan4']), 'MWAN4 service-control fix missing'
+    assert re.match(r'^0\.1\.1-(?:r)?8$', pkgs['mwan4']), 'MWAN4 default-off policy missing'
+    assert re.match(r'^1\.0\.0-(?:r)?12$', pkgs['luci-app-mwan4']), 'MWAN4 stopped-state editing fix missing'
     assert re.search(r'-(?:r)?9$', pkgs['luci-app-pon-status']), 'PON fullwidth-v3 package release missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
     assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
@@ -119,8 +119,19 @@ overview = (installed / 'www/luci-static/resources/view/mwan4/network/overview.j
 assert 'Service stopped' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
 assert '192.168.10.1' in (installed / 'bin/config_generate').read_text(), 'Default LAN IP missing'
 assert 'create_iface_rules(iface, l3_device)' in (installed / 'lib/mwan4/mwan4.uc').read_text(), 'Native MWAN4 init rules missing'
-defaults = installed / 'etc/uci-defaults/98-xg2010g-mwan4-defaults'
-assert defaults.stat().st_mode & 0o111 and defaults.read_bytes() == (repo / 'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').read_bytes(), 'Fresh dual-WAN preset missing'
+assert not (installed / 'etc/uci-defaults/98-xg2010g-mwan4-defaults').exists(), 'Preset must wait for explicit start'
+for relative in ('etc/uci-defaults/99-xg2010g-mwan4-default-off', 'usr/libexec/xg2010g-mwan4-preset'):
+    path = installed / relative
+    assert path.stat().st_mode & 0o111 and path.read_bytes() == (repo / 'files' / relative).read_bytes(), relative
+assert 'enabled || return 0' in mwan_init and 'service_running || return 0' in mwan_init
+assert 'procd_running mwan4' in mwan_init, 'Status directory must not be treated as a running service'
+assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in mwan_init
+assert 'wasRunning' in overview and 'Service remains stopped.' in overview
+assert 'withButtonBusy(eventButton(ev), refreshRuntime)' in overview
+assert "action == 'stop' ? 'disable' : 'enable'" in (installed / 'usr/share/rpcd/ucode/mwan4').read_text()
+assert 'm.init();' not in (installed / 'usr/share/rpcd/ucode/mwan4').read_text()
+assert json.loads((installed / 'etc/xg2010g-mwan4-source.json').read_text()) == json.loads((repo / 'MWAN4-SOURCE.json').read_text())
+assert (installed / 'etc/upstream-059895-source.json').read_bytes() == (repo / 'UPSTREAM-059895-SOURCE.json').read_bytes()
 assert (installed / 'www/luci-static/resources/view/wol.js').is_file(), 'WOL page missing'
 assert (installed / 'usr/bin/etherwake').stat().st_mode & 0o111, 'WOL packet sender missing'
 assert (installed / 'www/luci-static/resources/view/status/index.js').read_bytes() == (repo / 'UI/status-index.js').read_bytes(), 'Independent overview card loading missing'

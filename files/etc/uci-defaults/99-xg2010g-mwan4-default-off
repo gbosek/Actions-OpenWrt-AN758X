@@ -1,0 +1,11 @@
+#!/bin/sh
+# First boot after flashing: keep policies, but require an explicit MWAN4 start.
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
+[ -x /etc/init.d/mwan4 ] || exit 1
+if /etc/init.d/mwan4 status >/dev/null 2>&1; then
+	/etc/init.d/mwan4 stop || exit 1
+fi
+/etc/init.d/mwan4 disable || exit 1
+mkdir -p /var/run
+: > /var/run/mwan4-rule-guard.stopped
+exit 0

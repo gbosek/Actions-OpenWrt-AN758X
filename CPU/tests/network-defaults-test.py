@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Exercise the shipped first-boot preset without changing retained policies."""
+"""Exercise the explicit-start preset without changing retained policies."""
 from pathlib import Path
 import json, os, subprocess, tempfile
 
 repo = Path(__file__).resolve().parents[2]
-source = repo / 'files/etc/uci-defaults/98-xg2010g-mwan4-defaults'
+source = repo / 'files/usr/libexec/xg2010g-mwan4-preset'
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     board = root / 'board'; board.write_text('gemtek,xg2010g\n')

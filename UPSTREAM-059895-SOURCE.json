@@ -1,0 +1,65 @@
+{
+  "upstream": "openwrt/openwrt",
+  "commit": "059895c014bdc4ecb24487b7983c528f1e97822a",
+  "url": "https://github.com/openwrt/openwrt/commit/059895c014bdc4ecb24487b7983c528f1e97822a",
+  "baseline": "pbs05/ponwrt@a57faf93c6c3638ba3651690228aabaa51d3f235 + Linux 6.18.55",
+  "selection": [
+    {
+      "fix": "SRAM flush error propagation",
+      "linux_commit": "d7d81b00301398fcd38cf5b5869f0fdb674472ef",
+      "implementation": "932-net-airoha-return-sram-flush-failures.patch",
+      "action": "Existing equivalent fix replaced with exact upstream payload"
+    },
+    {
+      "fix": "QDMA TRTCM retry and readback",
+      "linux_commit": "7e170da2edec9fb0717543571cc14b0aabee2b46",
+      "implementation": "934-net-airoha-retry-trtcm-configuration.patch",
+      "action": "Retain existing exact backport"
+    },
+    {
+      "fix": "Shared QDMA TX BQL",
+      "linux_commit": "6117098309452c641af4458a0f7c02888b026fb6",
+      "implementation": "923-01-net-airoha-fix-BQL-underflow-in-shared-QDMA-TX-ring.patch",
+      "action": "Retain PON-adapted baseline version"
+    },
+    {
+      "fix": "skb fragment page DMA mapping",
+      "linux_commit": "32f1c2bbb26ae2be476c8b66e3b41789b6b97bfc",
+      "implementation": "923-02-net-airoha-dma-map-xmit-frags-with-skb-frag-dma-map.patch",
+      "action": "Retain PON-adapted baseline version"
+    },
+    {
+      "fix": "Maximum receive size, PPE egress MTU and L2 overhead",
+      "implementation": [
+        "920-13-net-airoha-Rework-MTU-configuration.patch",
+        "920-16-net-airoha-Account-for-L2-overhead-in-PPE-MTU-configuration.patch"
+      ],
+      "action": "Retain equivalent cumulative implementation; do not duplicate upstream 190"
+    },
+    {
+      "fix": "Flowtable QoS queue and DSCP",
+      "implementation": "915-02-net-airoha-Set-hw-QoS-parameter-according-to-the-pac.patch",
+      "action": "Retain existing equivalent end-state"
+    },
+    {
+      "fix": "Lossless MIB statistics",
+      "linux_commit": "d163725af84ad958bb74ef4f6eb906a04daa8902",
+      "implementation": "170-net-airoha-fix-MIB-stats-collection-to-be-lossless.patch",
+      "action": "Retain existing same-commit backport"
+    }
+  ],
+  "retained": [
+    "931 NPU flow-stats rejection fallback",
+    "933 TC template candidate",
+    "934 TRTCM retry",
+    "937 statistics capability",
+    "999 compatible 500-1400MHz boost"
+  ],
+  "not_added": [
+    "Multicast changes excluded by user request",
+    "186 module license text has no runtime effect; omitted",
+    "No wholesale Airoha patch-set rebase or optional new LRO feature"
+  ],
+  "verification": "scripts/check-upstream-backports.py reads actual prepared source; firmware workflow also compiles ARM64 drivers and checks staged rootfs",
+  "hardware_tested": false
+}

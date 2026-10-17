@@ -1,0 +1,43 @@
+{
+  "openwrt_commit": "059895c014bdc4ecb24487b7983c528f1e97822a",
+  "kernel": "linux-6.18.55",
+  "sram_error_return": true,
+  "trtcm_retry_readback": true,
+  "shared_tx_bql": true,
+  "fragment_page_dma": true,
+  "rx_limit_and_ppe_l2_mtu": true,
+  "lossless_mib": true,
+  "flowtable_qos_dscp": true,
+  "ppe_stats_refusal_fallback": true,
+  "source_sha256": {
+    "airoha_eth.c": "6ecd1397c1ecf12626c36e93842912655a515976b83412504363c0a036a6603a",
+    "airoha_eth.h": "277f317b19ba450d07e0d03cb60f7c12aea9570fc7e2827e316338200b689951",
+    "airoha_ppe.c": "41f95f1420dfb97e29dd2c11d82166ff74808aa05013471ff82fafb52a6b4b9d",
+    "airoha_regs.h": "1441b80f769dce9950646b252664c8d5508e1e1f919a14441fd5e42416139ea4"
+  },
+  "scope": "Complete kernel patch application, ARM64 driver objects with WERROR, actual function tests and isolated lifecycle tests; full image build and hardware stability require separate results",
+  "patch_queue_applied": 617,
+  "arm64_werror_build": true,
+  "driver_objects": {
+    "airoha_npu.o": "601fedf76ed10b740f00e8861bbcee88782a8fcb8436c69fffb97e3c49025c54",
+    "airoha_ppe.o": "7115c27755d7fde3e763ffd77022be61bc3d277435b1d1c03cc44e8c4b657350",
+    "airoha_ppe_debugfs.o": "e847da7cdfd7a41f646fce44cdf43685ea1a67e04953a6c0442d3b1390cef058",
+    "airoha_eth.o": "3e65c671e7c3a0a44c0f79db2094732b373df8e64bc3bc4004a559254a0ac992"
+  },
+  "ppe_function_cases": 16,
+  "trtcm_function_cases": 7,
+  "mwan4": [
+    "first boot stops and disables; ordinary reboot honors explicit start/stop",
+    "real procd status; stale directory does not start service",
+    "reload while stopped does nothing",
+    "RPC start enables and stop disables; per-WAN controls require running service",
+    "read-only status initialization",
+    "UI apply stopped/running/stop-during-apply/unknown state",
+    "Refresh button performs only status reads",
+    "DNS guard rejects stopped service even without volatile stop marker",
+    "native startup explicitly runs route guard",
+    "installer idempotent",
+    "preset retains user policies, network devices, credentials and DNS"
+  ],
+  "hardware_tested": false
+}
