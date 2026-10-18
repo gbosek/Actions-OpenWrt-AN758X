@@ -31,7 +31,9 @@ page=(root/'feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view
 assert 'cpuSampleDisplay(cpuusage)' in page and "'cpu-sample-values'" in page
 assert 'SYS 含 system / IRQ / softirq' not in page, 'Verbose CPU diagnostics still shown'
 queue=root/'target/linux/airoha/patches-6.18'
-for number in (931,932,933,934,937,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
+for number in (931,932,933,934,937,938,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
+assert 'CONFIG_BUSYBOX_CONFIG_FEATURE_SYSLOG_INFO=y' in config, 'BusyBox INFO logging missing'
+assert (root/'files/etc/config/fstab').is_file(), 'ROM fstab missing'
 assert not list(queue.glob('935-*patch')),'NPU watchdog fix is native in 6.18.55'
 assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
 init=(root/'package/custom/mwan4/files/etc/init.d/mwan4').read_text()

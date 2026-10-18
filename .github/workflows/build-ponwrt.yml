@@ -31,7 +31,7 @@ env:
 
 on:
   push:
-    branches: [work/xg2010g-1456-ppe-20261014]
+    branches: [work/xg2010g-1456-ppe-20261014, work/xg2010g-boot-log-fixes-20261018]
   repository_dispatch:
   workflow_dispatch:
     inputs:

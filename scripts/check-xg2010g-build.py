@@ -143,3 +143,11 @@ print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RP
 print('Verified MWAN4 stop/native-init fixes, RPS boot/event policy, full-width PON, WOL and default LAN 192.168.10.1')
 print('Verified independent overview rendering and Argon Chinese wallpaper configuration with Bing default')
 print('Verified PON fullwidth-v3, compact transparent rate rows, package r9 and layout provenance')
+assert (installed/'etc/config/fstab').is_file(), 'Default fstab missing from delivered rootfs'
+boot = json.loads((installed/'etc/xg2010g-boot-fixes.json').read_text())
+assert boot['phy_patch_sha256'] == hashlib.sha256((repo/'kernel-patches/airoha'/boot['phy_patch']).read_bytes()).hexdigest()
+busybox_configs = list((root/'build_dir').glob('target-*/busybox-default/busybox-*/.config'))
+assert busybox_configs, 'Compiled BusyBox configuration missing'
+for busybox_config in busybox_configs:
+    assert 'CONFIG_FEATURE_SYSLOG_INFO=y' in busybox_config.read_text().splitlines(), 'BusyBox still maps INFO to ERR'
+print('Verified ROM fstab, boot fix provenance and compiled BusyBox INFO logging')

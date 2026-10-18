@@ -1,0 +1,29 @@
+From: XG2010G maintainers
+Subject: [PATCH] net: phy: mediatek: make AN7581 LED mux board optional
+
+Boards using GPIO panel LEDs do not describe a gbe-led PHY pinctrl state.
+Do not request a nonexistent state on those boards. If a board does declare
+the state, retain the error and propagate probe deferral or setup failure.
+
+--- a/drivers/net/phy/mediatek/mtk-ge-soc.c
++++ b/drivers/net/phy/mediatek/mtk-ge-soc.c
+@@ -1423,11 +1423,14 @@ static int an7581_phy_probe(struct phy_device *phydev)
+ 	struct mtk_socphy_priv *priv;
+ 	struct pinctrl *pinctrl;
+ 
+-	/* Toggle pinctrl to enable PHY LED */
+-	pinctrl = devm_pinctrl_get_select(&phydev->mdio.dev, "gbe-led");
+-	if (IS_ERR(pinctrl))
+-		dev_err(&phydev->mdio.bus->dev,
+-			"Failed to setup PHY LED pinctrl\n");
++	/* Only boards using the PHY LED mux describe this optional state. */
++	if (of_property_match_string(phydev->mdio.dev.of_node,
++				     "pinctrl-names", "gbe-led") >= 0) {
++		pinctrl = devm_pinctrl_get_select(&phydev->mdio.dev, "gbe-led");
++		if (IS_ERR(pinctrl))
++			return dev_err_probe(&phydev->mdio.dev, PTR_ERR(pinctrl),
++					     "Failed to setup PHY LED pinctrl\n");
++	}
+ 
+ 	priv = devm_kzalloc(&phydev->mdio.dev, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
