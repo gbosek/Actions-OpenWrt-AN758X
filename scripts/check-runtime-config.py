@@ -39,8 +39,11 @@ assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
 init=(root/'package/custom/mwan4/files/etc/init.d/mwan4').read_text()
 assert 'enabled || return 0' in init and 'service_running || return 0' in init
 assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in init
-assert 'PKG_RELEASE:=8' in (root/'package/custom/mwan4/Makefile').read_text()
-assert 'PKG_RELEASE:=12' in (root/'package/custom/luci-app-mwan4/Makefile').read_text()
+metadata=json.loads((repo/'MWAN4-SOURCE.json').read_text())
+for kind,name in [('backend','mwan4'),('frontend','luci-app-mwan4')]:
+ expected=metadata[kind]['version'].rsplit('-r',1)[1]
+ make=(root/'package/custom'/name/'Makefile').read_text()
+ assert re.search(r'^PKG_RELEASE:='+re.escape(expected)+r'$',make,re.M), 'MWAN4 package release differs from source metadata: '+name
 assert not (root/'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
 assert (root/'files/etc/uci-defaults/99-xg2010g-mwan4-default-off').stat().st_mode & 0o111
 print('PASS: Linux 6.18.55, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')
