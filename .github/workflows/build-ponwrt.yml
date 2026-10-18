@@ -1,5 +1,5 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 + upstream fixes + MWAN4 default stopped - naoki and luanmuc
+run-name: XG2010G 6.18.55 + DNS routing and LAN LED fixes - naoki and luanmuc
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -808,6 +808,9 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-driver-fixes.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir --report bin/targets/airoha/an7581/UPSTREAM-059895-VERIFICATION.json
             UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/mwan4-default-off-test.py" .
+            UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/routing-functions-test.py" .
+            python3 "$GITHUB_WORKSPACE/Runtime/tests/route-test.py"
+            python3 "$GITHUB_WORKSPACE/CPU/tests/network-defaults-test.py"
           fi
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"

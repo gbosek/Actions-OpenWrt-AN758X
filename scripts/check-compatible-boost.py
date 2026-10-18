@@ -50,6 +50,15 @@ def board_from_fit(path):
     raise ValueError('FIT has no board device tree')
 
 
+def check_lan_leds(nodes):
+    for index, color, function in [(0, 2, b'link'), (1, 4, b'activity')]:
+        matches = [p for n,p in nodes.items() if n.endswith(f'/ethernet-phy@f/leds/led@{index}')]
+        assert len(matches) == 1, 'Missing LAN3 PHY LED in actual FIT'
+        led = matches[0]
+        assert cells(led['reg']) == (index,) and cells(led['color']) == (color,)
+        assert led['function'].rstrip(b'\0') == function
+
+
 def check_board(nodes):
     assert b'gemtek,xg2010g' in nodes['/']['compatible'].split(b'\0'), 'Wrong board'
     phandles={cells(p['phandle'])[0]:n for n,p in nodes.items() if 'phandle' in p}
@@ -76,6 +85,7 @@ def check_board(nodes):
     assert cells(controller[0]['reg'])==(0,0x1efbe000,0,0x1000)
     assert b'mcucfg' in controller[0]['reg-names'].split(b'\0')
     assert b'cpufreq.default_governor=powersave' in nodes['/chosen']['bootargs']
+    check_lan_leds(nodes)
     return sorted(entries)
 
 

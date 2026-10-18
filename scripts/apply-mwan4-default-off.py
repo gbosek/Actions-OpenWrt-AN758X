@@ -2,6 +2,7 @@
 """Keep MWAN4 stopped until an explicit start; preserve that state on edits."""
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -20,6 +21,14 @@ def install(root):
     frontend = root / 'package/custom/luci-app-mwan4'
     init = backend / 'files/etc/init.d/mwan4'
     assert init.is_file() and frontend.is_dir(), 'Pinned MWAN4 packages missing'
+    for relative in ('usr/libexec/xg2010g-mwan4-preset', 'etc/uci-defaults/99-xg2010g-mwan4-default-off'):
+        dest=root/'files'/relative
+        dest.parent.mkdir(parents=True,exist_ok=True)
+        shutil.copyfile(repo/'files'/relative,dest)
+        dest.chmod(0o755)
+    reference=root/'files/usr/share/xg2010g/mwan4-stock.config'
+    reference.parent.mkdir(parents=True,exist_ok=True)
+    shutil.copyfile(backend/'files/etc/config/mwan4',reference)
     replace_once(init, 'service_running() {\n\t[ -d "$MWAN4_STATUS_DIR" ]\n}',
                  'service_running() {\n\t[ ! -e /var/run/mwan4-rule-guard.stopped ] &&\n'
                  '\t\tprocd_running mwan4 "${1:-*}"\n}')

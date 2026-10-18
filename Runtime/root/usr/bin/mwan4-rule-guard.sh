@@ -16,7 +16,7 @@ fi
 cleanup_owned_dns() {
     [ -r "$state" ] || return 0
     while IFS='|' read -r fam pref spec; do
-        case "$fam:$pref:$spec" in 4:9[0-9][0-9][0-9]:to\ *\ lookup\ *|6:9[0-9][0-9][0-9]:to\ *\ lookup\ *)
+        case "$fam:$pref:$spec" in 4:15[0-9][0-9]:to\ *\ lookup\ *|6:16[0-9][0-9]:to\ *\ lookup\ *|4:9[0-9][0-9][0-9]:to\ *\ lookup\ *|6:9[0-9][0-9][0-9]:to\ *\ lookup\ *)
             if [ "$PLAN" = 1 ]; then printf 'DEL ip -%s rule del pref %s %s\n' "$fam" "$pref" "$spec"
             else ip "-$fam" rule del pref "$pref" $spec 2>/dev/null
             fi ;;
@@ -91,8 +91,43 @@ del_exact() {
 find_id() {
     printf '%s' "$MAP" | awk -v f="$1" -v n="$2" '$1==f && $2==n {print $3;exit}'
 }
+# A direct dump of a nonexistent family/table returns "Dump terminated".
+# Check the complete family dump instead, and never treat a failed dump as empty.
+table_is_empty() {
+    local routes
+    routes=$(ip "-$1" route show table all) || return 2
+    printf '%s\n' "$routes" | awk -v tid="$2" '
+        { for(i=1;i<NF;i++) if($i=="table" && $(i+1)==tid) found=1 }
+        END {exit found ? 1 : 0}'
+}
+# PPP interfaces can advertise a default in ubus while an equal-metric default
+# from another WAN occupies main. MWAN rtmon only clones installed main routes.
+# Recover only a missing default in this enabled PPP interface's own v4 table.
+# Event-driven via existing startup/hotplug; never add a default to main.
+ensure_ppp_default() {
+    local fam="$1" name="$2" tid="$3" dev="$4" data gateway proto up live_dev
+    [ "$fam" = 4 ] || return 0
+    [ -z "$(ip -4 route show table "$tid" default)" ] || return 0
+    data=$(ubus call "network.interface.$name" status 2>/dev/null)
+    up=$(printf '%s' "$data" | jsonfilter -e '@.up')
+    proto=$(printf '%s' "$data" | jsonfilter -e '@.proto')
+    live_dev=$(printf '%s' "$data" | jsonfilter -e '@.l3_device')
+    [ "$up" = true ] && [ "$proto" = pppoe ] && [ "$live_dev" = "$dev" ] || return 0
+    gateway=$(printf '%s' "$data" | jsonfilter -e '@["ipv4-address"][0].ptpaddress')
+    case "$gateway" in ''|*[!0-9.]*) return 0 ;; esac
+    if [ "$PLAN" = 1 ]; then
+        printf 'ADD ip -4 route add default via %s dev %s table %s\n' "$gateway" "$dev" "$tid"
+    else
+        [ ! -e /var/run/mwan4-rule-guard.stopped ] || return 0
+        if ip -4 route add default via "$gateway" dev "$dev" table "$tid"; then
+            logger -t mwan4-rule-guard "restored missing IPv4 default: $name table $tid dev $dev"
+        fi
+    fi
+}
+
 printf '%s' "$MAP" | while read -r fam name tid dev; do
     [ -n "$tid" ] || continue
+    ensure_ppp_default "$fam" "$name" "$tid" "$dev"
     [ -n "$(ip "-$fam" route show table "$tid")" ] || continue
     mark=$(mark_for_id "$tid")
     add_exact "$fam" $((tid+1000)) "iif $dev lookup $tid"
@@ -106,7 +141,7 @@ printf '%s' "$MAP" | while read -r fam name tid dev; do
     # Remove only the exact legacy v6 rules after the native replacement exists.
     if [ "$fam" = 6 ]; then
         base=${name%_6}; old=$(find_id 4 "$base")
-        if [ -n "$old" ] && [ "$old" != "$tid" ] && [ -z "$(ip -6 route show table "$old")" ] &&
+        if [ -n "$old" ] && [ "$old" != "$tid" ] && table_is_empty 6 "$old" &&
            [ -n "$(ip -6 route show table "$tid")" ]; then
             oldmark=$(mark_for_id "$old")
             del_exact 6 $((old+1000)) "iif $dev lookup $old"
@@ -120,7 +155,7 @@ tmp="${state}.$$"
 if [ -r /tmp/resolv.conf.d/resolv.conf.auto ]; then
     awk '/^# Interface /{n=$3} /^nameserver /{print ($2 ~ /:/ ? 6:4),n,$2}' /tmp/resolv.conf.d/resolv.conf.auto |
     {
-        p4=9000; p6=9100
+        p4=1500; p6=1600
         while read -r fam name dns; do
             case "$dns" in ''|*[!0-9a-fA-F:.]*) continue ;; esac
             tid=$(find_id "$fam" "$name")
@@ -134,7 +169,7 @@ if [ -r /tmp/resolv.conf.d/resolv.conf.auto ]; then
             add_exact "$fam" "$pref" "$spec" || continue
             [ "$PLAN" = 1 ] || printf '%s|%s|%s\n' "$fam" "$pref" "$spec" >> "$tmp"
             old=$(find_id 4 "$base")
-            if [ "$fam" = 6 ] && [ -n "$old" ] && [ "$old" != "$tid" ] && [ -z "$(ip -6 route show table "$old")" ]; then
+            if [ "$fam" = 6 ] && [ -n "$old" ] && [ "$old" != "$tid" ] && table_is_empty 6 "$old"; then
                 del_exact 6 "$pref" "to $dns lookup $old"
             fi
         done
@@ -143,7 +178,7 @@ fi
 if [ "$PLAN" = 0 ]; then
     if [ -r "$state" ]; then
         while IFS='|' read -r fam pref spec; do
-            case "$fam:$pref:$spec" in 4:9[0-9][0-9][0-9]:to\ *\ lookup\ *|6:9[0-9][0-9][0-9]:to\ *\ lookup\ *) ;; *) continue ;; esac
+            case "$fam:$pref:$spec" in 4:15[0-9][0-9]:to\ *\ lookup\ *|6:16[0-9][0-9]:to\ *\ lookup\ *|4:9[0-9][0-9][0-9]:to\ *\ lookup\ *|6:9[0-9][0-9][0-9]:to\ *\ lookup\ *) ;; *) continue ;; esac
             grep -Fqx "$fam|$pref|$spec" "$tmp" || del_exact "$fam" "$pref" "$spec"
         done < "$state"
     fi

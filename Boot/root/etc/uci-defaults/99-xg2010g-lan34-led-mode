@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Reapply the XG2010G LAN LED mapping even when sysupgrade keeps old settings.
+[ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = "gemtek,xg2010g" ] || exit 0
+
+uci set system.led_lan3_green='led'
+uci set system.led_lan3_green.sysfs='mt7530-0:0f:green:link'
+uci set system.led_lan3_green.trigger='netdev'
+uci set system.led_lan3_green.dev='lan3'
+uci set system.led_lan3_green.mode='link'
+
+uci set system.led_lan3_yellow='led'
+uci set system.led_lan3_yellow.sysfs='mt7530-0:0f:amber:activity'
+uci set system.led_lan3_yellow.trigger='netdev'
+uci set system.led_lan3_yellow.dev='lan3'
+uci set system.led_lan3_yellow.mode='tx rx'
+
+uci set system.led_lan4_green='led'
+uci set system.led_lan4_green.sysfs='green:lan-4'
+uci set system.led_lan4_green.trigger='netdev'
+uci set system.led_lan4_green.dev='lan4'
+uci set system.led_lan4_green.mode='link'
+
+uci set system.led_lan4_yellow='led'
+uci set system.led_lan4_yellow.sysfs='yellow:lan-4'
+uci set system.led_lan4_yellow.trigger='netdev'
+uci set system.led_lan4_yellow.dev='lan4'
+uci set system.led_lan4_yellow.mode='tx rx'
+
+uci commit system
+exit 0

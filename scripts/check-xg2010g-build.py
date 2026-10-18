@@ -39,7 +39,7 @@ for manifest in manifests:
         assert name in pkgs, f'{manifest.name}: missing {name}'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
-    assert re.match(r'^0\.1\.1-(?:r)?8$', pkgs['mwan4']), 'MWAN4 default-off policy missing'
+    assert re.match(r'^0\.1\.1-(?:r)?9$', pkgs['mwan4']), 'MWAN4 routing fixes missing'
     assert re.match(r'^1\.0\.0-(?:r)?12$', pkgs['luci-app-mwan4']), 'MWAN4 stopped-state editing fix missing'
     assert re.search(r'-(?:r)?9$', pkgs['luci-app-pon-status']), 'PON fullwidth-v3 package release missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
@@ -151,3 +151,19 @@ assert busybox_configs, 'Compiled BusyBox configuration missing'
 for busybox_config in busybox_configs:
     assert 'CONFIG_FEATURE_SYSLOG_INFO=y' in busybox_config.read_text().splitlines(), 'BusyBox still maps INFO to ERR'
 print('Verified ROM fstab, boot fix provenance and compiled BusyBox INFO logging')
+
+# Verify the changes in the delivered rootfs, not just the repository overlay.
+led = json.loads((installed/'etc/xg2010g-led-fixes.json').read_text())
+assert led['patch_sha256'] == hashlib.sha256((repo/'Boot/xg2010g-lan34-leds.patch').read_bytes()).hexdigest()
+rel = 'etc/uci-defaults/99-xg2010g-lan34-led-mode'
+assert (installed/rel).stat().st_mode & 0o111 and (installed/rel).read_bytes() == (repo/'Boot/root'/rel).read_bytes()
+library = (installed/'lib/mwan4/mwan4.uc').read_text()
+assert 'mwan4.mmx_default, mwan4.mmx_mask, mwan4.mmx_blackhole, mwan4.mmx_mask, mwan4.mmx_unreachable' in library, 'Reserved marks must not enter sticky cache'
+rtmon = (installed/'lib/mwan4/mwan4rtmon.uc').read_text().split('function add_all_routes() {',1)[1].split('function handle_route(',1)[0]
+assert 'route add table' not in rtmon and rtmon.count('route replace table') == 2, 'Route snapshots are not idempotent'
+assert not (installed/'etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
+for rel in ('etc/uci-defaults/99-xg2010g-mwan4-default-off', 'usr/libexec/xg2010g-mwan4-preset'):
+    assert (installed/rel).stat().st_mode & 0o111 and (installed/rel).read_bytes() == (repo/'files'/rel).read_bytes(), rel
+assert (installed/'usr/share/xg2010g/mwan4-stock.config').is_file()
+assert json.loads((installed/'etc/xg2010g-mwan4-source.json').read_text()) == json.loads((repo/'MWAN4-SOURCE.json').read_text())
+print('Verified LAN3/LAN4 migration, provider-DNS routing, reserved sticky marks, repeatable route snapshots and explicit-start defaults')

@@ -1,0 +1,34 @@
+diff --git a/files/lib/mwan4/mwan4.uc b/files/lib/mwan4/mwan4.uc
+--- a/files/lib/mwan4/mwan4.uc
++++ b/files/lib/mwan4/mwan4.uc
+@@ -1257,8 +1257,8 @@
+ 		push(L, sprintf('\t\tmeta mark & %s == 0 jump %s_strategy_%s_%s',
+ 			mwan4.mmx_mask, NFT_PREFIX, strategy, fam));
+ 		// Update sticky map with current assignment
+-		push(L, sprintf('\t\tmeta mark & %s != 0 meta mark & %s != %s update @%s_rule_%s_%s { %s : meta mark }',
+-			mwan4.mmx_mask, mwan4.mmx_mask, mwan4.mmx_default, NFT_PREFIX, fam, rule_name, saddr));
++		push(L, sprintf('\t\tmeta mark & %s != 0 meta mark & %s != %s meta mark & %s != %s meta mark & %s != %s update @%s_rule_%s_%s { %s : meta mark }',
++			mwan4.mmx_mask, mwan4.mmx_mask, mwan4.mmx_default, mwan4.mmx_mask, mwan4.mmx_blackhole, mwan4.mmx_mask, mwan4.mmx_unreachable, NFT_PREFIX, fam, rule_name, saddr));
+ 		push(L, '\t}');
+ 	}
+ 
+diff --git a/files/lib/mwan4/mwan4rtmon.uc b/files/lib/mwan4/mwan4rtmon.uc
+--- a/files/lib/mwan4/mwan4rtmon.uc
++++ b/files/lib/mwan4/mwan4rtmon.uc
+@@ -113,13 +113,13 @@
+ 		let tid = m.route_line_dev(route_line, family);
+ 		if (tid != null && active[tid]) {
+ 			// Route maps to a known device table
+-			system(sprintf('%s route add table %d %s 2>/dev/null', ip, tid, route_line));
++			system(sprintf('%s route replace table %d %s 2>/dev/null', ip, tid, route_line));
+ 		} else if (!match(route_line, /^default/) && !match(route_line, /^fe80::\/64/)) {
+ 			// Non-default route: add to all active tables
+ 			for (let id in active) {
+-				let err = m.cmd_lines(sprintf('%s route add table %s %s 2>&1', ip, id, route_line));
++				let err = m.cmd_lines(sprintf('%s route replace table %s %s 2>&1', ip, id, route_line));
+ 				if (length(err))
+-					m.LOG('warn', 'failed to add', route_line, 'to table', id, '-', join(' ', err));
++					m.LOG('warn', 'failed to synchronize', route_line, 'to table', id, '-', join(' ', err));
+ 			}
+ 		}
+ 	}

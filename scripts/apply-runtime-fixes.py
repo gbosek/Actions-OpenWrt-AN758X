@@ -6,6 +6,7 @@ root = Path(sys.argv[1] if len(sys.argv)>1 else '.').resolve()
 repo = Path(__file__).resolve().parents[1]
 assert (root / 'target/linux/airoha').is_dir()
 subprocess.run([sys.executable, str(Path(__file__).with_name('apply-boot-log-fixes.py')), str(root)], check=True)
+subprocess.run([sys.executable, str(Path(__file__).with_name('apply-lan-leds.py')), str(root)], check=True)
 for src in (repo / 'Runtime/root').rglob('*'):
     if not src.is_file(): continue
     dest = root / 'files' / src.relative_to(repo/'Runtime/root')
@@ -69,4 +70,5 @@ spec = importlib.util.spec_from_file_location('mwan4_default_off', repo/'scripts
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 module.install(root)
+subprocess.run([sys.executable, str(Path(__file__).with_name('apply-mwan4-routing-fixes.py')), str(root)], check=True)
 shutil.copyfile(repo/'UPSTREAM-059895-SOURCE.json', root/'files/etc/upstream-059895-source.json')

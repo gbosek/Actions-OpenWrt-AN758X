@@ -1,0 +1,45 @@
+diff --git a/target/linux/airoha/an7581/base-files/etc/board.d/01_leds b/target/linux/airoha/an7581/base-files/etc/board.d/01_leds
+--- a/target/linux/airoha/an7581/base-files/etc/board.d/01_leds
++++ b/target/linux/airoha/an7581/base-files/etc/board.d/01_leds
+@@ -20,9 +20,11 @@
+ 	ucidef_set_led_netdev "lan4-green" "lan4" "green:lan-4" "lan4" "link_1000 tx rx"
+ 	;;
+ gemtek,xg2010g)
+-	# GPIO42 and GPIO46 drive the LAN4 bicolor LED selected by link speed.
+-	ucidef_set_led_netdev "lan4-yellow" "lan4" "yellow:lan-4" "lan4" "link_10 link_100"
+-	ucidef_set_led_netdev "lan4-green" "lan4" "green:lan-4" "lan4" "link_1000 tx rx"
++	# LAN3 uses the EN8811H PHY LED outputs; LAN4 uses GPIO46/42.
++	ucidef_set_led_netdev "lan3-green" "lan3" "mt7530-0:0f:green:link" "lan3" "link"
++	ucidef_set_led_netdev "lan3-yellow" "lan3" "mt7530-0:0f:amber:activity" "lan3" "tx rx"
++	ucidef_set_led_netdev "lan4-green" "lan4" "green:lan-4" "lan4" "link"
++	ucidef_set_led_netdev "lan4-yellow" "lan4" "yellow:lan-4" "lan4" "tx rx"
+ 	;;
+ nokia,xg-040g-md-ubi|\
+ nokia,xg-040g-tf-ubi|\
+diff --git a/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts b/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts
+--- a/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts
++++ b/target/linux/airoha/dts/an7581-gemtek-xg2010g.dts
+@@ -365,6 +365,23 @@
+ 		reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
+ 		reset-assert-us = <1000000>;
+ 		reset-deassert-us = <100000>;
++		/* EN8811H LED outputs: 0 is green link, 1 is amber activity. */
++		leds {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			led@0 {
++				reg = <0>;
++				color = <LED_COLOR_ID_GREEN>;
++				function = "link";
++			};
++
++			led@1 {
++				reg = <1>;
++				color = <LED_COLOR_ID_AMBER>;
++				function = "activity";
++			};
++		};
+ 	};
+ 
+ 	/* GPIO29 and GPIO27 are active-low resets for the two RTL8261N PHYs. */

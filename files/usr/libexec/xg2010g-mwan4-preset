@@ -30,17 +30,50 @@ for interface in wan wanb; do
 	fi
 	if [ -n "$v6" ]; then
 		[ "$v6" = "$old" ] || uci rename "mwan4.$old=$v6"
-		uci set "mwan4.$v6.enabled=1"
+		# A DNS resolver need not answer every single ICMP request. Require
+		# one reachable target, with multiple packets per probe.
 		uci -q delete "mwan4.$v6.track_ip"
-		uci add_list "mwan4.$v6.track_ip=2400:3200::1"
-		uci add_list "mwan4.$v6.track_ip=2400:3200:baba::1"
+		dns_targets="$(ubus call "network.interface.$v6" status 2>/dev/null | jsonfilter -e '@["dns-server"][*]')"
+		v6_enabled=0
+		for target in $dns_targets; do
+			case "$target" in *:*) ;; *) continue ;; esac
+			case "$target" in *[!0-9a-fA-F:]*) continue ;; esac
+			uci add_list "mwan4.$v6.track_ip=$target"
+			v6_enabled=1
+		done
+		uci set "mwan4.$v6.enabled=$v6_enabled"
+		uci set "mwan4.$v6.count=3"
+		uci set "mwan4.$v6.timeout=3"
+		uci set "mwan4.$v6.interval=10"
 		uci set "mwan4.$v6.reliability=1"
+		[ "$v6_enabled" = 1 ] || logger -t xg2010g-mwan4-preset "No received DNS on $v6; IPv6 forwarding remains owned by netifd"
+		# Renaming an interface section does not rewrite route references.
+		for suffix in m1_w3 m2_w3 m1_w2 m2_w2; do
+			[ "$(uci -q get "mwan4.${old}_$suffix")" = route ] || continue
+			uci set "mwan4.${old}_$suffix.interface=$v6"
+		done
 	fi
 	changed=1
 done
 [ "$changed" = 1 ] || exit 0
 uci set mwan4.wan_m1_w3.weight=1
 uci set mwan4.wanb_m1_w2.weight=1
+uci set mwan4.wanb_m1_w3.weight=1
+uci -q delete mwan4.balanced.use_route
+uci add_list mwan4.balanced.use_route=wan_m1_w3
+uci add_list mwan4.balanced.use_route=wanb_m1_w3
+uci set mwan4.default_rule_v4.enabled=1
+uci set mwan4.default_rule_v6.enabled=0
+# Keep table IDs predictable without changing any retained user configuration.
+uci reorder mwan4.wan=1
+uci reorder mwan4.wanb=2
+for pair in wan:3 wanb:4; do
+	interface=${pair%:*}; position=${pair#*:}
+	for name in "${interface}_6" "${interface}6"; do
+		[ "$(uci -q get "mwan4.$name")" = interface ] || continue
+		uci reorder "mwan4.$name=$position"
+	done
+done
 uci commit mwan4
 uci commit network
 exit 0
