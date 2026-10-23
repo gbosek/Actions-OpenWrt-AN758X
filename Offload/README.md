@@ -42,3 +42,11 @@ Run `python3 Offload/tests/check-prepared.py --kernel /path/linux-6.18.55` after
 preparing sources. `--compiled` also checks actual AArch64 objects and records
 the Image hash when the full image exists. GitHub invokes both gates before
 publishing firmware. No test accesses or modifies a router.
+
+`PREPARED-SOURCE-REVIEW.json` records the source-hash reconciliation after the
+first prepared-source CI gate. An independent replay of the immutable Linux
+6.18.55 files and pinned target patches reproduced CI exactly. The earlier local
+fixture retained an equivalent older SRAM flush error-return form; CI already
+used the exact upstream 932 patch. The reviewed expected hash now reflects that
+payload. The complete hash gate, guarded offload patches and PHY/DHCP sources
+remain in place; five AArch64 objects and all 30 + 16 function cases were rerun.

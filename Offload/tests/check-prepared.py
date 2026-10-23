@@ -138,7 +138,11 @@ def check(kernel, compiled=False):
     result['scope'] = 'Prepared source checks and real function fixtures, not hardware/packet-path validation'
     result['source_sha256'] = {n:hashlib.sha256((kernel/n).read_bytes()).hexdigest() for n in ['drivers/net/ethernet/airoha/airoha_ppe.c','drivers/net/ethernet/airoha/airoha_eth.c','drivers/net/ethernet/airoha/airoha_eth.h','include/linux/netdevice.h','net/core/dev.c']}
     metadata = json.loads((REPO/'Offload/SOURCE.json').read_text())
-    assert result['source_sha256'] == metadata['expected_prepared_sources'], 'Prepared implementation differs from the reviewed patch set'
+    mismatch = {name: {'expected': metadata['expected_prepared_sources'].get(name), 'actual': digest}
+                for name, digest in result['source_sha256'].items()
+                if digest != metadata['expected_prepared_sources'].get(name)}
+    assert result['source_sha256'] == metadata['expected_prepared_sources'], \
+        'Prepared implementation differs from the reviewed patch set: ' + json.dumps(mismatch, sort_keys=True)
     result['patches'] = metadata['patches']
     if compiled:
         result['compiled_objects'] = {}

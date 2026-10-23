@@ -1,0 +1,22 @@
+{
+  "failed_run": 40005445092,
+  "failed_job": 120592071562,
+  "baseline": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+  "kernel": "6.18.55",
+  "reason": "Local fixture retained the equivalent older SRAM flush error-return implementation; CI already applies the exact upstream 932 payload.",
+  "changed_function": "airoha_ppe_flush_sram_entries",
+  "reviewed_delta": "Move err to loop scope, return immediately on commit failure, return 0 after the loop. No change to the new guarded binding path.",
+  "previous_fixture_ppe_sha256": "b70d75e127c84925b4a11ea31edd8c2f32c497464241fa6bd2b963814cfccf24",
+  "expected_prepared_sources": {
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "9ea085423ae773eb764737b776c4d67b66d697a7b7c771a12ace3efab526ad63",
+    "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "d1aff470f8e2a2cbaefc70b6208b97f5553441bd5cfe3b125d36b202e71434f9",
+    "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
+    "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0"
+  },
+  "reconstruction": "Immutable gregkh/linux v6.18.55 files plus pinned pbs05/ponwrt target queues, the existing stable rebases and exact current patch payloads. PPE output independently matches failed CI hash.",
+  "new_offload_patch_fuzz": 0,
+  "baseline_patch_fuzz": "Retains existing OpenWrt patch behavior, including baseline 310-10 phylink fuzz; no PHY payload change.",
+  "runtime_changes": false,
+  "hardware_tested": false
+}

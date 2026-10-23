@@ -27,7 +27,7 @@
     }
   ],
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "b70d75e127c84925b4a11ea31edd8c2f32c497464241fa6bd2b963814cfccf24",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "9ea085423ae773eb764737b776c4d67b66d697a7b7c771a12ace3efab526ad63",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
     "drivers/net/ethernet/airoha/airoha_eth.h": "d1aff470f8e2a2cbaefc70b6208b97f5553441bd5cfe3b125d36b202e71434f9",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
