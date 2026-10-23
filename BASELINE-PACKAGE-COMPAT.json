@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/immortalwrt/packages",
+  "commit": "a2256c3feee330739cbe2bc67d438f04ec3d3c29",
+  "path": "net/rtp2httpd",
+  "package": "rtp2httpd",
+  "version": "3.16.0-r1",
+  "reason": "Pinned compatibility feed lacks the backend required by retained luci-app-rtp2httpd.",
+  "baseline_manifests": [
+    "PonWrt-naoki",
+    "PonWrt-luanmuc"
+  ],
+  "baseline_version": "3.16.0-r1",
+  "files_sha256": {
+    "Makefile": "46a1b9c0e416c2cb0cfd55ebfd2ffb194d8fd50ecab0474e0e446272063f6105",
+    "files/rtp2httpd.config": "a12a5f787a3f76cdc10d2a6e52c79d4b7162cc9ff17925db2772fc5b07da2753",
+    "files/rtp2httpd.init": "0fb2dcd3c3e493f9b1ce1e695ee7e3dc58c53582f9a3a07cbd37d125b3d536a7"
+  },
+  "source_tarball_sha256": "83ff812c5b454cf70057bd2b714c891c8650260d4092d6b86629e451fda57d26",
+  "runtime_configuration_modified": false
+}

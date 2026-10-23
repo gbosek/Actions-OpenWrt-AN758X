@@ -29,6 +29,8 @@ for manifest in manifests:
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
     assert re.match(r'^6\.18\.55(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.55'
     assert 'ttyd' in pkgs and 'luci-app-ttyd' in pkgs, 'Requested web terminal missing'
+    assert re.match(r'^3\.16\.0-(?:r)?1$', pkgs.get('rtp2httpd','')), 'Retained RTP backend version missing'
+    assert 'luci-app-rtp2httpd' in pkgs, 'Retained RTP UI missing'
     assert not any(n.startswith(('wpad','hostapd','wpa-supplicant')) or n in
         ('coremark','luci-app-coremark','iw','iwinfo','wifi-scripts','wireless-regdb','kmod-mac80211','kmod-cfg80211') for n in pkgs), 'Unused wireless packages remain'
 
@@ -167,3 +169,10 @@ for rel in ('etc/uci-defaults/99-xg2010g-mwan4-default-off', 'usr/libexec/xg2010
 assert (installed/'usr/share/xg2010g/mwan4-stock.config').is_file()
 assert json.loads((installed/'etc/xg2010g-mwan4-source.json').read_text()) == json.loads((repo/'MWAN4-SOURCE.json').read_text())
 print('Verified LAN3/LAN4 migration, provider-DNS routing, reserved sticky marks, repeatable route snapshots and explicit-start defaults')
+compat = json.loads((installed/'etc/firmware-package-compat.json').read_text())
+assert compat == json.loads((repo/'BASELINE-PACKAGE-COMPAT.json').read_text()), 'Package compatibility provenance differs'
+binary = (installed/'usr/bin/rtp2httpd').read_bytes()
+assert binary[:4] == b'\x7fELF' and binary[18:20] == b'\xb7\0', 'RTP backend missing or not AArch64'
+for name, path in [('files/rtp2httpd.config', 'etc/config/rtp2httpd'), ('files/rtp2httpd.init', 'etc/init.d/rtp2httpd')]:
+    assert hashlib.sha256((installed/path).read_bytes()).hexdigest() == compat['files_sha256'][name], path
+print('Verified existing rtp2httpd backend and unchanged disabled default in actual staged rootfs')

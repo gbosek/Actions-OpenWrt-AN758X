@@ -189,6 +189,7 @@ jobs:
           python3 CPU/tests/pon-selection-test.py
           python3 tests/ppe-prepare-test.py
           python3 tests/feed-pin-test.py
+          python3 tests/package-compat-test.py
           python3 UI/tests/pon-install-test.py
           python3 CPU/tests/driver-fixes-test.py
           node UI/tests/overview-test.js

@@ -86,6 +86,7 @@ normalize_custom_luci_makefile() {
 # XG2010G MWAN4 + 系统菜单扩展
 # =========================================================
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
+  python3 "$GITHUB_WORKSPACE/scripts/apply-package-compat.py" . || exit 1
   python3 "$GITHUB_WORKSPACE/scripts/upgrade-kernel55.py" . --project pon
   for KERNEL_PATCH in \
     931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch \
@@ -379,7 +380,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-argon-config luci-theme-argon luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp"
+    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-argon-config luci-theme-argon luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp luci-app-rtp2httpd rtp2httpd"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do
