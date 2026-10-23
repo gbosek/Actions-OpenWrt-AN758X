@@ -10,7 +10,7 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-npu-test-') as d:
   apps=list((root/'package/custom').glob('luci-app-airoha*'));assert len(apps)==1
   app=apps[0]
   release=re.search(r'^PKG_RELEASE:=(.+)$',(app/'Makefile').read_text(),re.M).group(1)
-  assert release.isdigit() and release=={'naoki':'902','luanmuc':'102'}[variant], 'APK revision must be an integer'
+  assert release.isdigit() and release=={'naoki':'903','luanmuc':'102'}[variant], 'APK revision must be an integer'
   if variant=='naoki':
    make=(app/'Makefile').read_text()
    body=re.search(r'^define Package/\$\(LUCI_NAME\)/install\n(.*?)^endef',make,re.M|re.S).group(1)

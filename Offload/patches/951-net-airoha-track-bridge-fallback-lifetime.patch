@@ -1,0 +1,208 @@
+Subject: net: airoha: gate bridge fallback on hardware flowtable lifetime
+
+Count only successful TC_SETUP_FT bindings, not flower or QoS blocks. Recheck
+under the PPE lock before fallback commits. Track fallback-owned slots, clear
+ownership on ordinary slot reuse, and invalidate them at the last unbind.
+Teardown yields between slots and stops at the first failed hardware ACK.
+It does not pretend that a failed ACK confirms the hardware stopped.
+---
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -717,6 +717,9 @@
+ 	void *foe;
+ 	dma_addr_t foe_dma;
+ 	bool flow_stats_cap;
++	u32 bridge_ft_refs;
++	bool bridge_fallback_fault;
++	unsigned long *bridge_fallback;
+ 
+ 	struct rhashtable l2_flows;
+ 
+@@ -848,6 +851,7 @@
+ 			  u16 hash, bool rx_wlan);
+ int airoha_ppe_setup_tc_block_cb(struct airoha_ppe_dev *dev, void *type_data);
+ int airoha_ppe_init(struct airoha_eth *eth);
++void airoha_ppe_flowtable_ref(struct airoha_ppe *ppe, bool bind);
+ void airoha_ppe_deinit(struct airoha_eth *eth);
+ void airoha_ppe_init_upd_mem(struct airoha_gdm_dev *dev, const u8 *addr);
+ u32 airoha_ppe_get_total_num_entries(struct airoha_ppe *ppe);
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -3843,11 +3843,13 @@
+ }
+ 
+ static int airoha_dev_setup_tc_block(struct net_device *dev,
+-				     struct flow_block_offload *f)
++				     struct flow_block_offload *f,
++				     bool flowtable)
+ {
+ 	flow_setup_cb_t *cb = airoha_dev_setup_tc_block_cb;
+ 	static LIST_HEAD(block_cb_list);
+ 	struct flow_block_cb *block_cb;
++	struct airoha_gdm_dev *gdm = netdev_priv(dev);
+ 
+ 	if (f->binder_type != FLOW_BLOCK_BINDER_TYPE_CLSACT_INGRESS)
+ 		return -EOPNOTSUPP;
+@@ -3858,7 +3860,7 @@
+ 		block_cb = flow_block_cb_lookup(f->block, cb, dev);
+ 		if (block_cb) {
+ 			flow_block_cb_incref(block_cb);
+-			return 0;
++			goto bound;
+ 		}
+ 		block_cb = flow_block_cb_alloc(cb, dev, dev, NULL);
+ 		if (IS_ERR(block_cb))
+@@ -3867,6 +3869,9 @@
+ 		flow_block_cb_incref(block_cb);
+ 		flow_block_cb_add(block_cb, f);
+ 		list_add_tail(&block_cb->driver_list, &block_cb_list);
++bound:
++		if (flowtable)
++			airoha_ppe_flowtable_ref(gdm->eth->ppe, true);
+ 		return 0;
+ 	case FLOW_BLOCK_UNBIND:
+ 		block_cb = flow_block_cb_lookup(f->block, cb, dev);
+@@ -3877,6 +3882,8 @@
+ 			flow_block_cb_remove(block_cb, f);
+ 			list_del(&block_cb->driver_list);
+ 		}
++		if (flowtable)
++			airoha_ppe_flowtable_ref(gdm->eth->ppe, false);
+ 		return 0;
+ 	default:
+ 		return -EOPNOTSUPP;
+@@ -4081,7 +4088,8 @@
+ 		return airoha_tc_setup_qdisc_htb(dev, type_data);
+ 	case TC_SETUP_BLOCK:
+ 	case TC_SETUP_FT:
+-		return airoha_dev_setup_tc_block(dev, type_data);
++		return airoha_dev_setup_tc_block(dev, type_data,
++					 type == TC_SETUP_FT);
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include <linux/airoha-eth.h>
++#include <linux/bitmap.h>
+ #include <linux/etherdevice.h>
+ #include <linux/if_bridge.h>
+ #include <linux/ip.h>
+@@ -896,6 +897,8 @@
+ 	struct airoha_npu *npu;
+ 	int err = 0;
+ 
++	/* Normal L4/cache commits take ownership when a slot is reused. */
++	__clear_bit(hash, ppe->bridge_fallback);
+ 	if (airoha_is_7581(eth) &&
+ 	    FIELD_GET(AIROHA_FOE_IB1_BIND_PACKET_TYPE, hwe->ib1) ==
+ 	    PPE_PKT_TYPE_BRIDGE &&
+@@ -1296,7 +1299,8 @@
+ 	struct hlist_node *n;
+ 	u32 index, state;
+ 
+-	if (!local)
++	if (!local && READ_ONCE(ppe->bridge_ft_refs) &&
++	    !READ_ONCE(ppe->bridge_fallback_fault))
+ 		bridge_ready = airoha_ppe_foe_prepare_bridge_subflow(ppe, skb,
+ 							     &bridge_hwe);
+ 
+@@ -1348,8 +1352,19 @@
+ 				   airoha_l2_flow_table_params);
+ 	if (e)
+ 		airoha_ppe_foe_commit_subflow_entry(ppe, e, hash, rx_wlan);
+-	else if (bridge_ready)
+-		airoha_ppe_foe_commit_subflow(ppe, &bridge_hwe, hash, rx_wlan);
++	else if (bridge_ready && ppe->bridge_ft_refs &&
++		 !ppe->bridge_fallback_fault) {
++		int err;
++
++		err = airoha_ppe_foe_commit_subflow(ppe, &bridge_hwe, hash, rx_wlan);
++		/* An ACK failure may still have written hardware: track it too. */
++		__set_bit(hash, ppe->bridge_fallback);
++		if (err) {
++			ppe->bridge_fallback_fault = true;
++			dev_warn_ratelimited(ppe->eth->dev,
++				"bridge fallback commit failed (%d); further fallback disabled\n", err);
++		}
++	}
+ unlock:
+ 	spin_unlock_bh(&ppe_lock);
+ }
+@@ -2032,6 +2047,62 @@
+ }
+ EXPORT_SYMBOL_GPL(airoha_ppe_put_dev);
+ 
++/* Only TC_SETUP_FT counts: TC flower/QoS blocks cannot activate this path.
++ * Called in process context by netdev flowtable bind/unbind. RX rechecks the
++ * reference under ppe_lock before committing, closing the last-unbind race.
++ */
++void airoha_ppe_flowtable_ref(struct airoha_ppe *ppe, bool bind)
++{
++	u32 hash, count = airoha_ppe_get_total_num_entries(ppe);
++	u32 sram_count = airoha_ppe_get_total_sram_num_entries(ppe);
++
++	spin_lock_bh(&ppe_lock);
++	if (bind) {
++		ppe->bridge_ft_refs++;
++		spin_unlock_bh(&ppe_lock);
++		return;
++	}
++	if (!ppe->bridge_ft_refs || --ppe->bridge_ft_refs) {
++		spin_unlock_bh(&ppe_lock);
++		return;
++	}
++	spin_unlock_bh(&ppe_lock);
++
++	for_each_set_bit(hash, ppe->bridge_fallback, count) {
++		struct airoha_foe_entry *hwe;
++		int err = 0;
++
++		spin_lock_bh(&ppe_lock);
++		if (ppe->bridge_ft_refs) {
++			spin_unlock_bh(&ppe_lock);
++			return;
++		}
++		if (!test_bit(hash, ppe->bridge_fallback)) {
++			spin_unlock_bh(&ppe_lock);
++			continue;
++		}
++		hwe = ppe->foe + hash * sizeof(*hwe);
++		hwe->ib1 &= ~AIROHA_FOE_IB1_BIND_STATE;
++		hwe->ib1 |= FIELD_PREP(AIROHA_FOE_IB1_BIND_STATE,
++				      AIROHA_FOE_STATE_INVALID);
++		wmb();
++		if (hash < sram_count)
++			err = airoha_ppe_foe_commit_sram_entry(ppe, hash);
++		if (!err)
++			__clear_bit(hash, ppe->bridge_fallback);
++		else
++			ppe->bridge_fallback_fault = true;
++		spin_unlock_bh(&ppe_lock);
++		if (err) {
++			/* Abort at the first timeout, not once per remaining SRAM slot. */
++			dev_warn(ppe->eth->dev,
++				 "bridge fallback cleanup failed (%d); hardware state unconfirmed\n", err);
++			return;
++		}
++		cond_resched();
++	}
++}
++
+ int airoha_ppe_init(struct airoha_eth *eth)
+ {
+ 	int foe_size, err, ppe_num_stats_entries;
+@@ -2051,6 +2122,10 @@
+ 			  !airoha_is_7583(eth);
+ 
+ 	ppe_num_entries = airoha_ppe_get_total_num_entries(ppe);
++	ppe->bridge_fallback = devm_bitmap_zalloc(eth->dev, ppe_num_entries,
++						GFP_KERNEL);
++	if (!ppe->bridge_fallback)
++		return -ENOMEM;
+ 	foe_size = ppe_num_entries * sizeof(struct airoha_foe_entry);
+ 	ppe->foe = dmam_alloc_coherent(eth->dev, foe_size, &ppe->foe_dma,
+ 				       GFP_KERNEL);

@@ -1,11 +1,21 @@
 {
   "variant": "naoki",
-  "upstream": "naoki66/luci-app-airoha",
-  "commit": "323539cf229bce52754fbb318135c9c56c514d2f",
+  "upstream": "gbosek/luci-app-airoha",
+  "commit": "94d62294fd5d6d2fd832f08f164902ff525376a5",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
     "Chinese catalog filenames use airoha-npu basename"
   ],
-  "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3"
+  "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3",
+  "upstream_mirror": {
+    "repo": "naoki66/luci-app-airoha",
+    "commit": "496664d3928a7944fcb211f4732b9bdb5459fc4a"
+  },
+  "selected_updates": [
+    "per-core CPU load history",
+    "missing aui.legend fallback",
+    "distinct per-core chart colors",
+    "native bridge binding compatibility regression coverage"
+  ]
 }

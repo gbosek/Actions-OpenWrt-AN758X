@@ -307,6 +307,7 @@ jobs:
             cp "$GITHUB_WORKSPACE/${FEEDS_CONF}" feeds.conf.default
           fi
           python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant "$NPU_VARIANT" --phase feed
+          python3 "$GITHUB_WORKSPACE/scripts/pin-offload-baseline.py" .
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
@@ -771,6 +772,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/check_ppe_functions.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/scripts/check-driver-fixes.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir
+          python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir
 
       # =========================================================
       # 18. 编译固件
@@ -807,6 +809,7 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-compatible-boost.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-driver-fixes.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir --report bin/targets/airoha/an7581/UPSTREAM-059895-VERIFICATION.json
+            python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/NAOKI-OFFLOAD-VERIFICATION.json
             UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/mwan4-default-off-test.py" .
             UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/routing-functions-test.py" .
             python3 "$GITHUB_WORKSPACE/Runtime/tests/route-test.py"
@@ -929,9 +932,11 @@ jobs:
             echo "---"
             echo "NPU LuCI 版本：${NPU_VARIANT}；独立来源见 AIROHA-SOURCE.json；MWAN4 与中文界面；PPE v2 NPU stats 拒绝回退；仓库原生 CPU0–CPU3 使用率；RPS 单实例与误报修复；WOL 中文网络唤醒；Argon 中文壁纸配置与 Bing 每日登录壁纸；概览卡片独立加载；默认 LAN 192.168.10.1；MWAN4 停止状态修复；PON 卡片铺满并显示 PON；500–1400MHz 动态兼容超频（旧 BL31 内核 PLL 重实现，未做硬件稳定性验证）。"
             echo "PPE 新增 932 SRAM flush 错误传递及 933 TC 模板时间戳候选；继续使用 1456-62 配对固件，SHA 和驱动对象核对见 PPE-BUILD-VERIFICATION.json。"
+            echo "本轮移植 VLAN-aware bridge cache-miss 补充绑定、native L2B key 保护、硬件 flowtable 门控与解绑清理，保留原网口/PHY/DHCP/设备树及 NPU 1456。编译对象与实际函数验证见 NAOKI-OFFLOAD-VERIFICATION.json；BND 数量不代表卸载流量率。"
+            echo "naoki LuCI 纳入逐核占用率历史和 aui.legend 缺失回退；不更新无关 ONU/PON 业务配置。此构建尚未完成实机稳定性验证，不能据此宣称已修复另一固件的未知 10G 失联原因。"
             echo "PON fullwidth-v2：独立布局、正常字号、Aurora/Argon 桌面和手机实样式验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
             echo "包含上游 059895c 有用修复：SRAM 失败传递对齐上游；QDMA 重试、BQL、分片 DMA、MTU 与 MIB 修复复用已有等效实现，防止重复。看门狗及 RX31 修复由 6.18.55 原生提供。来源及实际源码检查见 UPSTREAM-059895-*.json。"
-            echo "MWAN4 后端 r8 / LuCI r12：刷机后首次启动默认停止并关闭自启动；页面启动/停止同步开机状态；停用时编辑应用保持停止，刷新仅读取状态。双 WAN 默认预设延后至手动启动时应用。"
+            echo "MWAN4 版本见 MWAN4-SOURCE.json：刷机后首次启动默认停止并关闭自启动；页面启动/停止同步开机状态；停用时编辑应用保持停止，刷新仅读取状态。双 WAN 默认预设延后至手动启动时应用。"
             echo "兼容性审查修复：naoki ONU 配套 firewall4 zone-device 卸载补丁与原 FullCone 共存；共享 cpufreq 保留原 ondemand 参数。"
             echo "> 此预发布固件完成构建和离线函数检查后提供下载；设备重拨、ACK 故障恢复、SID 隔离及超频稳定性尚未验收。"
             echo "> 安装前请用 AN758x-Stock2UBI 备份原厂 flash，刷机后恢复 PON/校准数据。"

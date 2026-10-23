@@ -1,0 +1,48 @@
+From: XG2010G Maintainers
+Subject: [PATCH] net: expose VLAN-aware forward path using existing traversal
+
+Adapt the __dev_fill_forward_path API from naoki66's 675-01 patch to this
+kernel's existing dev_fill_forward_path_common implementation. Only expose
+the API needed by the PPE VLAN-aware bridge fallback; keep dev_fill_bridge_path
+and the ordinary wrapper unchanged. The unused bridge FDB export and separate
+nft bridge flowtable implementation are not needed by this driver path.
+
+Reference: naoki66/ImmortalWrt-for-Gemtek-brightspeed
+Commit: c15760c70b7ceeb85fd852d081b06c4bcac1cf5c
+Path: target/linux/generic/pending-6.18/675-01-net-export-__dev_fill_forward_path-and-br_fdb_find_rcu.patch
+Original-author: Ryan Chen <rchen14b@gmail.com>
+---
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -3375,6 +3375,8 @@
+ 			 struct net_device_path_stack *stack);
+ int dev_fill_forward_path(const struct net_device *dev, const u8 *daddr,
+ 			  struct net_device_path_stack *stack);
++int __dev_fill_forward_path(struct net_device_path_ctx *ctx, const u8 *daddr,
++			    struct net_device_path_stack *stack);
+ struct net_device *dev_get_by_name(struct net *net, const char *name);
+ struct net_device *dev_get_by_name_rcu(struct net *net, const char *name);
+ struct net_device *__dev_get_by_name(struct net *net, const char *name);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -809,6 +809,20 @@
+ }
+ EXPORT_SYMBOL_GPL(dev_fill_bridge_path);
+ 
++/* VLAN-aware counterpart of dev_fill_forward_path(). The caller supplies the
++ * ingress VLAN context; reuse the existing traversal without changing the
++ * ordinary bridge-path and routed-path APIs.
++ */
++int __dev_fill_forward_path(struct net_device_path_ctx *ctx, const u8 *daddr,
++			    struct net_device_path_stack *stack)
++{
++	memcpy(ctx->daddr, daddr, sizeof(ctx->daddr));
++	stack->num_paths = 0;
++
++	return dev_fill_forward_path_common(ctx, stack);
++}
++EXPORT_SYMBOL_GPL(__dev_fill_forward_path);
++
+ int dev_fill_forward_path(const struct net_device *dev, const u8 *daddr,
+ 			  struct net_device_path_stack *stack)
+ {

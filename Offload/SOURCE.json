@@ -1,0 +1,47 @@
+{
+  "version": "guarded-naoki-bridge-20261024",
+  "kernel": "6.18.55",
+  "upstream": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
+  "upstream_commit": "c15760c70b7ceeb85fd852d081b06c4bcac1cf5c",
+  "upstream_paths": [
+    "target/linux/airoha/patches-6.18/9990-net-airoha-bind-WLAN-bound-flows-on-PPE-driver-L2-cache-miss.patch",
+    "target/linux/airoha/patches-6.18/9993-net-airoha-pass-ingress-vlan-to-bridge-path.patch",
+    "target/linux/airoha/patches-6.18/9994-net-airoha-fix-native-l2b-entry-layout.patch",
+    "target/linux/generic/pending-6.18/675-01-net-export-__dev_fill_forward_path-and-br_fdb_find_rcu.patch"
+  ],
+  "exact_image_source_ref_resolved": false,
+  "existing_native_l2b_patch_retained": true,
+  "npu_firmware": "1456-62 unchanged",
+  "patches": [
+    {
+      "file": "949-net-export-vlan-aware-forward-path.patch",
+      "sha256": "34c8403cde49a934022cdf4f31da3b0995e93b332b992f343e1e38f60327230e"
+    },
+    {
+      "file": "950-net-airoha-bridge-cache-miss-fallback.patch",
+      "sha256": "7300e3da682d3d019bb47482853ac83993f0166b3434be2b5b663d112ef18965"
+    },
+    {
+      "file": "951-net-airoha-track-bridge-fallback-lifetime.patch",
+      "sha256": "7904e4a72a785c9f5929ab1bafc695eccb36c6811400cf78aaf3381bfc7fad3c"
+    }
+  ],
+  "expected_prepared_sources": {
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "b70d75e127c84925b4a11ea31edd8c2f32c497464241fa6bd2b963814cfccf24",
+    "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "d1aff470f8e2a2cbaefc70b6208b97f5553441bd5cfe3b125d36b202e71434f9",
+    "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
+    "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0"
+  },
+  "local_safeguards": [
+    "DHCP and local MAC exclusion",
+    "ingress VLAN membership",
+    "STP, isolation and same-port checks",
+    "PON bearer mutex exclusion",
+    "TC_SETUP_FT gate and bounded cleanup",
+    "ACK-failed parent and bitmap ownership"
+  ],
+  "hardware_tested": false,
+  "bridge_custom_acl_equivalence_verified": false,
+  "ten_gigabit_root_cause_proven": false
+}
