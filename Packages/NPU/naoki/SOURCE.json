@@ -1,7 +1,7 @@
 {
   "variant": "naoki",
   "upstream": "gbosek/luci-app-airoha",
-  "commit": "94d62294fd5d6d2fd832f08f164902ff525376a5",
+  "commit": "37916c517db547da58820ee8c07c481edafe9ddd",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
@@ -10,12 +10,18 @@
   "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3",
   "upstream_mirror": {
     "repo": "naoki66/luci-app-airoha",
-    "commit": "496664d3928a7944fcb211f4732b9bdb5459fc4a"
+    "commit": "b0502a916d551ebf1465c05b9438dc71e13e3d8f"
   },
   "selected_updates": [
     "per-core CPU load history",
     "missing aui.legend fallback",
     "distinct per-core chart colors",
-    "native bridge binding compatibility regression coverage"
+    "native bridge binding compatibility regression coverage",
+    "EIP93 crypto status and ACL",
+    "PPE per-engine indexed table counts",
+    "Forwarding share terminology",
+    "IRQ CPU-column-only summation and algorithm-reference semantics",
+    "Clear stale split and use full-snapshot unbound count",
+    "Do not infer fixed CDM/PPE ownership from the CDM register number"
   ]
 }

@@ -12,7 +12,7 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('gbosek/luci-app-airoha', '94d62294fd5d6d2fd832f08f164902ff525376a5', r'^2\.0\.0-(?:r)?903$'),
+    'naoki': ('gbosek/luci-app-airoha', '37916c517db547da58820ee8c07c481edafe9ddd', r'^2\.0\.0-(?:r)?904$'),
     'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?102$'),
 }
 variant = meta['variant']

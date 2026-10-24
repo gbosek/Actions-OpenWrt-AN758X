@@ -1,6 +1,6 @@
 {
   "upstream": "gbosek/luci-app-airoha",
-  "commit": "94d62294fd5d6d2fd832f08f164902ff525376a5",
+  "commit": "37916c517db547da58820ee8c07c481edafe9ddd",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
@@ -9,6 +9,6 @@
   "cpu_overview": "Structured /proc/stat delta samples, SYS includes IRQ/softirq; explicit failure and last-success time",
   "upstream_mirror": {
     "repo": "naoki66/luci-app-airoha",
-    "commit": "496664d3928a7944fcb211f4732b9bdb5459fc4a"
+    "commit": "b0502a916d551ebf1465c05b9438dc71e13e3d8f"
   }
 }

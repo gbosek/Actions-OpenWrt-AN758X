@@ -1,5 +1,5 @@
 {
-  "version": "guarded-naoki-bridge-20261024",
+  "version": "policy-topology-safe-naoki-bridge-20261024",
   "kernel": "6.18.55",
   "upstream": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
   "upstream_commit": "c15760c70b7ceeb85fd852d081b06c4bcac1cf5c",
@@ -24,14 +24,23 @@
     {
       "file": "951-net-airoha-track-bridge-fallback-lifetime.patch",
       "sha256": "7904e4a72a785c9f5929ab1bafc695eccb36c6811400cf78aaf3381bfc7fad3c"
+    },
+    {
+      "file": "952-net-airoha-constrain-bridge-fallback-policy.patch",
+      "sha256": "732fa032d14a989afefbcaad725112ece49d6702939713865204f57ddd64ce8e"
     }
   ],
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "9ea085423ae773eb764737b776c4d67b66d697a7b7c771a12ace3efab526ad63",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "3b4603c378dac046e47b0c49cc2812c83ba0d628284c667e7057fe50d29f3d44",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
-    "drivers/net/ethernet/airoha/airoha_eth.h": "d1aff470f8e2a2cbaefc70b6208b97f5553441bd5cfe3b125d36b202e71434f9",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "50e370721095d6d6dc86d915e421ca0b7286af19d179dacc74c3164ceae1e305",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
-    "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0"
+    "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
+    "include/linux/if_bridge.h": "c006c72ebb39a333281e0cfcd7e724aea67b4e326555f3ed280da319d1c6f54d",
+    "net/bridge/br_vlan.c": "90e45b6a9496e5282c1e548d82fd32de266290f5417f838b5ffc275dbf155fb1",
+    "net/bridge/br_if.c": "efa3c5bd94f671fafe20941edb93d95258ad34156a9011ba5225c86b636a5b6d",
+    "include/linux/netfilter.h": "6075c947730d6dd5f2e0c5b00f9f578c692a7fe1b976731d4eab50c0095d5649",
+    "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c"
   },
   "local_safeguards": [
     "DHCP and local MAC exclusion",
@@ -39,9 +48,16 @@
     "STP, isolation and same-port checks",
     "PON bearer mutex exclusion",
     "TC_SETUP_FT gate and bounded cleanup",
-    "ACK-failed parent and bitmap ownership"
+    "ACK-failed parent and bitmap ownership",
+    "Reject coarse fallback on bridge/netdev filtering hooks; revoke before hook publication",
+    "FDB MAC/VID ownership and synchronous revocation",
+    "RTNL plus bridge-state synchronization before topology resume",
+    "Generation-fenced RX candidates",
+    "Effective ingress/egress VLAN forwarding state"
   ],
   "hardware_tested": false,
   "bridge_custom_acl_equivalence_verified": false,
-  "ten_gigabit_root_cause_proven": false
+  "ten_gigabit_root_cause_proven": false,
+  "coarse_fallback_scope": "Only unfiltered init_net bridge paths. Filtering hooks fence new fallback; ordinary parent-owned and routed offload is preserved. Topology changes revoke then resume only after RTNL/bridge-state synchronization.",
+  "ten_gigabit_context": "The reported no-DHCP outage occurred on the other naoki66 image, not the retained user firmware. No board/PHY/DHCP replacement or root-cause claim."
 }

@@ -1,0 +1,588 @@
+Subject: net: airoha: constrain coarse fallback and revoke topology-stale flows
+
+Only plain unfiltered bridge paths may create parentless L2 bindings. Revoke
+before publishing filtering hooks, track FDB ownership, fence topology changes
+and stale RX preparations, and query the bridge core's effective VLAN state.
+Existing board/PHY/DHCP and parent-owned/routed paths remain unchanged.
+---
+--- a/include/linux/if_bridge.h
++++ b/include/linux/if_bridge.h
+@@ -120,6 +120,7 @@
+ 		     struct bridge_vlan_info *p_vinfo);
+ int br_vlan_get_info_rcu(const struct net_device *dev, u16 vid,
+ 			 struct bridge_vlan_info *p_vinfo);
++bool br_vlan_is_forwarding_rcu(const struct net_device *dev, u16 vid);
+ bool br_mst_enabled(const struct net_device *dev);
+ int br_mst_get_info(const struct net_device *dev, u16 msti, unsigned long *vids);
+ int br_mst_get_state(const struct net_device *dev, u16 msti, u8 *state);
+@@ -154,6 +155,11 @@
+ 				       struct bridge_vlan_info *p_vinfo)
+ {
+ 	return -EINVAL;
++}
++
++static inline bool br_vlan_is_forwarding_rcu(const struct net_device *dev, u16 vid)
++{
++	return false;
+ }
+ 
+ static inline bool br_mst_enabled(const struct net_device *dev)
+@@ -180,6 +186,7 @@
+ void br_fdb_clear_offload(const struct net_device *dev, u16 vid);
+ bool br_port_flag_is_set(const struct net_device *dev, unsigned long flag);
+ u8 br_port_get_stp_state(const struct net_device *dev);
++void br_offload_state_sync(const struct net_device *dev);
+ clock_t br_get_ageing_time(const struct net_device *br_dev);
+ #else
+ static inline struct net_device *
+@@ -200,6 +207,8 @@
+ 	return false;
+ }
+ 
++static inline void br_offload_state_sync(const struct net_device *dev) {}
++
+ static inline u8 br_port_get_stp_state(const struct net_device *dev)
+ {
+ 	return BR_STATE_DISABLED;
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -1563,6 +1563,20 @@
+ }
+ EXPORT_SYMBOL_GPL(br_vlan_get_info_rcu);
+ 
++/* The caller holds RCU. Membership alone does not establish MST eligibility. */
++bool br_vlan_is_forwarding_rcu(const struct net_device *dev, u16 vid)
++{
++	struct net_bridge_port *p = br_port_get_check_rcu(dev);
++	struct net_bridge_vlan *v;
++
++	if (!p)
++		return false;
++	v = br_vlan_find(nbp_vlan_group_rcu(p), vid);
++	return v && br_vlan_should_use(v) &&
++	       br_vlan_get_state(v) == BR_STATE_FORWARDING;
++}
++EXPORT_SYMBOL_GPL(br_vlan_is_forwarding_rcu);
++
+ static int br_vlan_is_bind_vlan_dev(const struct net_device *dev)
+ {
+ 	return is_vlan_dev(dev) &&
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -780,3 +780,18 @@
+ 	return p->flags & flag;
+ }
+ EXPORT_SYMBOL_GPL(br_port_flag_is_set);
++
++/* The caller holds RTNL. Pair with atomic STP changes under br->lock. */
++void br_offload_state_sync(const struct net_device *dev)
++{
++	struct net_bridge *br;
++
++	if (!netif_is_bridge_master(dev))
++		return;
++	br = netdev_priv(dev);
++	spin_lock_bh(&br->lock);
++	spin_unlock_bh(&br->lock);
++	spin_lock_bh(&br->hash_lock);
++	spin_unlock_bh(&br->hash_lock);
++}
++EXPORT_SYMBOL_GPL(br_offload_state_sync);
+--- a/include/linux/netfilter.h
++++ b/include/linux/netfilter.h
+@@ -195,6 +195,14 @@
+ 	struct module *owner;
+ };
+ 
++/* Observers may revoke coarse L2 offloads before a filtering hook is published.
++ * Registration callbacks run in process context under nf_hook_mutex. They must
++ * not register another netfilter hook. A failed revoke vetoes publication.
++ */
++struct notifier_block;
++int nf_register_hook_observer(struct notifier_block *nb);
++int nf_unregister_hook_observer(struct notifier_block *nb);
++
+ /* Function to register/unregister hook points. */
+ int nf_register_net_hook(struct net *net, const struct nf_hook_ops *ops);
+ void nf_unregister_net_hook(struct net *net, const struct nf_hook_ops *ops);
+--- a/net/netfilter/core.c
++++ b/net/netfilter/core.c
+@@ -8,6 +8,7 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/netfilter.h>
++#include <linux/notifier.h>
+ #include <net/protocol.h>
+ #include <linux/init.h>
+ #include <linux/skbuff.h>
+@@ -37,6 +38,19 @@
+ #endif
+ 
+ static DEFINE_MUTEX(nf_hook_mutex);
++static BLOCKING_NOTIFIER_HEAD(nf_hook_observers);
++
++int nf_register_hook_observer(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&nf_hook_observers, nb);
++}
++EXPORT_SYMBOL_GPL(nf_register_hook_observer);
++
++int nf_unregister_hook_observer(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&nf_hook_observers, nb);
++}
++EXPORT_SYMBOL_GPL(nf_unregister_hook_observer);
+ 
+ /* max hooks per family/hooknum */
+ #define MAX_HOOK_COUNT		1024
+@@ -427,6 +441,12 @@
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&nf_hook_mutex);
++	err = notifier_to_errno(blocking_notifier_call_chain(&nf_hook_observers,
++							    pf, (void *)reg));
++	if (err) {
++		mutex_unlock(&nf_hook_mutex);
++		return err;
++	}
+ 
+ 	p = nf_entry_dereference(*pp);
+ 	new_hooks = nf_hook_entries_grow(p, reg);
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -710,6 +710,13 @@
+ #define AIROHA_RXD4_PPE_CPU_REASON	GENMASK(20, 16)
+ #define AIROHA_RXD4_FOE_ENTRY		GENMASK(15, 0)
+ 
++struct airoha_bridge_owner {
++	int bridge_ifindex;
++	int egress_ifindex;
++	u16 vid;
++	u8 dmac[ETH_ALEN];
++};
++
+ struct airoha_ppe {
+ 	struct airoha_ppe_dev dev;
+ 	struct airoha_eth *eth;
+@@ -720,6 +727,15 @@
+ 	u32 bridge_ft_refs;
+ 	bool bridge_fallback_fault;
+ 	unsigned long *bridge_fallback;
++	struct airoha_bridge_owner *bridge_owners;
++	u64 bridge_generation;
++	bool bridge_policy_blocked;
++	bool bridge_topology_blocked;
++	struct delayed_work bridge_topology_work;
++	struct notifier_block bridge_nf_nb;
++	struct notifier_block bridge_netdev_nb;
++	struct notifier_block bridge_switchdev_nb;
++	struct notifier_block bridge_switchdev_blocking_nb;
+ 
+ 	struct rhashtable l2_flows;
+ 
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -8,6 +8,10 @@
+ #include <linux/bitmap.h>
+ #include <linux/etherdevice.h>
+ #include <linux/if_bridge.h>
++#include <linux/netfilter.h>
++#include <linux/rtnetlink.h>
++#include <net/net_namespace.h>
++#include <net/switchdev.h>
+ #include <linux/ip.h>
+ #include <linux/udp.h>
+ #include <linux/tcp.h>
+@@ -1180,10 +1184,64 @@
+ 	       udp->dest == htons(546) || udp->dest == htons(547);
+ }
+ 
++
++/* A coarse L2 key cannot implement per-flow ACLs. Only unfiltered bridge paths
++ * are eligible; an nft flowtable hook itself is not a filtering rule.
++ */
++static bool airoha_ppe_bridge_has_filter(const struct nf_hook_entries *head)
++{
++	struct nf_hook_ops **ops;
++	unsigned int i;
++
++	if (!head)
++		return false;
++	ops = nf_hook_entries_get_hook_ops(head);
++	for (i = 0; i < head->num_hook_entries; i++)
++		if (ops[i]->hook_ops_type != NF_HOOK_OP_NFT_FT)
++			return true;
++	return false;
++}
++
++static bool airoha_ppe_bridge_policy_allows(struct net_device *master,
++					   struct net_device *ingress,
++					   struct net_device *egress)
++{
++	struct net *net = dev_net(master);
++	unsigned int i;
++
++	/* The on-chip PPE is shared; do not infer namespace ownership. */
++	if (!net_eq(net, &init_net))
++		return false;
++#ifdef CONFIG_NET_XGRESS
++	if (rcu_access_pointer(ingress->tcx_ingress) ||
++	    rcu_access_pointer(ingress->tcx_egress) ||
++	    rcu_access_pointer(egress->tcx_ingress) ||
++	    rcu_access_pointer(egress->tcx_egress))
++		return false;
++#endif
++#ifdef CONFIG_NETFILTER_FAMILY_BRIDGE
++	for (i = 0; i < ARRAY_SIZE(net->nf.hooks_bridge); i++)
++		if (airoha_ppe_bridge_has_filter(rcu_dereference(net->nf.hooks_bridge[i])))
++			return false;
++#endif
++#ifdef CONFIG_NETFILTER_INGRESS
++	if (airoha_ppe_bridge_has_filter(rcu_dereference(ingress->nf_hooks_ingress)) ||
++	    airoha_ppe_bridge_has_filter(rcu_dereference(egress->nf_hooks_ingress)))
++		return false;
++#endif
++#ifdef CONFIG_NETFILTER_EGRESS
++	if (airoha_ppe_bridge_has_filter(rcu_dereference(ingress->nf_hooks_egress)) ||
++	    airoha_ppe_bridge_has_filter(rcu_dereference(egress->nf_hooks_egress)))
++		return false;
++#endif
++	return true;
++}
++
+ static bool
+ airoha_ppe_foe_prepare_bridge_subflow(struct airoha_ppe *ppe,
+ 				      struct sk_buff *skb,
+-				      struct airoha_foe_entry *hwe)
++				      struct airoha_foe_entry *hwe,
++				      struct airoha_bridge_owner *owner)
+ {
+ 	struct net_device_path_stack stack;
+ 	struct net_device_path_ctx ctx = {};
+@@ -1193,7 +1251,7 @@
+ 	struct net_device *master, *egress, *real_egress, *ingress;
+ 	struct airoha_gdm_dev *egress_dev;
+ 	const struct vlan_ethhdr *veh;
+-	u16 vid, proto;
++	u16 vid = 0, proto, ingress_vid;
+ 	int err, i;
+ 	bool ready = false;
+ 
+@@ -1248,6 +1306,10 @@
+ 	    (!ctx.num_vlans || !ctx.vlan[0].id ||
+ 	     br_vlan_get_info_rcu(ingress, ctx.vlan[0].id, &ingress_vlan)))
+ 		goto out;
++	ingress_vid = ctx.num_vlans ? ctx.vlan[0].id : 0;
++	if (br_vlan_enabled(master) &&
++	    !br_vlan_is_forwarding_rcu(ingress, ingress_vid))
++		goto out;
+ 	err = __dev_fill_forward_path(&ctx, eh->h_dest, &stack);
+ 	if (err || stack.num_paths < 2 ||
+ 	    stack.path[0].type != DEV_PATH_BRIDGE ||
+@@ -1262,6 +1324,16 @@
+ 	    (br_port_flag_is_set(ingress, BR_ISOLATED) &&
+ 	     br_port_flag_is_set(egress, BR_ISOLATED)))
+ 		goto out;
++	if ((br_vlan_enabled(master) &&
++	     !br_vlan_is_forwarding_rcu(egress, ingress_vid)) ||
++	    br_port_flag_is_set(ingress, BR_PORT_LOCKED | BR_PORT_MAB) ||
++	    br_port_flag_is_set(egress, BR_PORT_LOCKED | BR_PORT_MAB) ||
++	    !airoha_ppe_bridge_policy_allows(master, ingress, egress))
++		goto out;
++	owner->bridge_ifindex = master->ifindex;
++	owner->egress_ifindex = egress->ifindex;
++	owner->vid = br_vlan_enabled(master) ? ingress_vid : 0;
++	ether_addr_copy(owner->dmac, eh->h_dest);
+ 	/* PON bearer lookup requires flow_offload_mutex and cannot run in RX.
+ 	 * Ordinary routed/PON flowtable offload retains its existing locked path.
+ 	 */
+@@ -1290,6 +1362,8 @@
+ 					u32 hash, bool rx_wlan)
+ {
+ 	struct airoha_foe_entry bridge_hwe = {};
++	struct airoha_bridge_owner bridge_owner = {};
++	u64 bridge_generation = READ_ONCE(ppe->bridge_generation);
+ 	struct airoha_flow_table_entry *e;
+ 	struct airoha_foe_bridge br = {};
+ 	struct airoha_foe_entry *hwe;
+@@ -1300,9 +1374,11 @@
+ 	u32 index, state;
+ 
+ 	if (!local && READ_ONCE(ppe->bridge_ft_refs) &&
+-	    !READ_ONCE(ppe->bridge_fallback_fault))
++	    !READ_ONCE(ppe->bridge_fallback_fault) &&
++	    !READ_ONCE(ppe->bridge_policy_blocked) &&
++	    !READ_ONCE(ppe->bridge_topology_blocked))
+ 		bridge_ready = airoha_ppe_foe_prepare_bridge_subflow(ppe, skb,
+-							     &bridge_hwe);
++							     &bridge_hwe, &bridge_owner);
+ 
+ 	spin_lock_bh(&ppe_lock);
+ 
+@@ -1353,9 +1429,12 @@
+ 	if (e)
+ 		airoha_ppe_foe_commit_subflow_entry(ppe, e, hash, rx_wlan);
+ 	else if (bridge_ready && ppe->bridge_ft_refs &&
+-		 !ppe->bridge_fallback_fault) {
++		 !ppe->bridge_fallback_fault && !ppe->bridge_policy_blocked &&
++		 !ppe->bridge_topology_blocked &&
++		 bridge_generation == ppe->bridge_generation) {
+ 		int err;
+ 
++		ppe->bridge_owners[hash] = bridge_owner;
+ 		err = airoha_ppe_foe_commit_subflow(ppe, &bridge_hwe, hash, rx_wlan);
+ 		/* An ACK failure may still have written hardware: track it too. */
+ 		__set_bit(hash, ppe->bridge_fallback);
+@@ -2049,6 +2128,212 @@
+ }
+ EXPORT_SYMBOL_GPL(airoha_ppe_put_dev);
+ 
++
++/* Called with ppe_lock held. A failed ACK remains owned and faults new fallback. */
++static int airoha_ppe_bridge_invalidate_slot(struct airoha_ppe *ppe, u32 hash)
++{
++	struct airoha_foe_entry *hwe = ppe->foe + hash * sizeof(*hwe);
++	int err = 0;
++
++	hwe->ib1 &= ~AIROHA_FOE_IB1_BIND_STATE;
++	hwe->ib1 |= FIELD_PREP(AIROHA_FOE_IB1_BIND_STATE, AIROHA_FOE_STATE_INVALID);
++	wmb();
++	if (hash < airoha_ppe_get_total_sram_num_entries(ppe))
++		err = airoha_ppe_foe_commit_sram_entry(ppe, hash);
++	if (err)
++		ppe->bridge_fallback_fault = true;
++	else
++		__clear_bit(hash, ppe->bridge_fallback);
++	return err;
++}
++
++static int airoha_ppe_bridge_revoke(struct airoha_ppe *ppe, const u8 *addr,
++				   u16 vid, bool block, bool sleepable)
++{
++	u32 hash, count = airoha_ppe_get_total_num_entries(ppe);
++	int err = 0;
++
++	spin_lock_bh(&ppe_lock);
++	ppe->bridge_generation++;
++	if (block)
++		ppe->bridge_policy_blocked = true;
++	spin_unlock_bh(&ppe_lock);
++	for_each_set_bit(hash, ppe->bridge_fallback, count) {
++		struct airoha_bridge_owner *owner = &ppe->bridge_owners[hash];
++
++		spin_lock_bh(&ppe_lock);
++		if (test_bit(hash, ppe->bridge_fallback) &&
++		    (!addr || (owner->vid == vid && ether_addr_equal(owner->dmac, addr))))
++			err = airoha_ppe_bridge_invalidate_slot(ppe, hash);
++		spin_unlock_bh(&ppe_lock);
++		if (err) {
++			dev_warn_ratelimited(ppe->eth->dev,
++				"bridge revoke ACK failed (%d); fallback disabled\n", err);
++			return err;
++		}
++		if (sleepable)
++			cond_resched();
++	}
++	return 0;
++}
++
++static int airoha_ppe_bridge_nf_event(struct notifier_block *nb,
++				     unsigned long family, void *ptr)
++{
++	struct airoha_ppe *ppe = container_of(nb, struct airoha_ppe, bridge_nf_nb);
++	const struct nf_hook_ops *ops = ptr;
++
++	if ((family != NFPROTO_BRIDGE && family != NFPROTO_NETDEV &&
++	     !(family == NFPROTO_INET && ops->hooknum == NF_INET_INGRESS)) ||
++	    ops->hook_ops_type == NF_HOOK_OP_NFT_FT)
++		return NOTIFY_DONE;
++	return notifier_from_errno(airoha_ppe_bridge_revoke(ppe, NULL, 0, true, true));
++}
++
++static void airoha_ppe_bridge_topology_work(struct work_struct *work)
++{
++	struct airoha_ppe *ppe = container_of(to_delayed_work(work),
++					     struct airoha_ppe, bridge_topology_work);
++	struct net_device *dev;
++	u64 generation;
++	bool retry;
++
++	/* Never block module teardown which may itself own RTNL. */
++	if (!rtnl_trylock()) {
++		mod_delayed_work(system_wq, &ppe->bridge_topology_work,
++				 msecs_to_jiffies(20));
++		return;
++	}
++	spin_lock_bh(&ppe_lock);
++	generation = ppe->bridge_generation;
++	spin_unlock_bh(&ppe_lock);
++	for_each_netdev(&init_net, dev)
++		if (netif_is_bridge_master(dev))
++			br_offload_state_sync(dev);
++	spin_lock_bh(&ppe_lock);
++	retry = generation != ppe->bridge_generation;
++	if (!retry)
++		ppe->bridge_topology_blocked = false;
++	spin_unlock_bh(&ppe_lock);
++	rtnl_unlock();
++	if (retry)
++		mod_delayed_work(system_wq, &ppe->bridge_topology_work,
++				 msecs_to_jiffies(20));
++}
++
++static void airoha_ppe_bridge_topology_event(struct airoha_ppe *ppe, bool sleepable)
++{
++	spin_lock_bh(&ppe_lock);
++	ppe->bridge_topology_blocked = true;
++	spin_unlock_bh(&ppe_lock);
++	airoha_ppe_bridge_revoke(ppe, NULL, 0, false, sleepable);
++	mod_delayed_work(system_wq, &ppe->bridge_topology_work, 0);
++}
++
++static int airoha_ppe_bridge_netdev_event(struct notifier_block *nb,
++					 unsigned long event, void *ptr)
++{
++	struct airoha_ppe *ppe = container_of(nb, struct airoha_ppe, bridge_netdev_nb);
++	struct net_device *dev = netdev_notifier_info_to_dev(ptr);
++
++	if (!netif_is_bridge_port(dev) && !netif_is_bridge_master(dev))
++		return NOTIFY_DONE;
++	switch (event) {
++	case NETDEV_GOING_DOWN:
++	case NETDEV_DOWN:
++	case NETDEV_UNREGISTER:
++	case NETDEV_CHANGE:
++	case NETDEV_CHANGEADDR:
++	case NETDEV_CHANGEMTU:
++	case NETDEV_PRECHANGEUPPER:
++	case NETDEV_CHANGEUPPER:
++		/* Resume only after RTNL and bridge state writers have quiesced. */
++		airoha_ppe_bridge_topology_event(ppe, false);
++		break;
++	}
++	return NOTIFY_DONE;
++}
++
++static int airoha_ppe_bridge_switchdev_event(struct notifier_block *nb,
++					    unsigned long event, void *ptr)
++{
++	struct airoha_ppe *ppe = container_of(nb, struct airoha_ppe, bridge_switchdev_nb);
++	struct switchdev_notifier_fdb_info *fdb = ptr;
++
++	switch (event) {
++	case SWITCHDEV_FDB_ADD_TO_DEVICE:
++	case SWITCHDEV_FDB_DEL_TO_DEVICE:
++		/* FDB notifications follow the update. Generation fencing rejects
++		 * preparations which resolved the previous destination port.
++		 */
++		airoha_ppe_bridge_revoke(ppe, fdb->addr, fdb->vid, false, false);
++		break;
++	case SWITCHDEV_FDB_ADD_TO_BRIDGE:
++	case SWITCHDEV_FDB_DEL_TO_BRIDGE:
++	case SWITCHDEV_FDB_FLUSH_TO_BRIDGE:
++	case SWITCHDEV_PORT_ATTR_SET:
++		/* External FDB notifications can precede the bridge's update. */
++		airoha_ppe_bridge_topology_event(ppe, false);
++		break;
++	}
++	return NOTIFY_DONE;
++}
++
++static int airoha_ppe_bridge_switchdev_blocking_event(struct notifier_block *nb,
++						     unsigned long event, void *ptr)
++{
++	struct airoha_ppe *ppe = container_of(nb, struct airoha_ppe,
++					     bridge_switchdev_blocking_nb);
++
++	switch (event) {
++	case SWITCHDEV_PORT_ATTR_SET:
++	case SWITCHDEV_PORT_OBJ_ADD:
++	case SWITCHDEV_PORT_OBJ_DEL:
++		airoha_ppe_bridge_topology_event(ppe, true);
++		break;
++	}
++	return NOTIFY_DONE;
++}
++
++static int airoha_ppe_bridge_observers_register(struct airoha_ppe *ppe)
++{
++	int err;
++
++	INIT_DELAYED_WORK(&ppe->bridge_topology_work, airoha_ppe_bridge_topology_work);
++	ppe->bridge_nf_nb.notifier_call = airoha_ppe_bridge_nf_event;
++	ppe->bridge_netdev_nb.notifier_call = airoha_ppe_bridge_netdev_event;
++	ppe->bridge_switchdev_nb.notifier_call = airoha_ppe_bridge_switchdev_event;
++	ppe->bridge_switchdev_blocking_nb.notifier_call = airoha_ppe_bridge_switchdev_blocking_event;
++	err = nf_register_hook_observer(&ppe->bridge_nf_nb);
++	if (err)
++		return err;
++	err = register_netdevice_notifier(&ppe->bridge_netdev_nb);
++	if (err)
++		goto unregister_nf;
++	err = register_switchdev_notifier(&ppe->bridge_switchdev_nb);
++	if (err)
++		goto unregister_netdev;
++	err = register_switchdev_blocking_notifier(&ppe->bridge_switchdev_blocking_nb);
++	if (!err)
++		return 0;
++	unregister_switchdev_notifier(&ppe->bridge_switchdev_nb);
++unregister_netdev:
++	unregister_netdevice_notifier(&ppe->bridge_netdev_nb);
++unregister_nf:
++	nf_unregister_hook_observer(&ppe->bridge_nf_nb);
++	cancel_delayed_work_sync(&ppe->bridge_topology_work);
++	return err;
++}
++
++static void airoha_ppe_bridge_observers_unregister(struct airoha_ppe *ppe)
++{
++	unregister_switchdev_blocking_notifier(&ppe->bridge_switchdev_blocking_nb);
++	unregister_switchdev_notifier(&ppe->bridge_switchdev_nb);
++	unregister_netdevice_notifier(&ppe->bridge_netdev_nb);
++	nf_unregister_hook_observer(&ppe->bridge_nf_nb);
++	cancel_delayed_work_sync(&ppe->bridge_topology_work);
++}
++
+ /* Only TC_SETUP_FT counts: TC flower/QoS blocks cannot activate this path.
+  * Called in process context by netdev flowtable bind/unbind. RX rechecks the
+  * reference under ppe_lock before committing, closing the last-unbind race.
+@@ -2068,6 +2353,7 @@
+ 		spin_unlock_bh(&ppe_lock);
+ 		return;
+ 	}
++	ppe->bridge_generation++;
+ 	spin_unlock_bh(&ppe_lock);
+ 
+ 	for_each_set_bit(hash, ppe->bridge_fallback, count) {
+@@ -2128,6 +2414,10 @@
+ 						GFP_KERNEL);
+ 	if (!ppe->bridge_fallback)
+ 		return -ENOMEM;
++	ppe->bridge_owners = devm_kcalloc(eth->dev, ppe_num_entries,
++					 sizeof(*ppe->bridge_owners), GFP_KERNEL);
++	if (!ppe->bridge_owners)
++		return -ENOMEM;
+ 	foe_size = ppe_num_entries * sizeof(struct airoha_foe_entry);
+ 	ppe->foe = dmam_alloc_coherent(eth->dev, foe_size, &ppe->foe_dma,
+ 				       GFP_KERNEL);
+@@ -2171,6 +2461,11 @@
+ 	err = airoha_ppe_debugfs_init(ppe);
+ 	if (err)
+ 		goto error_l2_flow_table_destroy;
++	err = airoha_ppe_bridge_observers_register(ppe);
++	if (err) {
++		debugfs_remove(ppe->debugfs_dir);
++		goto error_l2_flow_table_destroy;
++	}
+ 
+ 	return 0;
+ 
+@@ -2185,6 +2480,8 @@
+ void airoha_ppe_deinit(struct airoha_eth *eth)
+ {
+ 	struct airoha_npu *npu;
++
++	airoha_ppe_bridge_observers_unregister(eth->ppe);
+ 
+ 	mutex_lock(&flow_offload_mutex);
+ 

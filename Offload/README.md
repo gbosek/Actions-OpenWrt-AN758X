@@ -22,31 +22,59 @@ spinlock and yields between slots. It stops at the first SRAM ACK failure and
 reports hardware state as unconfirmed; further fallback stays disabled after
 that fault. This is not a claim that broken hardware acknowledged deletion.
 
+## Policy and topology hardening (952)
+
+- A coarse L2 key cannot express a per-flow ACL. New parentless binding is
+  therefore rejected on bridge or netdev filtering hooks, foreign namespaces,
+  existing TCX programs and locked/MAB ports. An nft flowtable hook is not by
+  itself a filtering rule or permission to bypass another filtering hook.
+- A netfilter observer revokes existing fallback before a filtering hook is
+  published. An ACK error vetoes that publication instead of pretending the
+  offload was deleted. After such a policy fence, coarse fallback remains
+  disabled for the driver lifetime; ordinary routed/parent-owned offload is
+  unaffected. This conservative fence avoids guessing when a policy update
+  has finished. Installing TC/XDP policy while offload is active is outside
+  this plain-bridge fallback mode; disable hardware offload before doing so.
+- Per-slot MAC/bridge/egress/VID ownership makes FDB moves and deletions revoke
+  the corresponding fallback. The FDB VID is zero on VLAN-unfiltered bridges,
+  even when an 802.1Q frame traverses them. No net_device pointers are retained.
+- Bridge/port/VLAN/STP changes fence new fallback and revoke current entries.
+  Event-driven work uses RTNL and a bridge-state writer barrier before resuming;
+  a generation change retries instead of admitting a stale RX preparation.
+  Atomic FDB callbacks never schedule or sleep through per-entry yields.
+- The bridge core supplies effective ingress and egress VLAN forwarding state,
+  including MST. VLAN membership alone is not enough. The original local/CPU,
+  PON-mutex, isolation, same-port, FT-reference and failed-ACK guards remain.
+
 ## Boundaries
 
-- Early bridge FDB resolution does not prove that arbitrary custom bridge
-  forward ACLs permit a packet. This remains a candidate for ordinary trusted
-  LAN bridging; do not treat it as verified enforcement for custom bridge ACLs.
-- These direct hardware entries are not ordinary parent-linked flowtable
-  entries. Hardware aging and last-flowtable cleanup apply; full roaming/FDB
-  lifecycle equivalence has not been established by offline checks.
+- The supported extra path is ordinary unfiltered bridging, not arbitrary
+  policy bypass. More BND is conditional on traffic and safe eligibility.
 - BND is a hardware table-entry count, not a traffic rate or performance score.
   Control-plane/same-port exclusions deliberately favor CPU correctness.
 - No board DTS, PHY programming, port numbering, DHCP/netifd settings or NPU
   microcode are replaced. The PON feed is pinned to the R68 used in the delivered
   20261018 image, preventing an unrelated R69+ update during this build.
-- The reported 10G outage in another firmware has no established root cause.
-  Compile and regression checks cannot establish physical-port stability.
+- The user reports no 10G DHCP failure on the retained firmware; the failure
+  occurred on the other naoki66 image. This is not a patch for a demonstrated
+  bug in the retained firmware. Its board/PHY/DHCP implementation is preserved.
+  Compile and regression checks still cannot establish physical-port stability.
 
 Run `python3 Offload/tests/check-prepared.py --kernel /path/linux-6.18.55` after
-preparing sources. `--compiled` also checks actual AArch64 objects and records
-the Image hash when the full image exists. GitHub invokes both gates before
-publishing firmware. No test accesses or modifies a router.
+preparing sources. `--compiled` checks eight actual AArch64 objects and hashes
+the normal `KDIR/Image`, not the mutable original-tree Image overwritten during
+initramfs compilation. CI additionally passes `--images bin/targets/airoha/an7581`:
+the final sysupgrade FIT must decompress to exactly KDIR/Image, and recovery
+must match exactly one per-rootfs Image-initramfs input. FIT region hashes and
+the final file hashes are recorded too. No test accesses or modifies a router.
 
 `PREPARED-SOURCE-REVIEW.json` records the source-hash reconciliation after the
 first prepared-source CI gate. An independent replay of the immutable Linux
 6.18.55 files and pinned target patches reproduced CI exactly. The earlier local
 fixture retained an equivalent older SRAM flush error-return form; CI already
 used the exact upstream 932 patch. The reviewed expected hash now reflects that
-payload. The complete hash gate, guarded offload patches and PHY/DHCP sources
-remain in place; five AArch64 objects and all 30 + 16 function cases were rerun.
+payload. The new safety patch is independently replayed with the same immutable
+inputs; ten prepared file hashes are checked before and after full compilation.
+Eight AArch64 objects, the retained 30+16 assertions, 16 eligibility cases,
+  14 revoke assertions and 15 real RX-function gate assertions passed locally.
+Host kernel helpers are models; this is not full Linux/hardware packet proof.

@@ -29,6 +29,7 @@ PREFIX = r'''
 #include <linux/tcp.h>
 #include <linux/if_ether.h>
 typedef uint32_t u32;
+typedef uint64_t u64;
 typedef uint8_t u8;
 typedef uint16_t __be16;
 struct vlan_hdr { uint16_t h_vlan_TCI, h_vlan_encapsulated_proto; };
@@ -52,7 +53,7 @@ static bool ip_is_fragment(const struct iphdr *p) {return ntohs(p->frag_off)&0x3
 #define FIELD_PREP(m,v) ((v) << __builtin_ctz(m))
 struct airoha_foe_entry {u32 ib1;};
 struct fake_eth {void *dev;};
-struct airoha_ppe {struct fake_eth *eth; void *foe; u32 bridge_ft_refs; bool bridge_fallback_fault; unsigned long *bridge_fallback;};
+struct airoha_ppe {struct fake_eth *eth; void *foe; u32 bridge_ft_refs; u64 bridge_generation; bool bridge_fallback_fault; unsigned long *bridge_fallback;};
 static int ppe_lock, lock_depth, commits, yields, fail_hash=-1;
 static void spin_lock_bh(int *p) {(void)p; if(lock_depth++) abort();}
 static void spin_unlock_bh(int *p) {(void)p; if(--lock_depth) abort();}
@@ -117,7 +118,7 @@ int main(void) {
 }
 '''
 
-def check(kernel, compiled=False):
+def check(kernel, compiled=False, images=None):
     ppe = (kernel/'drivers/net/ethernet/airoha/airoha_ppe.c').read_text()
     eth = (kernel/'drivers/net/ethernet/airoha/airoha_eth.c').read_text()
     markers = ['br_vlan_get_info_rcu(ingress, ctx.vlan[0].id', 'egress == ingress',
@@ -135,9 +136,11 @@ def check(kernel, compiled=False):
         subprocess.run(['cc','-std=gnu11','-O2','-Wall','-Wextra','-Werror',str(c),'-o',str(binary)],check=True)
         result = json.loads(subprocess.check_output([str(binary)],text=True))
     result['retained_regressions'] = old_regressions(kernel)
+    from bridge_safety import check as safety_check
+    result['safety_regressions'] = safety_check(kernel, function)
     result['scope'] = 'Prepared source checks and real function fixtures, not hardware/packet-path validation'
-    result['source_sha256'] = {n:hashlib.sha256((kernel/n).read_bytes()).hexdigest() for n in ['drivers/net/ethernet/airoha/airoha_ppe.c','drivers/net/ethernet/airoha/airoha_eth.c','drivers/net/ethernet/airoha/airoha_eth.h','include/linux/netdevice.h','net/core/dev.c']}
     metadata = json.loads((REPO/'Offload/SOURCE.json').read_text())
+    result['source_sha256'] = {n:hashlib.sha256((kernel/n).read_bytes()).hexdigest() for n in metadata['expected_prepared_sources']}
     mismatch = {name: {'expected': metadata['expected_prepared_sources'].get(name), 'actual': digest}
                 for name, digest in result['source_sha256'].items()
                 if digest != metadata['expected_prepared_sources'].get(name)}
@@ -146,20 +149,36 @@ def check(kernel, compiled=False):
     result['patches'] = metadata['patches']
     if compiled:
         result['compiled_objects'] = {}
-        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o']:
+        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o','net/netfilter/core.o','net/bridge/br_vlan.o','net/bridge/br_if.o']:
             raw=(kernel/n).read_bytes();assert raw[:4]==b'\x7fELF' and raw[18:20]==b'\xb7\0', n
             result['compiled_objects'][n]=hashlib.sha256(raw).hexdigest()
-        for name,symbol in [('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_flowtable_ref'),('drivers/net/ethernet/airoha/airoha_eth.o',' U airoha_ppe_flowtable_ref'),('net/core/dev.o',' T __dev_fill_forward_path')]:
+        for name,symbol in [('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_flowtable_ref'),('drivers/net/ethernet/airoha/airoha_eth.o',' U airoha_ppe_flowtable_ref'),('net/core/dev.o',' T __dev_fill_forward_path'),
+                            ('drivers/net/ethernet/airoha/airoha_ppe.o',' U nf_register_hook_observer'),
+                            ('drivers/net/ethernet/airoha/airoha_ppe.o',' U br_vlan_is_forwarding_rcu'),
+                            ('drivers/net/ethernet/airoha/airoha_ppe.o',' U br_offload_state_sync'),
+                            ('net/netfilter/core.o',' T nf_register_hook_observer'),
+                            ('net/bridge/br_vlan.o',' T br_vlan_is_forwarding_rcu'),
+                            ('net/bridge/br_if.o',' T br_offload_state_sync')]:
             assert symbol in subprocess.check_output(['nm',str(kernel/name)],text=True), name
-        image=kernel/'arch/arm64/boot/Image'
+        image=kernel.parent/'Image'
         result['kernel_image_sha256']=hashlib.sha256(image.read_bytes()).hexdigest() if image.is_file() else None
+        result['kernel_image_role']='KDIR/Image: normal sysupgrade input, not mutable arch/arm64/boot/Image'
+        arch=kernel/'arch/arm64/boot/Image'
+        result['diagnostic_arch_image_sha256']=hashlib.sha256(arch.read_bytes()).hexdigest() if arch.is_file() else None
+        if images:
+            from packaged_kernel import check as packaged_check
+            result['packaged_images']=packaged_check(kernel.parent,images)
+            assert result['packaged_images']['sysupgrade']['input_sha256']==result['kernel_image_sha256']
     result['hardware_tested']=False
     return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);g=p.add_mutually_exclusive_group(required=True)
     g.add_argument('--kernel',type=Path);g.add_argument('--build-dir',type=Path)
-    p.add_argument('--compiled',action='store_true');p.add_argument('--report',type=Path);a=p.parse_args()
-    result=check(a.kernel or find_kernel(a.build_dir),a.compiled)
+    p.add_argument('--compiled',action='store_true');p.add_argument('--report',type=Path)
+    p.add_argument('--images',type=Path,help='Require exact normal/recovery kernel identity against final FITs')
+    a=p.parse_args()
+    assert not a.images or a.compiled,'Packaged-image verification requires compiled-object checks'
+    result=check(a.kernel or find_kernel(a.build_dir),a.compiled,a.images)
     if a.report:a.report.parent.mkdir(parents=True,exist_ok=True);a.report.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result))
