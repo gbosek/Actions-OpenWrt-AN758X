@@ -1,0 +1,36 @@
+From: XG2010G integration
+Subject: [PATCH] fw4: make generated bridge conntrack flowtable opt-in
+
+Keep the inet firewall/flowtable and all custom includes unchanged.
+Parentless hardware L2 binding is limited to unfiltered bridge paths;
+the generated bridge base chain otherwise trips the policy guard.
+Use defaults.flow_offloading_bridge=1 for native bridge conntrack mode.
+Switching an existing generated table off requires a fresh boot; this
+patch never flushes somebody else's bridge table in the disabled branch.
+
+--- a/root/usr/share/ucode/fw4.uc
++++ b/root/usr/share/ucode/fw4.uc
+@@ -2058,6 +2058,7 @@
+ 			disable_ipv6: [ "bool", null, UNSUPPORTED ],
+ 			flow_offloading: [ "bool", "0" ],
+ 			flow_offloading_hw: [ "bool", "0" ],
++			flow_offloading_bridge: [ "bool", "0" ],
+ 
+ 			auto_includes: [ "bool", "1" ]
+ 		});
+--- a/root/usr/share/firewall4/templates/ruleset.uc
++++ b/root/usr/share/firewall4/templates/ruleset.uc
+@@ -481,6 +481,7 @@
+ 	}
+ {% fw4.includes('table-append') %}
+ }
++{% if (fw4.default_option("flow_offloading_bridge")): %}
+ table bridge fw4
+ flush table bridge fw4
+ {% if (fw4.check_bridge_flowtable()): %}
+@@ -508,4 +509,5 @@
+ 	}
+ }
+ {% endif %}
++{% endif %}
+ {% fw4.includes('ruleset-append') %}

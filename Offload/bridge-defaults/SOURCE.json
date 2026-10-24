@@ -1,0 +1,28 @@
+{
+  "version": "guarded-raw-bridge-default-20261024",
+  "baseline_ponwrt": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+  "fw4_source": "b6e5157527d361f99ad52eaa6da273cb0f2dfd59",
+  "original_bridge_patch_sha256": "e7ebb18f6ec51aa9230f2502620a62b43e200050e26de75c7143ae26410179a8",
+  "package_patch": "002-xg2010g-bridge-flowtable-opt-in.patch",
+  "package_patch_sha256": "faff7b87ff93dc8ba204c3793782f1182de6519a4d9218288fd89dbf0f942412",
+  "packaged_bridge_sysctl_sha256": "fd1dd4f2667663c13930c46b07bd381d77b0a54e3a4ff8291028c7fe508c5f75",
+  "helper_sha256": "8dd15dd44a447e065780cbd58fe10803a7ab8d64e7fafd9d3f58ed32d602c695",
+  "defaults": {
+    "flow_offloading_bridge": false,
+    "br_netfilter": "demand-only; explicit bridge sysctl settings preserved",
+    "nf_conntrack_bridge": "installed and autoloadable; no native bridge CT use by default"
+  },
+  "retained": [
+    "inet fw4 firewall and hardware flowtable",
+    "all custom bridge/netdev rules and ruleset includes",
+    "949-952 policy/FDB/topology/VLAN/DHCP safeguards",
+    "all board/PHY/PON/CPU/MWAN4 settings"
+  ],
+  "limitations": [
+    "Custom bridge/netdev filters disable coarse fallback until reboot (fail-safe).",
+    "Turning generated bridge FT from on to off needs fresh boot to remove existing hooks.",
+    "No measured BND gain or throughput/stability validation before flash."
+  ],
+  "hardware_tested": false,
+  "boot_gate": "Default closed in driver; userspace opens only after bridge module request succeeds; close synchronously revokes owned fallback entries"
+}

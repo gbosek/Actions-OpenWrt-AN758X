@@ -25,16 +25,17 @@
   },
   "reviewed_change": "952 resolves coarse bridge filtering, FDB/topology lifetime and effective VLAN state; correct normal/per-rootfs FIT input role verification. Board/PHY/DHCP remain retained. Alignment-safe inline VLAN parsing retains all guards; independent PHY 939 is reviewed separately.",
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "c0d29113ab60162fff0d433321fdf7c3419c6fc6e59d38870b41f490e7702912",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
-    "drivers/net/ethernet/airoha/airoha_eth.h": "50e370721095d6d6dc86d915e421ca0b7286af19d179dacc74c3164ceae1e305",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
     "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
     "include/linux/if_bridge.h": "c006c72ebb39a333281e0cfcd7e724aea67b4e326555f3ed280da319d1c6f54d",
     "net/bridge/br_vlan.c": "90e45b6a9496e5282c1e548d82fd32de266290f5417f838b5ffc275dbf155fb1",
     "net/bridge/br_if.c": "efa3c5bd94f671fafe20941edb93d95258ad34156a9011ba5225c86b636a5b6d",
     "include/linux/netfilter.h": "6075c947730d6dd5f2e0c5b00f9f578c692a7fe1b976731d4eab50c0095d5649",
-    "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c"
+    "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c",
+    "drivers/net/ethernet/airoha/airoha_ppe_debugfs.c": "7d0be7c10c3c1fa0232ce8f41ff2f9f26cbbc414335394c8007d246d13a04d44"
   },
   "independent_replay": "gregkh/linux v6.18.55 pristine files plus fixed PonWrt a57faf9 queues and all exact local 930-952 patches; newly added patch requires fuzz=0",
   "hardware_tested": false,
@@ -48,7 +49,11 @@
       "failed": 0
     },
     "rx_gate_cases": {
-      "cases": 15,
+      "cases": 18,
+      "failed": 0
+    },
+    "boot_gate_cases": {
+      "cases": 7,
       "failed": 0
     },
     "scope": "Actual prepared eligibility/VLAN/revoke/notifier functions with host kernel models; generation/publication ordering also inspected. Not hardware or complete Linux packet-path validation."
@@ -61,5 +66,13 @@
       "odd-aligned unadmitted VLAN200"
     ],
     "prepared_ppe_sha256": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6"
+  },
+  "boot_gate_followup": {
+    "baseline_ppe_sha256": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6",
+    "reason": "Raw default must remain closed on explicit bridge-module request failure; returning from an init script does not block network startup.",
+    "patch": 953,
+    "fw4_default": "Only generated bridge CT/flowtable becomes opt-in; inet template output identical; all custom policy gates retained.",
+    "failure": "Gate closes before owned slot revocation and opens only after successful userspace preparation; normal sysctl application continues on helper error.",
+    "hardware_tested": false
   }
 }

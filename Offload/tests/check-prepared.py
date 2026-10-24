@@ -153,6 +153,8 @@ def check(kernel, compiled=False, images=None):
             raw=(kernel/n).read_bytes();assert raw[:4]==b'\x7fELF' and raw[18:20]==b'\xb7\0', n
             result['compiled_objects'][n]=hashlib.sha256(raw).hexdigest()
         for name,symbol in [('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_flowtable_ref'),('drivers/net/ethernet/airoha/airoha_eth.o',' U airoha_ppe_flowtable_ref'),('net/core/dev.o',' T __dev_fill_forward_path'),
+                            ('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_bridge_boot_gate'),
+                            ('drivers/net/ethernet/airoha/airoha_ppe_debugfs.o',' U airoha_ppe_bridge_boot_gate'),
                             ('drivers/net/ethernet/airoha/airoha_ppe.o',' U nf_register_hook_observer'),
                             ('drivers/net/ethernet/airoha/airoha_ppe.o',' U br_vlan_is_forwarding_rcu'),
                             ('drivers/net/ethernet/airoha/airoha_ppe.o',' U br_offload_state_sync'),

@@ -1,0 +1,24 @@
+#!/bin/sh
+# Load the compatibility module only for explicit bridge sysctl settings.
+# The packaged default sets all three bridge firewall calls to zero.
+# Custom nft bridge/ct and iptables physdev rules retain their own autoload.
+gate=/sys/kernel/debug/ppe/bridge_boot_ready
+# A missing gate leaves the kernel default closed. Never unload filters.
+[ -w "$gate" ] || exit 1
+echo 0 > "$gate" || exit 1
+for conf in /etc/sysctl.d/*.conf /etc/sysctl.conf; do
+	[ -f "$conf" ] || continue
+	if [ "$conf" = /etc/sysctl.d/11-br-netfilter.conf ] &&
+	   [ "$(sha256sum "$conf" | cut -d ' ' -f 1)" = fd1dd4f2667663c13930c46b07bd381d77b0a54e3a4ff8291028c7fe508c5f75 ]; then
+		continue
+	fi
+	if grep -Eq '^[[:space:]]*-?net[./]bridge[./]' "$conf"; then
+		modprobe br_netfilter
+		return_code=$?
+		[ "$return_code" = 0 ] || logger -t xg2010g-bridge 'Cannot load requested bridge netfilter'
+		[ "$return_code" = 0 ] || exit "$return_code"
+		break
+	fi
+done
+echo 1 > "$gate" || exit 1
+exit 0

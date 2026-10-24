@@ -1,0 +1,102 @@
+From: XG2010G integration
+Subject: [PATCH] airoha: fence parentless binding until bridge policy setup
+
+Require successful boot policy preparation. Closing the gate fences new RX
+candidates, synchronously reclaims owned fallback entries, and does not
+change ordinary parent/routed offload. Enabling cannot clear policy,
+topology or ACK-failure protection. No binding thresholds are changed.
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -730,6 +730,7 @@
+ 	struct airoha_bridge_owner *bridge_owners;
+ 	u64 bridge_generation;
+ 	bool bridge_policy_blocked;
++	bool bridge_boot_ready;
+ 	bool bridge_topology_blocked;
+ 	struct delayed_work bridge_topology_work;
+ 	struct notifier_block bridge_nf_nb;
+@@ -868,6 +869,7 @@
+ int airoha_ppe_setup_tc_block_cb(struct airoha_ppe_dev *dev, void *type_data);
+ int airoha_ppe_init(struct airoha_eth *eth);
+ void airoha_ppe_flowtable_ref(struct airoha_ppe *ppe, bool bind);
++int airoha_ppe_bridge_boot_gate(struct airoha_ppe *ppe, u64 ready);
+ void airoha_ppe_deinit(struct airoha_eth *eth);
+ void airoha_ppe_init_upd_mem(struct airoha_gdm_dev *dev, const u8 *addr);
+ u32 airoha_ppe_get_total_num_entries(struct airoha_ppe *ppe);
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -1374,7 +1374,8 @@
+ 	struct hlist_node *n;
+ 	u32 index, state;
+ 
+-	if (!local && READ_ONCE(ppe->bridge_ft_refs) &&
++	if (!local && READ_ONCE(ppe->bridge_boot_ready) &&
++	    READ_ONCE(ppe->bridge_ft_refs) &&
+ 	    !READ_ONCE(ppe->bridge_fallback_fault) &&
+ 	    !READ_ONCE(ppe->bridge_policy_blocked) &&
+ 	    !READ_ONCE(ppe->bridge_topology_blocked))
+@@ -1429,7 +1430,8 @@
+ 				   airoha_l2_flow_table_params);
+ 	if (e)
+ 		airoha_ppe_foe_commit_subflow_entry(ppe, e, hash, rx_wlan);
+-	else if (bridge_ready && ppe->bridge_ft_refs &&
++	else if (bridge_ready && READ_ONCE(ppe->bridge_boot_ready) &&
++		 ppe->bridge_ft_refs &&
+ 		 !ppe->bridge_fallback_fault && !ppe->bridge_policy_blocked &&
+ 		 !ppe->bridge_topology_blocked &&
+ 		 bridge_generation == ppe->bridge_generation) {
+@@ -2175,6 +2177,23 @@
+ 		if (sleepable)
+ 			cond_resched();
+ 	}
++	return 0;
++}
++
++/* Userspace must finish the explicit bridge-policy module request first.
++ * Closing the gate fences RX before synchronous owned-slot reclamation.
++ * Enabling never clears filtering/topology/fault latches.
++ */
++int airoha_ppe_bridge_boot_gate(struct airoha_ppe *ppe, u64 ready)
++{
++	if (ready > 1)
++		return -EINVAL;
++
++	spin_lock_bh(&ppe_lock);
++	WRITE_ONCE(ppe->bridge_boot_ready, !!ready);
++	spin_unlock_bh(&ppe_lock);
++	if (!ready)
++		return airoha_ppe_bridge_revoke(ppe, NULL, 0, false, true);
+ 	return 0;
+ }
+ 
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -223,9 +223,27 @@
+ }
+ DEFINE_SHOW_ATTRIBUTE(airoha_ppe_debugfs_config);
+ 
++static int airoha_ppe_bridge_boot_ready_get(void *data, u64 *value)
++{
++	struct airoha_ppe *ppe = data;
++
++	*value = READ_ONCE(ppe->bridge_boot_ready);
++	return 0;
++}
++
++static int airoha_ppe_bridge_boot_ready_set(void *data, u64 value)
++{
++	return airoha_ppe_bridge_boot_gate(data, value);
++}
++DEFINE_DEBUGFS_ATTRIBUTE(airoha_ppe_bridge_boot_ready_fops,
++			airoha_ppe_bridge_boot_ready_get,
++			airoha_ppe_bridge_boot_ready_set, "%llu\n");
++
+ int airoha_ppe_debugfs_init(struct airoha_ppe *ppe)
+ {
+ 	ppe->debugfs_dir = debugfs_create_dir("ppe", NULL);
++	debugfs_create_file("bridge_boot_ready", 0600, ppe->debugfs_dir, ppe,
++			    &airoha_ppe_bridge_boot_ready_fops);
+ 	debugfs_create_file("config", 0444, ppe->debugfs_dir, ppe,
+ 			    &airoha_ppe_debugfs_config_fops);
+ 	debugfs_create_file("entries", 0444, ppe->debugfs_dir, ppe,

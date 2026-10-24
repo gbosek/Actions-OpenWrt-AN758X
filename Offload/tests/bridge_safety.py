@@ -162,7 +162,7 @@ struct ethhdr {u8 dst[6],src[6];};struct sk_buff {struct ethhdr *eth;};
 struct airoha_foe_entry {u32 ib1;};struct airoha_foe_bridge {int unused;};
 struct airoha_bridge_owner {int bridge_ifindex,egress_ifindex;u16 vid;u8 dmac[6];};
 struct hlist_node {int unused;};struct airoha_flow_table_entry {int type;u32 hash;struct airoha_foe_entry data;};
-struct airoha_ppe {void *eth;u32 bridge_ft_refs;u64 bridge_generation;bool bridge_policy_blocked,bridge_topology_blocked,bridge_fallback_fault;unsigned long *bridge_fallback;struct airoha_bridge_owner *bridge_owners;int foe_flow[1],l2_flows;};
+struct airoha_ppe {void *eth;u32 bridge_ft_refs;u64 bridge_generation;bool bridge_boot_ready,bridge_policy_blocked,bridge_topology_blocked,bridge_fallback_fault;unsigned long *bridge_fallback;struct airoha_bridge_owner *bridge_owners;int foe_flow[1],l2_flows;};
 static int ppe_lock,locks,prepares,commits,parent_commits,fail_commit,event,local_packet,control_packet,has_parent,cases;
 static bool qualifies=true;static struct airoha_foe_entry table;static struct airoha_flow_table_entry parent;
 static bool airoha_ppe_foe_skb_is_local(struct sk_buff *s) {(void)s;return local_packet;}
@@ -171,7 +171,7 @@ static bool airoha_ppe_foe_prepare_bridge_subflow(struct airoha_ppe *p,struct sk
 static void spin_lock_bh(int *p) {(void)p;if(locks++)abort();}
 static void spin_unlock_bh(int *p) {(void)p;if(--locks)abort();}
 static struct airoha_foe_entry *airoha_ppe_foe_get_entry_locked(struct airoha_ppe *p,u32 hash) {
- (void)hash;if(event==1)p->bridge_generation++;if(event==2)p->bridge_policy_blocked=true;if(event==3)p->bridge_topology_blocked=true;return &table;
+ (void)hash;if(event==1)p->bridge_generation++;if(event==2)p->bridge_policy_blocked=true;if(event==3)p->bridge_topology_blocked=true;if(event==4)p->bridge_boot_ready=false;return &table;
 }
 static bool airoha_is_7581(void *eth) {(void)eth;return true;}
 static u32 airoha_ppe_foe_get_entry_hash(struct airoha_ppe *p,struct airoha_foe_entry *h) {(void)p;(void)h;return 0;}
@@ -194,7 +194,7 @@ RX_TESTS = r'''
 static unsigned long bits;static struct airoha_bridge_owner owners[8];static struct airoha_ppe p;
 static struct ethhdr eh;static struct sk_buff skb={&eh};
 static void reset(void) {
- p=(struct airoha_ppe){.bridge_ft_refs=1,.bridge_fallback=&bits,.bridge_owners=owners};
+ p=(struct airoha_ppe){.bridge_boot_ready=true,.bridge_ft_refs=1,.bridge_fallback=&bits,.bridge_owners=owners};
  bits=0;table.ib1=(PPE_PKT_TYPE_BRIDGE<<16);prepares=commits=parent_commits=fail_commit=event=local_packet=control_packet=has_parent=0;qualifies=true;
 }
 int main(void) {
@@ -202,6 +202,9 @@ int main(void) {
  reset();event=1;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==1&&commits==0&&bits==0);
  reset();event=2;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==1&&commits==0);
  reset();event=3;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==1&&commits==0);
+ reset();event=4;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==1&&commits==0);
+ reset();p.bridge_boot_ready=false;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==0&&commits==0);
+ reset();p.bridge_boot_ready=false;has_parent=1;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(parent_commits==1&&commits==0);
  reset();p.bridge_ft_refs=0;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==0&&commits==0);
  reset();p.bridge_policy_blocked=true;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==0&&commits==0);
  reset();p.bridge_topology_blocked=true;airoha_ppe_foe_insert_entry(&p,&skb,1,false);check(prepares==0&&commits==0);
@@ -236,6 +239,35 @@ def check(kernel, extract):
     revoked=run(REVOKE_PREFIX+revoke+REVOKE_TESTS)
     insert=extract(ppe,'airoha_ppe_foe_insert_entry')
     rx=run(RX_PREFIX+insert+RX_TESTS)
+    gate=run(r'''
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+typedef uint64_t u64;
+struct airoha_ppe {bool bridge_boot_ready,bridge_policy_blocked,bridge_topology_blocked,bridge_fallback_fault;};
+static int ppe_lock,locks,revokes,fail_revoke,cases;
+#define WRITE_ONCE(x,v) ((x)=(v))
+static void spin_lock_bh(int *p){(void)p;if(locks++)abort();}
+static void spin_unlock_bh(int *p){(void)p;if(--locks)abort();}
+static int airoha_ppe_bridge_revoke(struct airoha_ppe *p,const void *a,int vid,bool block,bool sleepable){
+ if(p->bridge_boot_ready||a||vid||block||!sleepable||locks)abort();
+ revokes++;return fail_revoke;}
+#define check(x) do{cases++;if(!(x))abort();}while(0)
+''' + extract(ppe,'airoha_ppe_bridge_boot_gate') + r'''
+int main(void){
+ struct airoha_ppe p={.bridge_policy_blocked=true,.bridge_topology_blocked=true,.bridge_fallback_fault=true};
+ check(!p.bridge_boot_ready);
+ check(airoha_ppe_bridge_boot_gate(&p,2)==-EINVAL&&!p.bridge_boot_ready&&revokes==0);
+ check(airoha_ppe_bridge_boot_gate(&p,1)==0&&p.bridge_boot_ready&&revokes==0);
+ check(p.bridge_policy_blocked&&p.bridge_topology_blocked&&p.bridge_fallback_fault);
+ check(airoha_ppe_bridge_boot_gate(&p,0)==0&&!p.bridge_boot_ready&&revokes==1);
+ p.bridge_boot_ready=true;fail_revoke=-110;
+ check(airoha_ppe_bridge_boot_gate(&p,0)==-110&&!p.bridge_boot_ready&&revokes==2);
+ check(locks==0);printf("{\"cases\":%d,\"failed\":0}",cases);return 0;}
+''')
     assert 'bridge_generation == ppe->bridge_generation' in insert
     assert '!ppe->bridge_topology_blocked' in insert and '!ppe->bridge_policy_blocked' in insert
     nf=(kernel/'net/netfilter/core.c').read_text()
@@ -244,5 +276,5 @@ def check(kernel, extract):
     worker=extract(ppe,'airoha_ppe_bridge_topology_work')
     assert worker.index('br_offload_state_sync(dev)')<worker.index('ppe->bridge_topology_blocked = false')
     assert 'generation != ppe->bridge_generation' in worker and 'rtnl_trylock()' in worker
-    return {'prepare_cases':prep,'revoke_cases':revoked,'rx_gate_cases':rx,
+    return {'prepare_cases':prep,'revoke_cases':revoked,'rx_gate_cases':rx,'boot_gate_cases':gate,
             'scope':'Actual prepared eligibility/VLAN/revoke/notifier functions with host kernel models; generation/publication ordering also inspected. Not hardware or complete Linux packet-path validation.'}

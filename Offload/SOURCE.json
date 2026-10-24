@@ -1,5 +1,5 @@
 {
-  "version": "policy-topology-safe-naoki-bridge-20261024",
+  "version": "policy-topology-safe-raw-default-20261024",
   "kernel": "6.18.55",
   "upstream": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
   "upstream_commit": "c15760c70b7ceeb85fd852d081b06c4bcac1cf5c",
@@ -28,19 +28,24 @@
     {
       "file": "952-net-airoha-constrain-bridge-fallback-policy.patch",
       "sha256": "c7b6c2e4ed483cae058b15787270665f476e2f479a384369dcb52610085ec1b7"
+    },
+    {
+      "file": "953-net-airoha-gate-fallback-on-bridge-policy-setup.patch",
+      "sha256": "38f7498d19c51d6902cd79fb2046157992126c844f59d3d67a4d30e62a021b79"
     }
   ],
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "c0d29113ab60162fff0d433321fdf7c3419c6fc6e59d38870b41f490e7702912",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
-    "drivers/net/ethernet/airoha/airoha_eth.h": "50e370721095d6d6dc86d915e421ca0b7286af19d179dacc74c3164ceae1e305",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
     "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
     "include/linux/if_bridge.h": "c006c72ebb39a333281e0cfcd7e724aea67b4e326555f3ed280da319d1c6f54d",
     "net/bridge/br_vlan.c": "90e45b6a9496e5282c1e548d82fd32de266290f5417f838b5ffc275dbf155fb1",
     "net/bridge/br_if.c": "efa3c5bd94f671fafe20941edb93d95258ad34156a9011ba5225c86b636a5b6d",
     "include/linux/netfilter.h": "6075c947730d6dd5f2e0c5b00f9f578c692a7fe1b976731d4eab50c0095d5649",
-    "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c"
+    "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c",
+    "drivers/net/ethernet/airoha/airoha_ppe_debugfs.c": "7d0be7c10c3c1fa0232ce8f41ff2f9f26cbbc414335394c8007d246d13a04d44"
   },
   "local_safeguards": [
     "DHCP and local MAC exclusion",
@@ -53,11 +58,18 @@
     "FDB MAC/VID ownership and synchronous revocation",
     "RTNL plus bridge-state synchronization before topology resume",
     "Generation-fenced RX candidates",
-    "Effective ingress/egress VLAN forwarding state"
+    "Effective ingress/egress VLAN forwarding state",
+    "Default-closed boot readiness with fenced RX and synchronous owned-entry reclamation before explicit bridge policy changes"
   ],
   "hardware_tested": false,
   "bridge_custom_acl_equivalence_verified": false,
   "ten_gigabit_root_cause_proven": false,
   "coarse_fallback_scope": "Only unfiltered init_net bridge paths. Filtering hooks fence new fallback; ordinary parent-owned and routed offload is preserved. Topology changes revoke then resume only after RTNL/bridge-state synchronization.",
-  "ten_gigabit_context": "The reported no-DHCP outage occurred on the other naoki66 image, not the retained user firmware. No board/PHY/DHCP replacement or root-cause claim."
+  "ten_gigabit_context": "The reported no-DHCP outage occurred on the other naoki66 image, not the retained user firmware. No board/PHY/DHCP replacement or root-cause claim.",
+  "bridge_defaults": {
+    "metadata": "/etc/airoha-bridge-defaults.json",
+    "source_file": "Offload/bridge-defaults/SOURCE.json",
+    "sha256": "9d898d76cd8a754189ec86b7dcfa084511a9b06ed43414b4de12fb94bb6fc8ed",
+    "kernel_guards_unchanged": false
+  }
 }
