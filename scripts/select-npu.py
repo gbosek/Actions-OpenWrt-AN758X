@@ -25,7 +25,7 @@ shutil.copytree(app, dest)
 from adapt_npu import adapt
 adapt(dest, a.variant)
 meta["local_adjustments"].extend(["Shared kernel cpufreq policy adapter", "Compatibility boost enumeration and capability fields", "Local APK-compatible integer package revision", "Direct user-space PLL writes removed", "PPE complete export and snapshot/capability metadata", "Unused WiFi and jitter polling removed for XG2010G"])
-meta["local_package_release"] = {"naoki": 906, "luanmuc": 102}[a.variant]
+meta["local_package_release"] = {"naoki": 907, "luanmuc": 102}[a.variant]
 meta["cpu_boost_source"] = "CPU-BOOST-SOURCE.json"
 for file in (dest / 'root').rglob('*'):
     if file.is_file() and ('init.d' in file.parts or 'libexec' in file.parts) and file.suffix != '.awk':

@@ -1,7 +1,7 @@
 {
   "variant": "naoki",
   "upstream": "gbosek/luci-app-airoha",
-  "commit": "9bb3808e33c686955ff8a502fe58aeb7054f54ef",
+  "commit": "f8c1bc6872b36bc5445fd0946103d65b1f736d7b",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
@@ -10,7 +10,8 @@
   "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3",
   "upstream_mirror": {
     "repo": "naoki66/luci-app-airoha",
-    "commit": "74c360563b3e2f8d4696e888f99a7d25a6ed414f"
+    "commit": "d496614002cf21f83e96e4741716eab1e5333ede",
+    "branch": "main"
   },
   "selected_updates": [
     "per-core CPU load history",
@@ -23,12 +24,14 @@
     "IRQ CPU-column-only summation and algorithm-reference semantics",
     "Clear stale split and use full-snapshot unbound count",
     "Do not infer fixed CDM/PPE ownership from the CDM register number",
-    "GDM complete drop counters and PSE per-port queue counters",
     "CDM interval TX share with reset/idle handling and driver-verified LAN/WAN role labels",
     "EIP93 count-only summary, no algorithm list",
     "Explicit zero-L2 full-snapshot diagnostics with legacy-field omission",
     "CPU/frequency history hover sample readout",
     "NPU status/device/reserved-memory rows",
-    "Zero-L2 warning at 50 percent or greater"
+    "Zero-L2 warning at 50 percent or greater",
+    "GDM complete drop counters; misleading idle PSE port queue occupancy removed upstream",
+    "PSE shared-buffer hardware high-water mark with unknown on read failure",
+    "Compact PPE header count pills with no wrapping"
   ]
 }
