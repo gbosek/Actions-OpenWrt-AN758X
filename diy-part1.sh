@@ -106,6 +106,7 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   # Complete guarded bridge cache-miss path; no board/PHY/DHCP replacement.
   python3 "$GITHUB_WORKSPACE/scripts/apply-naoki-offload.py" .
   python3 "$GITHUB_WORKSPACE/scripts/apply-bridge-defaults.py" . || exit 1
+  python3 "$GITHUB_WORKSPACE/scripts/apply-eip93-packages.py" . || exit 1
 
   KERNEL_CONFIG="target/linux/airoha/an7581/config-6.18"
   if [ ! -f "$KERNEL_CONFIG" ]; then

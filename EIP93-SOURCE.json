@@ -1,0 +1,39 @@
+{
+  "baseline": "pbs05/ponwrt a57faf93c6c3638ba3651690228aabaa51d3f235",
+  "kernel": "6.18.55",
+  "packages": [
+    "kmod-crypto-hw-eip93",
+    "kmod-cryptodev",
+    "openssl-util",
+    "libopenssl-devcrypto"
+  ],
+  "package_source_sha256": {
+    "package/kernel/linux/modules/crypto.mk": "ef5392a89b64868d30ca5c1710a00248b3c94a993ea6090337b735009222d0d7",
+    "package/kernel/cryptodev-linux/Makefile": "e2bf305033941a6e855cd7bea65989f19a3f44751c023cfe7b4fe120c9a4f527",
+    "package/libs/openssl/Makefile": "fa85620226c0219c5c7f70ea5ee8b5778bcd794fd162c7a312cf1d3116558102",
+    "package/libs/openssl/files/devcrypto.cnf": "2d49b54dc24cb8a0c2251889a047380d119ccc5cb2eced14d1bc072820a8810f",
+    "package/kernel/cryptodev-linux/patches/002-Fix-build-for-Linux-6.18-rc1.patch": "4d66473b0efa7a8c45092775baa92f07c2332cc0bb91426d6dcb90e41435a45d",
+    "package/kernel/cryptodev-linux/patches/001-Fix-cryptodev_verbosity-sysctl-for-Linux-6.11-rc1.patch": "437028bb3372670a454c72aeb2e25b9693493c4aa9f5ea12f980788c37c0dbe0"
+  },
+  "prepared_driver_sha256": {
+    "drivers/crypto/inside-secure/eip93/eip93-aes.h": "55f73301dd31b9bf34537840f4a616c2891b10c743631d323f32bc4471b65ef8",
+    "drivers/crypto/inside-secure/eip93/eip93-main.h": "5e7b28b06147f4a416496db10889eb968b5fe934d081170521c1b27c99ca9c43",
+    "drivers/crypto/inside-secure/eip93/Kconfig": "fdcecbb4613769f5c254c8dd376e09d9cfc9056fd1cd18672e16165aca822b35",
+    "drivers/crypto/inside-secure/eip93/eip93-hash.c": "b0d0cd231dbe4c9cd2296dc08b63f383ed25bc01fa1303d82c3fd39aea70b59e",
+    "drivers/crypto/inside-secure/eip93/eip93-common.h": "7b5660c7a6950ab83951942258ff4ea257602d1ab56099bd7d86425d7ee64fd4",
+    "drivers/crypto/inside-secure/eip93/eip93-hash.h": "6736ee76e1bfb0667a80d114d0b96a02e353f85a74139b6566eb5a10066c50e5",
+    "drivers/crypto/inside-secure/eip93/eip93-regs.h": "889128aeae0414c31a13d7b5869d309ba2200daeb24f3b06d6e6e4521193ccd6",
+    "drivers/crypto/inside-secure/eip93/eip93-common.c": "6a27a841268c83b87deaaad5e9f86f442c0359c3b577549b610ed2b86523ab21",
+    "drivers/crypto/inside-secure/eip93/eip93-aead.h": "7e3de38ff99c80763ace29929f756af588de2e77d824b43e70eb915b7c0c8988",
+    "drivers/crypto/inside-secure/eip93/eip93-cipher.h": "a6454e20481f1880d4c5029f86e1df45df61189fbf192a142da5e02ba96b5d0d",
+    "drivers/crypto/inside-secure/eip93/Makefile": "73661c88199cc60080c3e6ee5d2c237a61783997487291636e0de6f7f0d97139",
+    "drivers/crypto/inside-secure/eip93/eip93-des.h": "2323fd8de5d6ce60c3e25d4f89e8e93cf2c72157b4587c6870467afd28e764a2",
+    "drivers/crypto/inside-secure/eip93/eip93-main.c": "82c62e6e9738529e24ea9342e787a0d4cd0b0b82eb6f2a0ed0bba48746755793",
+    "drivers/crypto/inside-secure/eip93/eip93-cipher.c": "1f5c509b2202500342457b1f04ac67604a1ee677eeddfe4fe685937d63db02bd",
+    "drivers/crypto/inside-secure/eip93/eip93-aead.c": "ab279a94e5b4948e25bede4b1a8a81a4f04f01d2069273e49f1a1c8e434c150f"
+  },
+  "scope": "Existing Airoha EIP93 driver and stock userspace packages; no PPE/NPU/PHY/DHCP/board configuration change",
+  "openssl_safety": "Stock devcrypto config retained: DIGESTS=NONE; engine is dynamic, not forcibly built into libcrypto",
+  "hardware_tested": false,
+  "runtime_install": "Requires exact running-kernel ABI; never bypass APK kernel dependency or force-load a module"
+}
