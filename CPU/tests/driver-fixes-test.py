@@ -36,6 +36,14 @@ for project, patchlevel in [('pon', 55), ('ci', 55)]:
         bad.write_text('conflicting changes')
         assert subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
         bad.unlink()
+        if project == 'pon':
+            for name, content in [('939-conflict.patch', 'conflicting PHY change'),
+                                  ('9999-duplicate-phy.patch', '+#define RTL826X_VEND1_PKG_MODEL_8261 0x8261\n')]:
+                bad = destination / name
+                bad.write_text(content)
+                assert subprocess.run(command, capture_output=True).returncode != 0
+                bad.unlink()
+            assert json.loads((root / 'files/etc/phy-rtl826x-source.json').read_text())['commit'] == '76da1ee259c5804e105c3f044fcf94833608b227'
         version.write_text('LINUX_VERSION-6.18 = .999\n')
         assert subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
 print('PASS: both kernel selections, repeat install, no obsolete payloads, native watchdog/RX31 duplicate rejection, provenance, conflict and unknown kernel rejection')

@@ -1,0 +1,44 @@
+{
+  "upstream": "openwrt/openwrt",
+  "commit": "76da1ee259c5804e105c3f044fcf94833608b227",
+  "url": "https://github.com/openwrt/openwrt/commit/76da1ee259c5804e105c3f044fcf94833608b227",
+  "source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
+  "kernel": "6.18.55",
+  "projects": [
+    "pon"
+  ],
+  "patch": "939-net-phy-realtek-harden-rtl826x-reset.patch",
+  "sha256": "7dcf9b1f48416457a8224c92fb87aa183ccfbb91128fc19e84baf11759817c27",
+  "baseline_patch_sha256": {
+    "target/linux/generic/pending-6.18/742-net-phy-realtek-add-5G-and-10G-PHY-support.patch": "d238d63ff0f8eaf2af6b90b8d827a5f719211f915574d1448c4dfd8cf6111105",
+    "target/linux/generic/pending-6.18/743-net-phy-realtek-reset-RTL8261N-USXGMII-SerDes-on-lin.patch": "b5206d66d8a4598d480544d6d024940ee680251b435926118cb1936a74557c2b",
+    "target/linux/airoha/patches-6.18/743-net-phy-realtek-add-RTL8261-USXGMII-inband-control.patch": "20afb049cb2f9225ad0d50feee36544dc922bcf20a04457424bf3aff84288744"
+  },
+  "prepared_source": "drivers/net/phy/realtek/realtek_main.c",
+  "prepared_sha256": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab",
+  "selected": [
+    "PKG_MODEL 0x8261 for RTL8261BE/N",
+    "2.5G/5G/10G EEE disable",
+    "150ms after MMD30 reset release"
+  ],
+  "retained": [
+    "743 bounded SerDes recovery",
+    "USXGMII in-band control",
+    "rtl826x-firmware 0cd4abe2-r4",
+    "XG2010G GPIO/reset/polarity/DHCP/PON configuration"
+  ],
+  "not_added": [
+    "RTL8261C/D/CE silicon support for different PHY IDs",
+    "wholesale PCS v18/framework replacement"
+  ],
+  "hardware_tested": false,
+  "ten_gigabit_root_cause_proven": false,
+  "prepared_sources_sha256": {
+    "drivers/net/phy/realtek/phy_patch_rtl826x.h": "89a2a4e16998e7fbe33f47038a6480bf02dc188d89b0010588ea0f631ae77ac8",
+    "drivers/net/phy/realtek/phy_patch_rtl826x.c": "a5379a20460d6b4aad91f065b8aefa096bf379898abcb49732e832f99eec8c3c",
+    "drivers/net/phy/realtek/realtek.h": "301e47b668f99b2da7c0e9384142b76d9ed4501655680ce2710b12e0944641c7",
+    "drivers/net/phy/realtek/phy_patch.h": "4e4c9c13eae369c472b10eabfef9f833533ecdac3fde6bb76be1da542856d91a",
+    "drivers/net/phy/realtek/phy_patch.c": "7cd57d10e94cce41b1cda6e4ae7c05921bad50376973b92e33e40500dd1ea961",
+    "drivers/net/phy/realtek/realtek_main.c": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab"
+  }
+}

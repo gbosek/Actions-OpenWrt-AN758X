@@ -15,6 +15,7 @@ static void reset(void) {
     ingress=(struct net_device){.ifindex=2,.net=&init_net,.port=true,.running=true,.carrier=true,.state=BR_STATE_FORWARDING};
     egress=ingress;egress.ifindex=3;member=true;vlan_filtering=true;prepare_calls=0;
     in_vlan=(struct net_bridge_vlan){true,BR_STATE_FORWARDING};out_vlan=in_vlan;
+    hw_vlan_tag=true;path_vid=path_proto=0;
 }
 static void run(bool expected) {
     struct ethhdr frame={.h_proto=htons(ETH_P_IP),.h_dest={2,3,4,5,6,7}};
@@ -23,6 +24,19 @@ static void run(bool expected) {
     bool actual=airoha_ppe_foe_prepare_bridge_subflow(&p,&skb,&hw,&owner);
     if(actual!=expected || prepare_calls!=(expected?1:0)) {fprintf(stderr,"%s failed\n",case_name);exit(1);}
     if(actual && (owner.bridge_ifindex!=1 || owner.egress_ifindex!=3 || owner.vid!=(vlan_filtering?100:0) || memcmp(owner.dmac,frame.h_dest,6)))exit(2);
+    cases++;
+}
+static void inline_vlan(unsigned int vid, bool expected) {
+    u8 raw[32] __attribute__((aligned(2)))={0};
+    struct ethhdr *frame=(struct ethhdr *)(raw+1);
+    struct sk_buff skb={.dev=&ingress,.mac=frame,.tail=raw+1+VLAN_ETH_HLEN};
+    struct airoha_foe_entry hw={0};struct airoha_ppe p={0};struct airoha_bridge_owner owner={0};
+    u16 tci=htons(vid);
+    hw_vlan_tag=false;frame->h_dest[0]=2;frame->h_proto=htons(ETH_P_8021Q);
+    memcpy(raw+1+ETH_HLEN,&tci,sizeof(tci));
+    bool actual=airoha_ppe_foe_prepare_bridge_subflow(&p,&skb,&hw,&owner);
+    if(actual!=expected || prepare_calls!=(expected?1:0))exit(3);
+    if(actual && (path_vid!=100 || path_proto!=htons(ETH_P_8021Q) || owner.vid!=100))exit(4);
     cases++;
 }
 int main(void) {
@@ -42,6 +56,8 @@ int main(void) {
     reset();ingress.flags=BR_PORT_LOCKED;case_name="locked_port";run(false);
     reset();egress.flags=BR_PORT_MAB;case_name="mab_port";run(false);
     reset();vlan_filtering=false;case_name="unfiltered_bridge_fdb_vid_zero";run(true);
+    reset();case_name="unaligned_inline_vlan";inline_vlan(100,true);
+    reset();case_name="unaligned_inline_vlan_not_admitted";inline_vlan(200,false);
     printf("{\"cases\":%d,\"failed\":0}",cases);return 0;
 }
 '''

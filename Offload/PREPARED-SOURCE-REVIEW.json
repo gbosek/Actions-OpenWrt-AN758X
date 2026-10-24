@@ -23,9 +23,9 @@
     "runtime_changes": false,
     "hardware_tested": false
   },
-  "reviewed_change": "952 resolves coarse bridge filtering, FDB/topology lifetime and effective VLAN state; correct normal/per-rootfs FIT input role verification. Board/PHY/DHCP remain retained.",
+  "reviewed_change": "952 resolves coarse bridge filtering, FDB/topology lifetime and effective VLAN state; correct normal/per-rootfs FIT input role verification. Board/PHY/DHCP remain retained. Alignment-safe inline VLAN parsing retains all guards; independent PHY 939 is reviewed separately.",
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "3b4603c378dac046e47b0c49cc2812c83ba0d628284c667e7057fe50d29f3d44",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
     "drivers/net/ethernet/airoha/airoha_eth.h": "50e370721095d6d6dc86d915e421ca0b7286af19d179dacc74c3164ceae1e305",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
@@ -40,7 +40,7 @@
   "hardware_tested": false,
   "review_fixtures": {
     "prepare_cases": {
-      "cases": 16,
+      "cases": 18,
       "failed": 0
     },
     "revoke_cases": {
@@ -52,5 +52,14 @@
       "failed": 0
     },
     "scope": "Actual prepared eligibility/VLAN/revoke/notifier functions with host kernel models; generation/publication ordering also inspected. Not hardware or complete Linux packet-path validation."
+  },
+  "alignment_followup": {
+    "failed_run": 40049908690,
+    "reason": "Host -Werror detected packed ethhdr to aligned vlan_ethhdr cast. Replaced actual production parse with memcpy from ETH_HLEN. No warning disabled.",
+    "new_cases": [
+      "odd-aligned admitted VLAN100",
+      "odd-aligned unadmitted VLAN200"
+    ],
+    "prepared_ppe_sha256": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6"
   }
 }

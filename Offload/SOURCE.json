@@ -27,11 +27,11 @@
     },
     {
       "file": "952-net-airoha-constrain-bridge-fallback-policy.patch",
-      "sha256": "732fa032d14a989afefbcaad725112ece49d6702939713865204f57ddd64ce8e"
+      "sha256": "c7b6c2e4ed483cae058b15787270665f476e2f479a384369dcb52610085ec1b7"
     }
   ],
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "3b4603c378dac046e47b0c49cc2812c83ba0d628284c667e7057fe50d29f3d44",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "9cdeae8c249f9876f38c19f16f62ff90a7ef2e281d3d7c2446e8fb1a2ead8ea6",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
     "drivers/net/ethernet/airoha/airoha_eth.h": "50e370721095d6d6dc86d915e421ca0b7286af19d179dacc74c3164ceae1e305",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",

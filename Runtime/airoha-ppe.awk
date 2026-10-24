@@ -47,7 +47,8 @@ function bucket(idx, state) {
 	}
 }
 BEGIN { total = shown = n4 = n6 = l2b = bnd = unb = fin = 0
-	ppe1 = ppe2 = dram = ppe1_bnd = ppe2_bnd = dram_bnd = 0 }
+	ppe1 = ppe2 = dram = ppe1_bnd = ppe2_bnd = dram_bnd = 0
+	zero_l2 = zero_l2_bnd = 0; have_records = 0 }
 # Some kernel versions expose only the bound count in ppe/bind.
 NF == 1 && $1 ~ /^[0-9]+$/ && (state_filter == "" || state_filter == "BND") {
 	total += $1
@@ -67,6 +68,11 @@ $1 ~ /^[0-9a-fA-F]+$/ && $2 ~ /^(BND|UNB|FIN|INV)$/ {
 	if (type == "IPv6") n6++
 	if (type == "L2B") l2b++
 	if ((type == "IPv4" || type == "IPv6") && $4 ~ /^[35]T$/) proto = $4
+	if (field("eth") == "00:00:00:00:00:00->00:00:00:00:00:00" && field("etype") == "0000") {
+		zero_l2++
+		if ($2 == "BND") zero_l2_bnd++
+	}
+	have_records = 1;
 	if (total <= offset) next
 	if (limit > 0 && shown >= limit) next
 	shown++
@@ -79,6 +85,8 @@ END {
 	if (ppe1 + ppe2 + dram > 0)
 		engine_split = sprintf(",\"ppe1\":%d,\"ppe2\":%d,\"dram\":%d,\"ppe1_bound\":%d,\"ppe2_bound\":%d,\"dram_bound\":%d",
 			ppe1, ppe2, dram, ppe1_bnd, ppe2_bnd, dram_bnd)
+	if (have_records)
+		engine_split = engine_split sprintf(",\"zero_l2\":%d,\"zero_l2_bound\":%d", zero_l2, zero_l2_bnd)
 	printf "{\"available\":true,\"total\":%d,\"ipv4\":%d,\"ipv6\":%d,\"l2b\":%d,\"bound\":%d,\"unbound\":%d,\"finished\":%d,\"truncated\":%s,\"returned\":%d,\"offset\":%d,\"next_offset\":%d,\"has_more\":%s,\"entries\":[",
 		total, n4, n6, l2b, bnd, unb, fin, (total > shown ? "true" : "false"), shown, offset, offset+shown, (offset+shown<total ? "true" : "false")
 	for (i = 1; i <= shown; i++) {

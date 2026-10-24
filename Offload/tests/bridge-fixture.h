@@ -46,6 +46,8 @@ struct net_bridge_port {struct net_bridge_vlan *v;};
 static struct net_bridge_vlan in_vlan,out_vlan;
 static struct net_bridge_port in_port={&in_vlan},out_port={&out_vlan};
 static bool vlan_filtering=true;
+static bool hw_vlan_tag=true;
+static u16 path_vid, path_proto;
 
 struct sk_buff { struct net_device *dev; struct ethhdr *mac; u8 *tail; uint16_t vlan_proto; };
 struct bridge_vlan_info { unsigned int flags; };
@@ -78,7 +80,7 @@ static bool netif_is_bridge_port(struct net_device *d) {return d->port;}
 static int br_port_get_stp_state(struct net_device *d) {return d->state;}
 static u16 vlan_dev_vlan_id(struct net_device *d) {(void)d;return 100;}
 static u16 vlan_dev_vlan_proto(struct net_device *d) {(void)d;return htons(ETH_P_8021Q);}
-static bool skb_vlan_tag_present(struct sk_buff *s) {(void)s;return true;}
+static bool skb_vlan_tag_present(struct sk_buff *s) {(void)s;return hw_vlan_tag;}
 static u16 skb_vlan_tag_get_id(struct sk_buff *s) {(void)s;return 100;}
 static bool eth_type_vlan(u16 p) {return p==htons(ETH_P_8021Q)||p==htons(ETH_P_8021AD);}
 static bool br_vlan_enabled(struct net_device *d) {(void)d;return vlan_filtering;}
@@ -86,6 +88,7 @@ static int br_vlan_get_pvid_rcu(struct net_device *d,u16 *v) {(void)d;*v=100;ret
 static int br_vlan_get_proto(struct net_device *d,u16 *v) {(void)d;*v=ETH_P_8021Q;return 0;}
 static int br_vlan_get_info_rcu(struct net_device *d,u16 v,struct bridge_vlan_info *i) {(void)d;(void)v;i->flags=0;return member?0:-1;}
 static int __dev_fill_forward_path(struct net_device_path_ctx *c,const u8 *dst,struct net_device_path_stack *s) {
+    path_vid=c->num_vlans?c->vlan[0].id:0;path_proto=c->num_vlans?c->vlan[0].proto:0;
     (void)dst;s->num_paths=2;s->path[0].type=DEV_PATH_BRIDGE;s->path[0].dev=&master;s->path[1].dev=&egress;
     c->dev=&egress;c->num_vlans=0;return 0;
 }

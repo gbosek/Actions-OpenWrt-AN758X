@@ -390,6 +390,13 @@ static void airoha_ppe_bridge_observers_unregister(struct airoha_ppe *ppe)
 '''
 
 def ppe_source(s):
+    s = replace(s, '\tconst struct vlan_ethhdr *veh;', '\t__be16 vlan_tci;')
+    s = replace(s, '\t\tveh = (const struct vlan_ethhdr *)eh;\n\t\tvid = ntohs(veh->h_vlan_TCI) & VLAN_VID_MASK;',
+                '\t\t/* skb MAC headers need not satisfy vlan_ethhdr alignment. */\n'
+                '\t\tmemcpy(&vlan_tci, (const u8 *)eh + ETH_HLEN, sizeof(vlan_tci));\n'
+                '\t\tvid = ntohs(vlan_tci) & VLAN_VID_MASK;')
+    s = replace(s, '\t\t\tctx.vlan[0].proto = veh->h_vlan_proto;',
+                '\t\t\tctx.vlan[0].proto = eh->h_proto;')
     s = replace(s, '#include <linux/if_bridge.h>', '#include <linux/if_bridge.h>\n#include <linux/netfilter.h>\n#include <linux/rtnetlink.h>\n#include <net/net_namespace.h>\n#include <net/switchdev.h>')
     s = replace(s, 'static bool\nairoha_ppe_foe_prepare_bridge_subflow', POLICY+'\nstatic bool\nairoha_ppe_foe_prepare_bridge_subflow')
     s = replace(s, '\t\t\t\t      struct airoha_foe_entry *hwe)\n{\n\tstruct net_device_path_stack stack;',

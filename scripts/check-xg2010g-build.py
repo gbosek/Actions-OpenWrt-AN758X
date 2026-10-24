@@ -12,7 +12,7 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('gbosek/luci-app-airoha', '37916c517db547da58820ee8c07c481edafe9ddd', r'^2\.0\.0-(?:r)?904$'),
+    'naoki': ('gbosek/luci-app-airoha', 'e839a0a26bbc43d62356b6c8a7da05cc1df933f7', r'^2\.0\.0-(?:r)?905$'),
     'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?102$'),
 }
 variant = meta['variant']
@@ -84,6 +84,7 @@ assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18
 driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
 driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
 assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'
+assert json.loads((installed / 'etc/phy-rtl826x-source.json').read_text()) == json.loads((repo / 'PHY-RTL826X-SOURCE.json').read_text()), 'Installed PHY provenance mismatch'
 for rel in ('usr/bin/rps-guard.sh','usr/bin/rps-watch.sh','etc/init.d/xg2010g-rps',
             'etc/hotplug.d/iface/99-rps-guard','etc/init.d/npu-jitter','usr/libexec/npu-jitter-daemon',
             'etc/uci-defaults/96-wifi-5g-cn'):

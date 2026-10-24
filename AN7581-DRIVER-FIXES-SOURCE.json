@@ -6,6 +6,15 @@
       "commit": "7e170da2edec9fb0717543571cc14b0aabee2b46",
       "url": "https://github.com/torvalds/linux/commit/7e170da2edec9fb0717543571cc14b0aabee2b46",
       "sha256": "8e74a058df65aeb3e7ad264b597435a34fe71985c42532139ef08b2a8159fa68"
+    },
+    {
+      "file": "939-net-phy-realtek-harden-rtl826x-reset.patch",
+      "commit": "76da1ee259c5804e105c3f044fcf94833608b227",
+      "url": "https://github.com/openwrt/openwrt/commit/76da1ee259c5804e105c3f044fcf94833608b227",
+      "sha256": "7dcf9b1f48416457a8224c92fb87aa183ccfbb91128fc19e84baf11759817c27",
+      "projects": [
+        "pon"
+      ]
     }
   ],
   "baselines": {
@@ -13,7 +22,8 @@
       "kernel": "6.18.55",
       "source_commit": "a57faf93c6c3638ba3651690228aabaa51d3f235",
       "apply": [
-        "934-net-airoha-retry-trtcm-configuration.patch"
+        "934-net-airoha-retry-trtcm-configuration.patch",
+        "939-net-phy-realtek-harden-rtl826x-reset.patch"
       ],
       "already_in_base": [
         "npu-watchdog-cleanup",
@@ -53,5 +63,6 @@
       "commit": "7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994",
       "url": "https://github.com/torvalds/linux/commit/7db28abbea0f7dc1ec4fdfdc149db5fbd9e4c994"
     }
-  ]
+  ],
+  "rtl826x_source": "PHY-RTL826X-SOURCE.json"
 }
