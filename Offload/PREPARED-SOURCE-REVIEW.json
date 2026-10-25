@@ -23,25 +23,26 @@
     "runtime_changes": false,
     "hardware_tested": false
   },
-  "reviewed_change": "952 resolves coarse bridge filtering, FDB/topology lifetime and effective VLAN state; correct normal/per-rootfs FIT input role verification. Board/PHY/DHCP remain retained. Alignment-safe inline VLAN parsing retains all guards; independent PHY 939 is reviewed separately.",
+  "reviewed_change": "952 resolves coarse bridge filtering, FDB/topology lifetime and effective VLAN state; correct normal/per-rootfs FIT input role verification. Board/PHY/DHCP remain retained. Alignment-safe inline VLAN parsing retains all guards; independent PHY 939 is reviewed separately.; 954 adds RCU STP accessor after runtime RTNL assertion and read-only admission diagnostics, without relaxing any guard.",
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "c0d29113ab60162fff0d433321fdf7c3419c6fc6e59d38870b41f490e7702912",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "4de0e1d6f42616651c7a0bc4eed5537a83bdf2d1b3828158cf2c27a8ba93ce75",
     "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
     "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
     "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
-    "include/linux/if_bridge.h": "c006c72ebb39a333281e0cfcd7e724aea67b4e326555f3ed280da319d1c6f54d",
+    "include/linux/if_bridge.h": "d8a9b9a988a5a96138f88b15ffe99ae6f65ac9da4892275a11378a8fc18a2cc3",
     "net/bridge/br_vlan.c": "90e45b6a9496e5282c1e548d82fd32de266290f5417f838b5ffc275dbf155fb1",
     "net/bridge/br_if.c": "efa3c5bd94f671fafe20941edb93d95258ad34156a9011ba5225c86b636a5b6d",
     "include/linux/netfilter.h": "6075c947730d6dd5f2e0c5b00f9f578c692a7fe1b976731d4eab50c0095d5649",
     "net/netfilter/core.c": "311bfd660ed106f8f5cae4fa41494fd93839fd892448b406fcf4a8d9ee54588c",
-    "drivers/net/ethernet/airoha/airoha_ppe_debugfs.c": "7d0be7c10c3c1fa0232ce8f41ff2f9f26cbbc414335394c8007d246d13a04d44"
+    "drivers/net/ethernet/airoha/airoha_ppe_debugfs.c": "34dce5473ea87404b87b5d2bc7eb5eed5d25ba1552a1a03e0759d931b0a8e025",
+    "net/bridge/br_stp.c": "65d26949eaa112f1d43273a9c7b371ac5d763db90dcf72f4732867a30f54aaa9"
   },
   "independent_replay": "gregkh/linux v6.18.55 pristine files plus fixed PonWrt a57faf9 queues and all exact local 930-952 patches; newly added patch requires fuzz=0",
   "hardware_tested": false,
   "review_fixtures": {
     "prepare_cases": {
-      "cases": 18,
+      "cases": 21,
       "failed": 0
     },
     "revoke_cases": {
@@ -53,6 +54,10 @@
       "failed": 0
     },
     "boot_gate_cases": {
+      "cases": 7,
+      "failed": 0
+    },
+    "stp_rcu_cases": {
       "cases": 7,
       "failed": 0
     },
@@ -74,5 +79,10 @@
     "fw4_default": "Only generated bridge CT/flowtable becomes opt-in; inet template output identical; all custom policy gates retained.",
     "failure": "Gate closes before owned slot revocation and opens only after successful userspace preparation; normal sysctl application continues on helper error.",
     "hardware_tested": false
+  },
+  "rcu_followup": {
+    "observed_warning": "Current shipped f724c96 firmware: RTNL assertion at br_port_get_stp_state in RX/NAPI bridge preparation",
+    "patch": 954,
+    "scope": "Fix accessor contract without relaxing bridge eligibility. BND increase and old naoki66 no-IP root cause remain unproven."
   }
 }

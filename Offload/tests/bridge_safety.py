@@ -22,7 +22,7 @@ static void run(bool expected) {
     struct sk_buff skb={.dev=&ingress,.mac=&frame,.tail=(u8*)(&frame+1),.vlan_proto=htons(ETH_P_8021Q)};
     struct airoha_foe_entry hw={0};struct airoha_ppe p={0};struct airoha_bridge_owner owner={0};
     bool actual=airoha_ppe_foe_prepare_bridge_subflow(&p,&skb,&hw,&owner);
-    if(actual!=expected || prepare_calls!=(expected?1:0)) {fprintf(stderr,"%s failed\n",case_name);exit(1);}
+    if(actual!=expected || prepare_calls!=(expected?1:0) || rcu_depth) {fprintf(stderr,"%s failed\n",case_name);exit(1);}
     if(actual && (owner.bridge_ifindex!=1 || owner.egress_ifindex!=3 || owner.vid!=(vlan_filtering?100:0) || memcmp(owner.dmac,frame.h_dest,6)))exit(2);
     cases++;
 }
@@ -47,6 +47,9 @@ int main(void) {
     reset();out_vlan.state=BR_STATE_BLOCKING;case_name="egress_mst_blocked";run(false);
     reset();out_vlan.usable=false;case_name="egress_vlan_unusable";run(false);
     reset();ingress.state=BR_STATE_BLOCKING;case_name="whole_port_stp_blocked";run(false);
+    reset();egress.state=BR_STATE_BLOCKING;case_name="egress_stp_blocked";run(false);
+    reset();ingress.port=false;case_name="missing_ingress_bridge_port";run(false);
+    reset();egress.port=false;case_name="missing_egress_bridge_port";run(false);
     reset();member=false;case_name="vlan_not_member";run(false);
     reset();egress.gdm.flags=AIROHA_PRIV_F_PON;case_name="pon_egress";run(false);
     reset();master.net=&other_net;case_name="foreign_namespace";run(false);
@@ -219,20 +222,58 @@ int main(void) {
 }
 '''
 
-def run(code):
+STP_PREFIX = r'''
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+typedef uint8_t u8;
+#define BR_STATE_DISABLED 0
+#define BR_STATE_BLOCKING 4
+#define BR_STATE_FORWARDING 3
+#define READ_ONCE(x) (x)
+static int rcu_depth,cases;
+#define RCU_LOCKDEP_WARN(condition,message) do {if(condition)abort();} while(0)
+static bool rcu_read_lock_held(void) {return rcu_depth>0;}
+struct net_bridge_port {u8 state;};
+struct net_device {bool port;struct net_bridge_port *p;};
+static struct net_bridge_port *br_port_get_check_rcu(const struct net_device *d) {return d->port?d->p:NULL;}
+#define check(x) do {cases++;if(!(x))abort();} while(0)
+'''
+STP_TESTS = r'''
+int main(int argc,char **argv) {
+ (void)argv;struct net_bridge_port port={BR_STATE_FORWARDING};struct net_device dev={true,&port};
+ if(argc>1) {br_port_get_stp_state_rcu(&dev);return 0;}
+ rcu_depth=1;check(br_port_get_stp_state_rcu(&dev)==BR_STATE_FORWARDING);
+ port.state=BR_STATE_BLOCKING;check(br_port_get_stp_state_rcu(&dev)==BR_STATE_BLOCKING);
+ port.state=BR_STATE_DISABLED;check(br_port_get_stp_state_rcu(&dev)==BR_STATE_DISABLED);
+ dev.port=false;check(br_port_get_stp_state_rcu(&dev)==BR_STATE_DISABLED);
+ dev.port=true;dev.p=NULL;check(br_port_get_stp_state_rcu(&dev)==BR_STATE_DISABLED);
+ rcu_depth--;check(rcu_depth==0);printf("{\"cases\":%d,\"failed\":0}",cases);return 0;
+}
+'''
+
+def run(code, reject_outside_rcu=False):
     with tempfile.TemporaryDirectory(prefix='bridge-safety-') as d:
         c, binary = Path(d)/'test.c', Path(d)/'test'
         c.write_text(code)
         subprocess.run(['cc','-std=gnu11','-O2','-Wall','-Wextra','-Werror',
                         '-Wno-sign-compare',str(c),'-o',str(binary)],check=True)
-        return json.loads(subprocess.check_output([str(binary)],text=True))
+        result=json.loads(subprocess.check_output([str(binary)],text=True))
+        if reject_outside_rcu:
+            rejected=subprocess.run([str(binary),'outside-rcu'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            assert rejected.returncode!=0,'RCU accessor accepted missing read-side lock in the contract fixture'
+            result['cases']+=1
+        return result
 
 def check(kernel, extract):
     ppe=(kernel/'drivers/net/ethernet/airoha/airoha_ppe.c').read_text()
     vlan=(kernel/'net/bridge/br_vlan.c').read_text()
+    stp=extract((kernel/'net/bridge/br_stp.c').read_text(),'br_port_get_stp_state_rcu')
     prepare='\n'.join(extract(ppe,n) for n in ['airoha_ppe_bridge_has_filter',
                        'airoha_ppe_bridge_policy_allows','airoha_ppe_foe_prepare_bridge_subflow'])
-    prep=run((HERE/'bridge-fixture.h').read_text()+extract(vlan,'br_vlan_is_forwarding_rcu')+prepare+PREPARE_TESTS)
+    prep=run((HERE/'bridge-fixture.h').read_text()+stp+extract(vlan,'br_vlan_is_forwarding_rcu')+prepare+PREPARE_TESTS)
+    stp_read=run(STP_PREFIX+stp+STP_TESTS,reject_outside_rcu=True)
     revoke='\n'.join(extract(ppe,n) for n in ['airoha_ppe_bridge_invalidate_slot',
                      'airoha_ppe_bridge_revoke','airoha_ppe_bridge_nf_event',
                      'airoha_ppe_bridge_switchdev_event'])
@@ -276,5 +317,5 @@ int main(void){
     worker=extract(ppe,'airoha_ppe_bridge_topology_work')
     assert worker.index('br_offload_state_sync(dev)')<worker.index('ppe->bridge_topology_blocked = false')
     assert 'generation != ppe->bridge_generation' in worker and 'rtnl_trylock()' in worker
-    return {'prepare_cases':prep,'revoke_cases':revoked,'rx_gate_cases':rx,'boot_gate_cases':gate,
+    return {'prepare_cases':prep,'revoke_cases':revoked,'rx_gate_cases':rx,'boot_gate_cases':gate,'stp_rcu_cases':stp_read,
             'scope':'Actual prepared eligibility/VLAN/revoke/notifier functions with host kernel models; generation/publication ordering also inspected. Not hardware or complete Linux packet-path validation.'}

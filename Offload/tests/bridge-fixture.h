@@ -13,6 +13,7 @@ typedef uint8_t u8;
 #define READ_ONCE(x) (x)
 #define BR_STATE_FORWARDING 3
 #define BR_STATE_BLOCKING 4
+#define BR_STATE_DISABLED 0
 #define BR_ISOLATED (1U << 16)
 #define AIROHA_PRIV_F_PON 1
 #define PPE_PKT_TYPE_BRIDGE 2
@@ -42,9 +43,9 @@ static bool net_eq(struct net *a,struct net *b) {return a==b;}
 #define rcu_dereference(x) (x)
 #define rcu_access_pointer(x) (x)
 struct net_bridge_vlan {bool usable;int state;};
-struct net_bridge_port {struct net_bridge_vlan *v;};
+struct net_bridge_port {struct net_bridge_vlan *v;u8 state;};
 static struct net_bridge_vlan in_vlan,out_vlan;
-static struct net_bridge_port in_port={&in_vlan},out_port={&out_vlan};
+static struct net_bridge_port in_port={.v=&in_vlan},out_port={.v=&out_vlan};
 static bool vlan_filtering=true;
 static bool hw_vlan_tag=true;
 static u16 path_vid, path_proto;
@@ -61,7 +62,11 @@ static struct net_device master, ingress, egress;
 static bool member;
 static int prepare_calls;
 static const char *case_name;
-static struct net_bridge_port *br_port_get_check_rcu(const struct net_device *d) {return d==&ingress?&in_port:d==&egress?&out_port:NULL;}
+static struct net_bridge_port *br_port_get_check_rcu(const struct net_device *d) {
+    struct net_bridge_port *p=d->port?(d==&ingress?&in_port:d==&egress?&out_port:NULL):NULL;
+    if(p)p->state=d->state;
+    return p;
+}
 static struct net_bridge_port *nbp_vlan_group_rcu(struct net_bridge_port *p) {return p;}
 static struct net_bridge_vlan *br_vlan_find(struct net_bridge_port *p,u16 vid) {return member&&vid==100?p->v:NULL;}
 static bool br_vlan_should_use(struct net_bridge_vlan *v) {return v->usable;}
@@ -71,13 +76,17 @@ static struct ethhdr *eth_hdr(struct sk_buff *s) {return s->mac;}
 static u8 *skb_tail_pointer(struct sk_buff *s) {return s->tail;}
 static bool airoha_ppe_foe_bridge_control(struct sk_buff *s) {(void)s;return false;}
 static void ether_addr_copy(u8 *a,const u8 *b) {memcpy(a,b,6);}
-static void rcu_read_lock(void) {}
-static void rcu_read_unlock(void) {}
+static int rcu_depth;
+static void rcu_read_lock(void) {rcu_depth++;}
+static void rcu_read_unlock(void) {if(--rcu_depth<0)abort();}
+static bool rcu_read_lock_held(void) {return rcu_depth>0;}
+#define RCU_LOCKDEP_WARN(condition,message) do {if(condition)abort();} while(0)
 static struct net_device *airoha_ppe_foe_get_bridge_master_rcu(struct net_device *d) {(void)d;return &master;}
 static bool is_vlan_dev(struct net_device *d) {(void)d;return false;}
 static struct net_device *vlan_dev_real_dev(struct net_device *d) {return d;}
 static bool netif_is_bridge_port(struct net_device *d) {return d->port;}
-static int br_port_get_stp_state(struct net_device *d) {return d->state;}
+/* A future RTNL-only call in the real RX body must fail this fixture. */
+#define br_port_get_stp_state(d) (abort(), BR_STATE_DISABLED)
 static u16 vlan_dev_vlan_id(struct net_device *d) {(void)d;return 100;}
 static u16 vlan_dev_vlan_proto(struct net_device *d) {(void)d;return htons(ETH_P_8021Q);}
 static bool skb_vlan_tag_present(struct sk_buff *s) {(void)s;return hw_vlan_tag;}

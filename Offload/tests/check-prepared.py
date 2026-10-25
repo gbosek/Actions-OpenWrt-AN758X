@@ -7,7 +7,7 @@ sys.path.insert(0, str(REPO/'scripts'))
 from check_ppe_functions import find_kernel, check as old_regressions
 
 def function(text, name):
-    m = re.search(r'^(?:static\s+)?(?:bool|void|int|struct net_device \*)[\s\n]*'+re.escape(name)+r'\([^;]*?\)\s*\{', text, re.M)
+    m = re.search(r'^(?:static\s+)?(?:bool|void|int|u8|struct net_device \*)[\s\n]*'+re.escape(name)+r'\([^;]*?\)\s*\{', text, re.M)
     assert m, name
     i = m.end(); depth = 1
     while depth:
@@ -149,7 +149,7 @@ def check(kernel, compiled=False, images=None):
     result['patches'] = metadata['patches']
     if compiled:
         result['compiled_objects'] = {}
-        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o','net/netfilter/core.o','net/bridge/br_vlan.o','net/bridge/br_if.o']:
+        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o','net/netfilter/core.o','net/bridge/br_vlan.o','net/bridge/br_if.o','net/bridge/br_stp.o']:
             raw=(kernel/n).read_bytes();assert raw[:4]==b'\x7fELF' and raw[18:20]==b'\xb7\0', n
             result['compiled_objects'][n]=hashlib.sha256(raw).hexdigest()
         for name,symbol in [('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_flowtable_ref'),('drivers/net/ethernet/airoha/airoha_eth.o',' U airoha_ppe_flowtable_ref'),('net/core/dev.o',' T __dev_fill_forward_path'),
@@ -162,6 +162,10 @@ def check(kernel, compiled=False, images=None):
                             ('net/bridge/br_vlan.o',' T br_vlan_is_forwarding_rcu'),
                             ('net/bridge/br_if.o',' T br_offload_state_sync')]:
             assert symbol in subprocess.check_output(['nm',str(kernel/name)],text=True), name
+        symbols=subprocess.check_output(['nm',str(kernel/'drivers/net/ethernet/airoha/airoha_ppe.o')],text=True)
+        assert ' U br_port_get_stp_state_rcu' in symbols
+        assert not re.search(r' U br_port_get_stp_state$',symbols,re.M),'RX still links the RTNL-only accessor'
+        assert ' T br_port_get_stp_state_rcu' in subprocess.check_output(['nm',str(kernel/'net/bridge/br_stp.o')],text=True)
         image=kernel.parent/'Image'
         result['kernel_image_sha256']=hashlib.sha256(image.read_bytes()).hexdigest() if image.is_file() else None
         result['kernel_image_role']='KDIR/Image: normal sysupgrade input, not mutable arch/arm64/boot/Image'

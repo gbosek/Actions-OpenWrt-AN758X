@@ -1,0 +1,83 @@
+Subject: [PATCH] net: bridge: provide RCU STP state for Airoha PPE RX
+
+RX/NAPI holds RCU, not RTNL. Keep STP checks while avoiding the RTNL-only
+accessor. Export existing admission fences read-only for runtime diagnosis.
+
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -83,6 +83,18 @@
+ 	return p->state;
+ }
+ EXPORT_SYMBOL_GPL(br_port_get_stp_state);
++
++/* RX callers cannot acquire RTNL. The bridge port lifetime is RCU protected. */
++u8 br_port_get_stp_state_rcu(const struct net_device *dev)
++{
++	struct net_bridge_port *p;
++
++	RCU_LOCKDEP_WARN(!rcu_read_lock_held(),
++			"br_port_get_stp_state_rcu() requires RCU");
++	p = br_port_get_check_rcu(dev);
++	return p ? READ_ONCE(p->state) : BR_STATE_DISABLED;
++}
++EXPORT_SYMBOL_GPL(br_port_get_stp_state_rcu);
+ 
+ /* called under bridge lock */
+ struct net_bridge_port *br_get_port(struct net_bridge *br, u16 port_no)
+--- a/include/linux/if_bridge.h
++++ b/include/linux/if_bridge.h
+@@ -186,6 +186,7 @@
+ void br_fdb_clear_offload(const struct net_device *dev, u16 vid);
+ bool br_port_flag_is_set(const struct net_device *dev, unsigned long flag);
+ u8 br_port_get_stp_state(const struct net_device *dev);
++u8 br_port_get_stp_state_rcu(const struct net_device *dev);
+ void br_offload_state_sync(const struct net_device *dev);
+ clock_t br_get_ageing_time(const struct net_device *br_dev);
+ #else
+@@ -214,6 +215,11 @@
+ 	return BR_STATE_DISABLED;
+ }
+ 
++static inline u8 br_port_get_stp_state_rcu(const struct net_device *dev)
++{
++	return BR_STATE_DISABLED;
++}
++
+ static inline clock_t br_get_ageing_time(const struct net_device *br_dev)
+ {
+ 	return 0;
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -1270,7 +1270,7 @@
+ 	 * prove STP/isolation eligibility in this early RX hook.
+ 	 */
+ 	if (!netif_is_bridge_port(ingress) ||
+-	    br_port_get_stp_state(ingress) != BR_STATE_FORWARDING)
++	    br_port_get_stp_state_rcu(ingress) != BR_STATE_FORWARDING)
+ 		goto out;
+ 	ctx.dev = master;
+ 	if (is_vlan_dev(skb->dev)) {
+@@ -1321,7 +1321,7 @@
+ 	    !netif_running(egress) ||
+ 	    !netif_carrier_ok(egress) ||
+ 	    airoha_ppe_foe_get_bridge_master_rcu(egress) != master ||
+-	    br_port_get_stp_state(egress) != BR_STATE_FORWARDING ||
++	    br_port_get_stp_state_rcu(egress) != BR_STATE_FORWARDING ||
+ 	    (br_port_flag_is_set(ingress, BR_ISOLATED) &&
+ 	     br_port_flag_is_set(egress, BR_ISOLATED)))
+ 		goto out;
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -198,6 +198,12 @@
+ 	seq_printf(m, "npu_attached: %u\n",
+ 		   !!rcu_access_pointer(eth->npu));
+ 	seq_printf(m, "flow_stats_cap: %u\n", ppe->flow_stats_cap);
++	/* Independent read-only state samples, not an atomic admission decision. */
++	seq_printf(m, "bridge_boot_ready: %u\n", READ_ONCE(ppe->bridge_boot_ready));
++	seq_printf(m, "bridge_flowtable_refs: %u\n", READ_ONCE(ppe->bridge_ft_refs));
++	seq_printf(m, "bridge_policy_blocked: %u\n", READ_ONCE(ppe->bridge_policy_blocked));
++	seq_printf(m, "bridge_topology_blocked: %u\n", READ_ONCE(ppe->bridge_topology_blocked));
++	seq_printf(m, "bridge_fallback_fault: %u\n", READ_ONCE(ppe->bridge_fallback_fault));
+ 	seq_printf(m, "gdm2_fwd_cfg: %08x\n",
+ 		   airoha_fe_rr(eth, REG_GDM_FWD_CFG(AIROHA_GDM2_IDX)));
+ 	seq_printf(m, "fe_wan_port: %08x\n",

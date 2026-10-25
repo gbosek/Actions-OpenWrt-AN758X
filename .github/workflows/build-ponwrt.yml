@@ -1,5 +1,5 @@
 name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 + guarded BND + EIP93 crypto/devcrypto + NPU UI r907 - naoki and luanmuc
+run-name: XG2010G 6.18.55 + RCU bridge STP fix and offload diagnostics + EIP93 + NPU UI r907 - naoki and luanmuc
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -947,6 +947,7 @@ jobs:
             echo "本轮移植 VLAN-aware bridge cache-miss 补充绑定、native L2B key 保护、硬件 flowtable 门控与解绑清理，保留原网口/DHCP/设备树及 NPU 1456，RTL826x 补回上游型号匹配、多速率 EEE 和 150ms 内部复位等待。编译对象与实际函数验证见 NAOKI-OFFLOAD-VERIFICATION.json；BND 数量不代表卸载流量率。"
             echo "本轮修正默认桥接卸载集成：额外 bridge CT/flowtable 显式启用，br_netfilter 按需加载；953 启动门控在准备成功前保持关闭。保留 inet 防火墙和全部949–952保护，文件证据见 BRIDGE-DEFAULTS-VERIFICATION.json。首次实机需核验门控及实际 BND，不以离线检查宣称增幅。"
             echo "加入原生 Airoha EIP93 加密驱动、cryptodev、OpenSSL 工具与动态 devcrypto 引擎；保留 stock DIGESTS=NONE，实际模块/引擎与内核 ABI 检查见 EIP93-BUILD-VERIFICATION.json。这是独立加密功能，不以此宣称 PPE BND 增加。"
+            echo "954 修复实机发现的 RX/NAPI 桥接路径调用 RTNL-only STP 读取接口问题，使用 RCU 接口并保留全部 STP/VLAN/过滤/生命周期保护；PPE config 新增只读准入门控状态。113项实际函数断言和9个ARM64对象核对见 NAOKI-OFFLOAD-VERIFICATION.json；不据此承诺 BND 数字增加或已修复另一固件未知失联。"
             echo "naoki LuCI 纳入逐核占用率历史和 aui.legend 缺失回退；不更新无关 ONU/PON 业务配置。此构建尚未完成实机稳定性验证，不能据此宣称已修复另一固件的未知 10G 失联原因。"
             echo "PON fullwidth-v2：独立布局、正常字号、Aurora/Argon 桌面和手机实样式验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
             echo "包含上游 059895c 有用修复：SRAM 失败传递对齐上游；QDMA 重试、BQL、分片 DMA、MTU 与 MIB 修复复用已有等效实现，防止重复。看门狗及 RX31 修复由 6.18.55 原生提供。来源及实际源码检查见 UPSTREAM-059895-*.json。"
