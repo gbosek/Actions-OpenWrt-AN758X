@@ -16,6 +16,7 @@ assert 'XG2010G' in (installed/'etc/uci-defaults/98-xg2010g-display-name').read_
 for name in ['xg2010g-dnsmasq-log-guard','rpcd/luci.airoha_npu','clients-probe','clients-dns']:
     path=installed/'usr/libexec'/name;assert path.is_file() and path.stat().st_mode&0o111,name
 assert '/usr/libexec/xg2010g-dnsmasq-log-guard || return 1' in (installed/'etc/init.d/dnsmasq').read_text()
+assert (installed/'usr/bin/pushbot/package_manager.sh').is_file(), 'Pushbot sourced package manager helper missing'
 for name in ['timewol','watchcat','ddns','pbr','udpxy','msd_lite','upnp']:
     assert any(name in p.name for p in (installed/'usr/share/luci/menu.d').glob('*.json')) or (installed/'usr/lib/lua/luci/controller'/ (name+'.lua')).exists(),name
 print('Verified requested plugin/backends, XG2010G brand, pre-start DHCP log guard and inactive Watchcat default')
