@@ -38,5 +38,12 @@
     "Compact PPE header count pills with no wrapping",
     "Upstream 2026-10-26 EIP93/PPE/NPU parallel cards and compact headings",
     "0fa3530 first-boot RPC registration self-heal"
-  ]
+  ],
+  "crypto_display": {
+    "mode": "upstream algorithm-derived active sessions",
+    "formula": "sum(max(0, algorithm refcnt - 1)) for matched EIP93 blocks",
+    "live_router_backend_sha256": "c2448ba93a248f7af1c5ab5e488ee328b1200e35677283b2a595cce9843e68b7",
+    "verified_against_current_router": true,
+    "not_a_hardware_utilization_counter": true
+  }
 }

@@ -14,10 +14,14 @@ def awk(code,data):
     return subprocess.check_output(['awk',code],input=data,text=True).strip()
 assert awk(irq,' 12: 10 20 30 40 GICv3 44 Level 1fb70000.crypto\n')=='100'
 assert awk(irq,' 12: 10 20 30 40 GICv3 44 Level unrelated\n')==''
-assert awk(crypto,'name : cbc(aes)\ndriver : cbc-aes-eip93\nrefcnt : 1\n\nname : sha256\ndriver : sha256-generic\nrefcnt : 999\n')=='1|1'
-assert awk(crypto,'name : sha256\ndriver : sha256-generic\nrefcnt : 999\n')=='0|0'
+assert awk(crypto,'name : cbc(aes)\ndriver : cbc-aes-eip93\nrefcnt : 1\n\nname : sha256\ndriver : sha256-generic\nrefcnt : 999\n')=='1|1|0'
+assert awk(crypto,'name : sha256\ndriver : sha256-generic\nrefcnt : 999\n')=='0|0|0'
+# User-selected current-firmware derivation: subtract baseline per matching block.
+assert awk(crypto,'name : cbc(aes)\ndriver : cbc-aes-eip93\nrefcnt : 4\n\nname : sha256\ndriver : sha256-generic\nrefcnt : 999\n')=='1|4|3'
+assert awk(crypto,'name : cbc(aes)\ndriver : cbc-aes-eip93\nrefcnt : 1\n\nname : ctr(aes)\ndriver : ctr-aes-eip93\nrefcnt : 3\n')=='2|4|2'
+assert awk(crypto,'name : cbc(aes)\ndriver : cbc-aes-eip93\nrefcnt : 0\n')=='1|0|0'
 js=(root/'htdocs/luci-static/resources/view/airoha_npu/status.js').read_text()
-assert "_('Algorithm references')" in js and "_('In use')" not in js
+assert "_('Active sessions')" in js and "_('Algorithm references')" not in js
 assert "latestPpeSplit = (typeof ppe.ppe1 !== 'undefined' || typeof ppe.zero_l2 !== 'undefined') ? ppe : null" in js
 # Execute real frontend delta logic and register-to-JSON helpers with host fixtures.
 m=re.search(r"function cdmDeltaShare\(c\) \{.*?^\}",js,re.M|re.S);assert m
@@ -74,4 +78,4 @@ for parser in parsers:
     if a.runtime_parser and parser==a.runtime_parser:
         page=json.loads(subprocess.check_output(['awk','-v','limit=1','-v','offset=2','-f',str(parser)],input=source,text=True))
         assert page['total']==5 and page['entries'][0]['index']=='2000' and page['ppe1']==2 and page['has_more']
-print(json.dumps({'crypto_probes':'passed','irq_cpu_columns_only':True,'references_not_sessions':True,'pse_peak_measured_zero_and_failure':'passed','parser_count':len(parsers),'full_scan_split_and_u64':'passed','pagination_preserved':bool(a.runtime_parser),'hardware_tested':False}))
+print(json.dumps({'crypto_probes':'passed','irq_cpu_columns_only':True,'upstream_derived_sessions_matches_live_firmware':True,'pse_peak_measured_zero_and_failure':'passed','parser_count':len(parsers),'full_scan_split_and_u64':'passed','pagination_preserved':bool(a.runtime_parser),'hardware_tested':False}))

@@ -46,3 +46,10 @@ from other runs are preserved. Actual timing gains require CI evidence.
 
 This branch builds the requested naoki UI image; no router is flashed or
 reconfigured, and no shutdown or recurring monitor is enabled.
+
+Per the user's final selection, EIP93 keeps the current router/upstream
+algorithm-derived "Active sessions" display. The old two-field probe fixture
+is updated to validate the three fields, per-block baseline subtraction,
+zero clipping and exclusion of unrelated software algorithms. It is still a
+derived indicator, not measured hardware utilization or crypto throughput.
+PSE register read failure remains null rather than a fabricated zero.
