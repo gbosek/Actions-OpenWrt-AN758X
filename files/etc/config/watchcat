@@ -1,0 +1,2 @@
+# No automatic reboot/watchdog rule on first install.
+# Add a rule and enable the service explicitly in Services / Watchcat.

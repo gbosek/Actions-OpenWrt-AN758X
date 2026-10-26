@@ -1,0 +1,47 @@
+{
+  "kernel": "6.18.55",
+  "retained_base_commit": "80e27f7d4d00507ac82d008569f92c8288af52ee",
+  "upstream": "openwrt/openwrt",
+  "commits": [
+    {
+      "sha": "279704475c3311030e4bb68f4722ba9544fe91d7",
+      "local_patch": 955,
+      "purpose": "Revoke direct-xmit flow when FDB destination moves",
+      "adaptation": "Context retains existing tuple dscp field; execution unchanged"
+    },
+    {
+      "sha": "1b90dab6216e8b8d254bf6edd80d04b6673cfad1",
+      "local_patch": 956,
+      "purpose": "Advertise VLAN/CVLAN match keys to drivers"
+    },
+    {
+      "sha": "9e692c0e7b52334245a65e2009464238a3b112ab",
+      "local_patch": 957,
+      "purpose": "Preserve flowtable priority with Airoha/MTK action compatibility",
+      "scope": "mlx5 companion excluded: CONFIG_MLX5 disabled on XG2010G"
+    }
+  ],
+  "patches": [
+    {
+      "file": "955-netfilter-flowtable-revoke-moved-bridge-destinations.patch",
+      "sha256": "6fe7a47540fcc2f42a404115b0201647a877eba0423d48c5b51cc4c3ac425933"
+    },
+    {
+      "file": "956-netfilter-flowtable-advertise-vlan-match.patch",
+      "sha256": "f0e452233a0704d69c76a1b025224ffa4d92ddc1b0234e95ad6d980d44cd6843"
+    },
+    {
+      "file": "957-netfilter-flowtable-preserve-priority.patch",
+      "sha256": "1f7a5222f62cd5362f90567945a93c86202015f66025b281919a0cbafb432dd9"
+    }
+  ],
+  "npu_firmware": "1456-62 unchanged",
+  "binding_thresholds": "unchanged",
+  "ageing": "unchanged",
+  "board_phy_layout": "retained",
+  "excluded": [
+    "Bulk pbs05 driver/PCS/PON/LRO merge changes baseline/API",
+    "706 forward-path WiFi API refactor not needed on radio-free board"
+  ],
+  "hardware_tested": false
+}

@@ -289,8 +289,8 @@ msgstr "空闲"
 msgid "Idle"
 msgstr "空闲"
 
-msgid "Algorithm references"
-msgstr "算法引用数"
+msgid "In use"
+msgstr "使用中"
 
 msgid "Index"
 msgstr "索引"
@@ -486,9 +486,6 @@ msgstr "暂停"
 
 msgid "Peak"
 msgstr "峰值"
-
-msgid "Per-band airtime efficiency, negotiated and expected rates, failure counts and BND/UNB ownership."
-msgstr "每频段的空口效率、协商与期望速率、失败计数以及 BND/UNB 归属。"
 
 msgid "Physical Bottleneck"
 msgstr "物理瓶颈"
@@ -796,14 +793,8 @@ msgstr "状态"
 msgid "PHY / Expected"
 msgstr "协商 / 预期速率"
 
-msgid "Switches here apply the hardware offload settings for this device."
-msgstr "此处开关用于应用本设备的硬件卸载设置。"
-
 msgid "Frame Engine"
 msgstr "帧引擎"
-
-msgid "Register-level counters for the GDM data MACs and CDM DMA engines."
-msgstr "直接读取帧引擎寄存器，显示 GDM 数据 MAC 与 CDM DMA 引擎计数。"
 
 msgid "GDM Ports"
 msgstr "GDM 端口"
@@ -837,12 +828,6 @@ msgstr "硬件快速路径"
 
 msgid "HW fast dropped"
 msgstr "硬件快速路径丢弃"
-
-msgid "TSO queue"
-msgstr "TSO 队列"
-
-msgid "TSO dropped"
-msgstr "TSO 丢弃"
 
 msgid "Per-CPU RX"
 msgstr "各 CPU 接收"
@@ -882,3 +867,9 @@ msgstr "已发送"
 
 msgid "CPU Usage History"
 msgstr "CPU 占用率历史"
+
+msgid "Active sessions"
+msgstr "活跃会话"
+
+msgid "Cumulative IRQs"
+msgstr "加速累计"

@@ -8,83 +8,102 @@
 'require uci';
 
 /*
- * PON 光模块 + 端口速率，Status -> Overview 的一个 include 块。
+ * PON status card for the status overview page.
  *
- * 光模块读数（收发光功率 / 温度 / 偏置电流 / 供电电压）来自
- * `/usr/sbin/ponctl status --json` 的 frontend 段，沿用本包原有的实现。
+ * view/status/index.js scans view/status/include/ and renders every *.js file
+ * it finds there, ordered by file name. This file is named 29a_pon.js so that
+ * it sorts between 29_ports.js (port status) and 30_network.js (network),
+ * which is where the card belongs. No patch to luci-mod-status is required.
  *
- * 端口速率自己采：相邻两次采样的 {rx,tx}_bytes 差值除以实际经过的时间，
- * 单位 MiB/s（1024*1024 bytes/s）。
- * 「Pon 端口速率」卡一致（上行取 tx、下行取 rx）。上行/下行两行紧凑显示在
- * 光模块读数右侧，不再使用大面积底色面板。
+ * Data sources (Airoha PON userspace stack):
+ *   uci pon                 xpon sections name the PON netdev of each line
+ *   ponctl --json           line state and optical frontend readings
+ *   ubus network.device     byte counters for the port rates (sysfs fallback)
  *
- * 连接数（TCP/UDP 总数 + [HW_OFFLOAD] 硬件卸载子集）由 helper 脚本给出，
- * 显示在 itemlist 下方的分隔线下一行。
- *
- * 数据源按优先级：
- *
- *   1) ubus `network.device status` —— LuCI 接口状态页本来就在用的调用，
- *      由 luci-base 的 luci-base-network-status ACL 组授权，返回值里每个
- *      设备名下都带 statistics（含 rx_bytes/tx_bytes）。pon0 在 sysfs 里
- *      是个符号链接，rpcd 的 file.read ACL 匹配走的是解析后的真实路径，
- *      "net/*" 这种通配根本批不下来（在 ponwrt 上实测：
- *      设备上的 ACL 文件正确、rpcd 已重启、重新登录，cat 能读，
- *      LuCI 里 file.read 仍被拒），所以 sysfs 直读只能当备胎。
- *
- *   2) sysfs /sys/class/net/<device>/statistics/{rx,tx}_bytes 直读
- *      （本包 ACL 授权）。只有在 ubus 那边拿不到该设备统计时才用它。
- *
- * 来源按端口缓存；临时失败后允许重新探测，避免一个端口影响其他端口。
- *
- * 采样点按 device 分开存。第一次没有历史采样，速率显示不可用；
- * 下次轮询再用真实时间差计算，不为速率延迟首屏。
- *
- * 计数回绕 / 接口重启会让差值变成负数，那种情况判定为无效读数
- * （返回 null），不显示一个假的尖峰。
+ * When no xpon section carries a device, the pon config is missing, or
+ * ponctl is unavailable on every line, load() rejects and the overview page
+ * hides the whole card - that is what keeps non-PON devices free of an empty
+ * section.
  */
 
-/* device -> 上一次 { rx, tx, t(ms) } */
-var prevNet = Object.create(null);
+var PONCTL = '/usr/sbin/ponctl';
 
-/* 按端口缓存来源；临时读取失败后重新探测：'ubus' 或 'sysfs' */
-var statsSource = Object.create(null);
-
-/* 连接数 helper：数 /proc/net/nf_conntrack 里的 TCP/UDP 条目及 [HW_OFFLOAD]
- * 子集。必须走 helper —— 该文件是 st_size 为 0 的伪文件，rpcd 的 file.read
- * 只读得回前 4 KiB。
- * 注意是「经 /bin/sh 调起」而不是直接 exec：rpcd 的 file.exec 要求目标有
- * 可执行位，而这个位在「Windows zip 打包 -> 各种解压/拷贝」的链路上反复
- * 丢失（0.4.1 的 Build/Prepare chmod 和 postinst chmod 在部分 SDK/固件上
- * 都不生效）。sh 读脚本内容不要求脚本本身可执行，ACL 用带参数的精确
- * 匹配 "/bin/sh /usr/sbin/ponstat-conn" 只放行这一条命令。 */
-var CONNSTAT = '/usr/sbin/ponstat-conn';
+var prevRates = {};
+var statsSource = null;
 
 var callDeviceStatus = rpc.declare({
 	object: 'network.device',
 	method: 'status'
 });
 
-function readFrontend(device) {
-	var args = (device != null && device !== '')
-		? [ '--device', device, 'status', '--json' ]
-		: [ 'status', '--json' ];
+/*
+ * Colors are never hardcoded on text: every value inherits the theme text
+ * color (Argon: --text-color, light #525f7f / dark #ccc) and the heads use
+ * the ifacebox-head pair (--iface-head-bg / --iface-head-text), exactly like
+ * the network port cards in 29_ports.js. Secondary text is muted with
+ * opacity instead of a fixed grey so it follows light/dark themes.
+ */
 
-	return L.resolveDefault(fs.exec_direct('/usr/sbin/ponctl', args), null).then(function(output) {
+var LIFECYCLE_LABEL = {
+	'operational': '在线',
+	'wait-optical-signal': '无光',
+	'wait-line-sync': '同步中',
+	'protocol-activating': '注册中',
+	'pma-configured': 'PMA 就绪',
+	'stopped': '已停用',
+	'error': '故障'
+};
+
+var ONU_STATES = {
+	'O1': { zh: '初始状态', en: 'Initial-state', severity: 'muted' },
+	'O2': { zh: '待机状态', en: 'Standby-state', severity: 'muted' },
+	'O3': { zh: '序列号状态', en: 'Serial-number-state', severity: 'warning' },
+	'O4': { zh: '测距状态', en: 'Ranging-state', severity: 'warning' },
+	'O5': { zh: '运行状态', en: 'Operation-state', severity: 'success' },
+	'O6': { zh: 'POPUP 状态', en: 'POPUP-state', severity: 'warning' },
+	'O7': { zh: '紧急停止状态', en: 'Emergency-stop-state', severity: 'error' }
+};
+
+var BADGE_BG = {
+	error: '#d9534f',
+	warning: '#f0ad4e',
+	success: '#5cb85c',
+	muted: '#8a8a8a'
+};
+
+var WAVELENGTHS = {
+	'gpon': [ '1310', '1490' ],
+	'xgpon': [ '1270', '1577' ],
+	'xgspon': [ '1270', '1577' ],
+	'epon-1g': [ '1310', '1310' ],
+	'epon-10g-1g': [ '1270', '1577' ],
+	'epon-10g-10g': [ '1270', '1577' ]
+};
+
+function readFrontend(device) {
+	return L.resolveDefault(fs.exec_direct(PONCTL,
+		[ '--device', device, 'status', '--json' ]), null).then(function(output) {
 		if (!output)
-			return { error: _('读取失败（设备不可用）') };
+			return null;
 
 		try {
 			var snapshot = JSON.parse(output);
+
 			if (snapshot.schema_version !== 1)
 				throw new Error('unsupported schema');
-			return L.isObject(snapshot.frontend) ? snapshot.frontend : {};
-		} catch (e) {
-			return { error: _('解析失败') };
+
+			return {
+				line: L.isObject(snapshot.line) ? snapshot.line : {},
+				frontend: L.isObject(snapshot.frontend) ? snapshot.frontend : {},
+				registration: L.isObject(snapshot.registration) ? snapshot.registration : {}
+			};
+		}
+		catch (e) {
+			return null;
 		}
 	});
 }
 
-/* 备用：sysfs 直读一次采样。接口不存在 / ACL 被拒时返回 null */
 function sampleSysfs(device) {
 	var base = '/sys/class/net/' + device + '/statistics';
 
@@ -101,13 +120,10 @@ function sampleSysfs(device) {
 	});
 }
 
-/* 主：ubus network.device status。调用失败或没有该设备的统计 -> null */
 function sampleUbus(device) {
 	return L.resolveDefault(callDeviceStatus(), null).then(function(res) {
-		var dev = (L.isObject(res) && L.isObject(res[device]))
-			? res[device] : null;
-		var st = (dev != null && L.isObject(dev.statistics))
-			? dev.statistics : null;
+		var dev = (L.isObject(res) && L.isObject(res[device])) ? res[device] : null;
+		var st = (dev != null && L.isObject(dev.statistics)) ? dev.statistics : null;
 		var rx = (st != null) ? parseInt(st.rx_bytes) : NaN;
 		var tx = (st != null) ? parseInt(st.tx_bytes) : NaN;
 
@@ -118,32 +134,25 @@ function sampleUbus(device) {
 	});
 }
 
-/* 一次采样：先 ubus，拿不到该设备统计时退回 sysfs；都不行 -> null */
 function sampleNet(device) {
-	if (statsSource[device] == 'sysfs')
-		return sampleSysfs(device).then(function(cur) {
-			if (cur != null)
-				return cur;
-			delete statsSource[device];
-			return sampleUbus(device);
-		});
+	if (statsSource == 'sysfs')
+		return sampleSysfs(device);
 
 	return sampleUbus(device).then(function(cur) {
 		if (cur != null) {
-			statsSource[device] = 'ubus';
+			statsSource = 'ubus';
 			return cur;
 		}
 
 		return sampleSysfs(device).then(function(cur2) {
 			if (cur2 != null)
-				statsSource[device] = 'sysfs';
+				statsSource = 'sysfs';
 
 			return cur2;
 		});
 	});
 }
 
-/* 计数回绕 / 接口重启会算出巨大的假速率，那种情况返回 null */
 function netRate(from, to) {
 	var dt = (to.t - from.t) / 1000.0;
 
@@ -151,53 +160,21 @@ function netRate(from, to) {
 		return null;
 
 	return {
-	rx: (to.rx - from.rx) / 1048576 / dt,
-	tx: (to.tx - from.tx) / 1048576 / dt
+		rx: (to.rx - from.rx) * 8 / 1048576 / dt,
+		tx: (to.tx - from.tx) * 8 / 1048576 / dt
 	};
 }
 
-/* 连接数：一次 helper exec 拿 TCP/UDP 总数与硬件卸载子集，不可用 -> null */
-function readConns() {
-	return L.resolveDefault(fs.exec('/bin/sh', [ CONNSTAT ]), null).then(function(res) {
-		var vals = {},
-		    lines = ((res && res.stdout) || '').split('\n'),
-		    i, m;
-
-		for (i = 0; i < lines.length; i++) {
-			m = lines[i].match(/^([a-z0-9_]+)=(\d+)$/);
-
-			if (m)
-				vals[m[1]] = parseInt(m[2]);
-		}
-
-		if (typeof(vals.tcp_total) != 'number' &&
-		    typeof(vals.udp_total) != 'number')
-			return null;
-
-		function pair(total, npu) {
-			return (typeof(total) == 'number')
-				? { total: total, npu: (typeof(npu) == 'number') ? npu : 0 }
-				: null;
-		}
-
-		return { tcp: pair(vals.tcp_total, vals.tcp_npu),
-		         udp: pair(vals.udp_total, vals.udp_npu) };
-	});
-}
-
-/* { rx, tx }，单位 MiB/s；计数读不到 -> { error: true }（多半是 ACL 没生效
- * 或接口不存在），采样有效但差分无效（回绕/重启）-> null */
 function readRate(device) {
 	return sampleNet(device).then(function(cur) {
 		if (cur == null) {
-			/* 读不到计数 —— 以后也采不到，别留着旧采样 */
-			delete prevNet[device];
+			delete prevRates[device];
 			return { error: true };
 		}
 
-		var prev = prevNet[device];
+		var prev = prevRates[device];
 
-		prevNet[device] = cur;
+		prevRates[device] = cur;
 
 		if (prev != null) {
 			var r = netRate(prev, cur);
@@ -206,170 +183,477 @@ function readRate(device) {
 				return r;
 		}
 
-		/* 无历史样本时不等待；下一轮用实际经过的时间计算速率。 */
-		return null;
+		return new Promise(function(resolve) {
+			window.setTimeout(function() {
+				sampleNet(device).then(function(cur2) {
+					if (cur2 == null) {
+						delete prevRates[device];
+						resolve({ error: true });
+						return;
+					}
+
+					prevRates[device] = cur2;
+					resolve(netRate(cur, cur2));
+				});
+			}, 500);
+		});
 	});
 }
 
-function metric(frontend, field, unit, digits) {
-	if (frontend.error)
-		return frontend.error;
-	if ((typeof frontend[field] != 'number' && typeof frontend[field] != 'string') ||
-		(typeof frontend[field] == 'string' && frontend[field].trim() == '') ||
-		!isFinite(Number(frontend[field])))
-		return _('不支持');
-	return Number(frontend[field]).toFixed(digits) + ' ' + unit;
-}
+function lineState(line) {
+	var mode = (line && line.active_mode) || '';
+	var lifecycle = (line && line.lifecycle) || '';
+	var parts = [], fault = false, progress = false;
 
-/* 主题变量 + 字面兜底（兜底值取 luCI 亮色主题的实际定义） */
-function css(name, fallback) {
-	return 'var(--' + name + ', ' + fallback + ')';
-}
+	if (lifecycle == 'operational' && mode && mode != 'none') {
+		parts.push(LIFECYCLE_LABEL['operational']);
+	}
+	else {
+		if (lifecycle == 'wait-optical-signal' || (line && line.optical_signal === false)) {
+			parts.push(LIFECYCLE_LABEL['wait-optical-signal']);
+			fault = true;
+		}
 
-var cBorder = css('hairline', css('border-color-low', '#eeeeee'));
-var cMuted  = css('text-muted', css('text-color-medium', '#808080'));
-var cStrong = css('text', css('text-color-highest', '#000000'));
-var cCool   = css('success-color-high', 'rgb(0, 172, 89)');
+		if (!mode || mode == 'none') {
+			parts.push('断线');
+			fault = true;
+		}
 
-var S_RATE_BLOCK = 'margin-top: 8px; padding-top: 8px; border-top: 1px solid ' + cBorder;
-/* 专用布局：左侧读数行、右侧速率面板；窄屏仍保持左右并排，避免主题通用
- * ifacebox/grid 样式把整个区域压成一个小卡片。 */
-var S_TOP        = 'display: flex; align-items: stretch; gap: clamp(8px, 2vw, 24px); min-width: 0; flex-wrap: nowrap; font-size: clamp(12px, 3.6vw, 16px)';
-var S_RATE_COL   = 'flex: 0 0 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px; padding: 0; margin-left: auto; box-sizing: border-box; background: transparent; border-radius: 0';
-var S_RATE_ROW   = 'display: flex; align-items: baseline; gap: 5px; white-space: nowrap';
-var S_RATE_LABEL = 'font-size: 1em; color: ' + cMuted + '; white-space: nowrap';
-var S_RATE_VALUE = 'font-size: 1.15em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
-var S_RATE_UNIT  = 'font-size: 0.85em; color: ' + cMuted + '; margin-left: 2px; white-space: nowrap';
-var S_EMPTY      = 'font-size: 1em; color: ' + cMuted + '; overflow-wrap: anywhere';
-/* 连接数行：协议标签 + 总数 + 硬件卸载计数（绿色，好消息的颜色）。
- * TCP/UDP 两组并排一行，宽度不够时允许换行。 */
-var S_CONN_ROW   = 'display: flex; flex: 1 1 220px; min-width: 0; align-items: baseline; gap: 8px; flex-wrap: wrap';
-var S_CONN_LABEL = 'font-size: 1em; font-weight: 600; color: ' + cMuted + '; white-space: nowrap';
-var S_CONN_VALUE = 'font-size: 1.1em; font-weight: 600; font-variant-numeric: tabular-nums; color: ' + cStrong + '; white-space: nowrap';
-var S_CONN_NPU   = 'font-size: 0.9em; color: ' + cMuted + '; white-space: nowrap';
-var S_CONN_NPU_V = 'font-size: 1em; font-weight: 600; color: ' + cCool + '; white-space: nowrap';
+		if (lifecycle == 'wait-line-sync' || lifecycle == 'protocol-activating' ||
+		    lifecycle == 'pma-configured') {
+			parts.push(LIFECYCLE_LABEL[lifecycle]);
+			progress = true;
+		}
 
-function rateLine(label, value) {
-	return E('div', { 'style': S_RATE_ROW }, [
-		E('span', { 'style': S_RATE_LABEL }, [ label ]),
-		E('span', { 'style': S_RATE_VALUE }, [ value.toFixed(2) ]),
-		E('span', { 'style': S_RATE_UNIT }, [ 'MiB/s' ])
-	]);
-}
+		if (lifecycle == 'error') {
+			parts.push(LIFECYCLE_LABEL['error']);
+			fault = true;
+		}
 
-function connCell(label, c) {
-	/* 不给 E() 传 null 子节点（旧版 LuCI 不跳过 null），这里全部非空 */
-	return E('div', { 'style': S_CONN_ROW }, [
-		E('span', { 'style': S_CONN_LABEL }, [ label ]),
-		E('span', { 'style': S_CONN_VALUE }, [ String(c.total) ]),
-		E('span', { 'style': S_CONN_NPU }, [ _('卸载') ]),
-		E('span', { 'style': S_CONN_NPU_V }, [ String(c.npu) ])
-	]);
-}
+		if (lifecycle == 'stopped') {
+			parts.push(LIFECYCLE_LABEL['stopped']);
+		}
 
-/* 右侧速率列：上行/下行两行，整列在卡片里垂直居中；读不到就给个简短占位 */
-function buildRateCol(rate) {
-	if (rate && !rate.error)
-		return E('div', { 'style': S_RATE_COL }, [
-			rateLine(_('上行'), rate.tx),
-			rateLine(_('下行'), rate.rx)
-		]);
-
-	return E('aside', { 'style': S_RATE_COL },
-		E('span', { 'style': S_EMPTY }, [ rate ? _('读取失败') : _('不可用') ]));
-}
-
-/* 底部分隔线下的一行：TCP / UDP 两组并排，宽度不够时换行 */
-function buildConnRow(conns) {
-	var cells = [];
-
-	if (conns && (conns.tcp || conns.udp)) {
-		if (conns.tcp)
-			cells.push(connCell('TCP', conns.tcp));
-
-		if (conns.udp)
-			cells.push(connCell('UDP', conns.udp));
-
-		return E('div', {
-			'style': 'display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap'
-		}, cells);
+		if (!parts.length)
+			parts.push(lifecycle || '未知');
 	}
 
-	return E('div', { 'style': S_EMPTY }, [ _('连接数不可用') ]);
+	return {
+		text: parts.join(' / '),
+		severity: fault ? 'error' : (progress ? 'warning' :
+			(parts.length == 1 && parts[0] == LIFECYCLE_LABEL['operational']) ? 'success' : 'muted')
+	};
 }
 
-function opticsRow(label, value) {
-	return E('div', { 'class': 'pon-optics-row', 'style': 'display: flex; flex-wrap: nowrap; align-items: baseline; gap: 8px; min-width: 0; padding: 6px 0; border-bottom: 1px solid ' + cBorder }, [
-		E('strong', { 'style': 'flex: 0 0 auto; min-width: 0; font-weight: 600; white-space: nowrap' }, label),
-		E('span', { 'style': 'flex: 1 1 auto; min-width: 0; text-align: right; white-space: normal; overflow-wrap: anywhere; font-variant-numeric: tabular-nums' }, value)
+/*
+ * Port rate block: grey ifacebox-head strip, two rows for the upstream
+ * and downstream rates. The ifacebox classes come from the theme
+ * (luci-theme-argon cascade.css), so the block follows the light/dark
+ * theme like the port status cards do.
+ */
+function ratePanel(rate) {
+	var ok = (rate != null && !rate.error && rate.rx != null && rate.tx != null);
+
+	function row(dir, arrow, value) {
+		return E('div', { 'style': 'display: flex; align-items: baseline; gap: 6px; flex-wrap: nowrap; white-space: nowrap' }, [
+			E('span', { 'style': 'font-size: 13px; opacity: 0.6' }, arrow),
+			E('span', { 'style': 'font-size: 12px; opacity: 0.6' }, dir),
+			E('strong', {
+				'style': 'font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums'
+			}, (value != null) ? value.toFixed(2) : '—'),
+			E('span', { 'style': 'font-size: 10px; opacity: 0.6' }, 'Mibit/s')
+		]);
+	}
+
+	return E('div', { 'class': 'ifacebox', 'style': 'flex: 0 0 auto; margin: 0' }, [
+		E('div', {
+			'class': 'ifacebox-head',
+			'style': 'padding: 3px 10px; font-size: 12px; font-weight: 600'
+		}, 'PON流量'),
+		E('div', {
+			'class': 'ifacebox-body',
+			'style': 'display: flex; flex-direction: column; gap: 6px; padding: 6px 10px'
+		}, [
+			row('上行', '↑', ok ? rate.tx : null),
+			row('下行', '↓', ok ? rate.rx : null)
+		])
 	]);
 }
 
-function renderBox(item) {
-	var frontend = item.frontend || {};
+/*
+ * Optical power diagnostic panel, drawn after the reference design: the
+ * live reading with a severity pill above a zone scale carrying a marker
+ * at the current value. Zone boundaries follow the ONU power budget:
+ *   RX (dBm): < -29 fault | -29..-27 warning | -27..-8 normal
+ *             (-22..-12 is the ideal band) | > -8 overload
+ *   TX (dBm): < +0.5 below the window | +0.5..+5 good | > +5 overload
+ */
+var PWR_ZONE = {
+	fault: '#f2b3b3',
+	warn: '#f6d9a6',
+	ok: '#bcd9a8',
+	ideal: '#4e9a06',
+	over: '#f2b3b3',
+	good: '#79c47f'
+};
 
-	return E('article', { 'class': 'pon-optics-card', 'data-pon-layout': 'fullwidth-v3', 'style': 'display: block; width: 100% !important; min-width: 0; max-width: none !important; margin: 0; box-sizing: border-box; align-self: stretch; border: 1px solid ' + cBorder + '; border-radius: 12px; overflow: hidden; font-size: 1rem; line-height: 1.6; color: ' + cStrong + '; background: ' + css('surface', '#ffffff') }, [
-		E('header', { 'class': 'pon-optics-head', 'style': 'display: block; width: 100%; max-width: none; box-sizing: border-box; padding: 10px 16px; text-align: center; color: ' + css('on-brand', '#ffffff') + '; background: ' + css('brand', css('primary', '#008fbb')) },
-			E('strong', 'PON')),
-		E('div', { 'class': 'pon-optics-body', 'style': 'display: block; width: 100%; min-width: 0; max-width: none; box-sizing: border-box; padding: 16px; text-align: left' }, [
-			E('div', { 'class': 'pon-optics-top', 'style': S_TOP }, [
-				E('div', { 'class': 'pon-optics-values', 'style': 'flex: 1 1 auto; min-width: 0' }, [
-					opticsRow(_('收光功率'), metric(frontend, 'rx_power_dbm', 'dBm', 2)),
-					opticsRow(_('发光功率'), metric(frontend, 'tx_power_dbm', 'dBm', 2)),
-					opticsRow(_('光模块温度'), metric(frontend, 'temperature_celsius', '°C', 2)),
-					opticsRow(_('偏置电流'), metric(frontend, 'tx_bias_ma', 'mA', 2)),
-					opticsRow(_('供电电压'), metric(frontend, 'voltage_volts', 'V', 4))
-				]),
-				buildRateCol(item.rate)
+var RX_ZONES = [
+	{ from: -30, to: -29, color: PWR_ZONE.fault },
+	{ from: -29, to: -27, color: PWR_ZONE.warn },
+	{ from: -27, to: -22, color: PWR_ZONE.ok },
+	{ from: -22, to: -12, color: PWR_ZONE.ideal },
+	{ from: -12, to: -8, color: PWR_ZONE.ok },
+	{ from: -8, to: -6, color: PWR_ZONE.over }
+];
+var RX_RANGE = { min: -30, max: -6 };
+var RX_TICKS = [
+	{ at: -30, label: '-30' },
+	{ at: -25, label: '-25' },
+	{ at: -12, label: '-12' },
+	{ at: -8, label: '-8' }
+];
+
+var TX_ZONES = [
+	{ from: 0, to: 0.5, color: PWR_ZONE.warn },
+	{ from: 0.5, to: 5, color: PWR_ZONE.good },
+	{ from: 5, to: 8, color: PWR_ZONE.over }
+];
+var TX_RANGE = { min: 0, max: 8 };
+var TX_TICKS = [
+	{ at: 0, label: '0' },
+	{ at: 0.5, label: '+0.5' },
+	{ at: 5, label: '+5' },
+	{ at: 8, label: '+8' }
+];
+
+function powerStatus(kind, value, hasSignal) {
+	if (!hasSignal)
+		return { text: '无光', severity: 'muted' };
+
+	if (value == null)
+		return { text: '读取失败', severity: 'muted' };
+
+	if (kind == 'rx') {
+		if (value > -8)
+			return { text: '饱和/过载', severity: 'error' };
+		if (value >= -12)
+			return { text: '正常', severity: 'success' };
+		if (value >= -22)
+			return { text: '理想良好', severity: 'success' };
+		if (value >= -27)
+			return { text: '正常', severity: 'success' };
+		if (value >= -29)
+			return { text: '临界预警', severity: 'warning' };
+		return { text: '差/故障', severity: 'error' };
+	}
+
+	if (value > 5)
+		return { text: '过载', severity: 'error' };
+	if (value >= 0.5)
+		return { text: '良好', severity: 'success' };
+	if (value >= -5)
+		return { text: '临界预警', severity: 'warning' };
+	return { text: '差/故障', severity: 'error' };
+}
+
+function powerPanel(kind, title, frontend, field, zones, range, ticks, hasSignal) {
+	var value = null;
+
+	if (frontend != null && !frontend.error && Object.prototype.hasOwnProperty.call(frontend, field))
+		value = Number(frontend[field]);
+
+	var status = powerStatus(kind, value, hasSignal);
+	var showMarker = (value != null && hasSignal);
+	var pct = showMarker
+		? Math.max(0, Math.min(100, (value - range.min) / (range.max - range.min) * 100))
+		: null;
+
+	function tickNode(t) {
+		var p = (t.at - range.min) / (range.max - range.min) * 100;
+		var shift = 'translateX(-50%)';
+
+		if (p < 10)
+			shift = 'translateX(0)';
+		else if (p > 90)
+			shift = 'translateX(-100%)';
+
+		return E('span', {
+			'style': 'position: absolute; bottom: 0; left: ' + p.toFixed(2) + '%; transform: ' + shift + '; font-size: 9px; line-height: 1; opacity: 0.65; white-space: nowrap'
+		}, t.label);
+	}
+
+	/*
+	 * The bar must override the theme rule
+	 * .network-status-table .ifacebox-body > div { gap: .5rem;
+	 * flex-wrap: wrap }, otherwise the zone segments come apart.
+	 */
+	var bar = E('div', { 'style': 'position: relative; height: 9px; border-radius: 4px; overflow: hidden; display: flex; flex-wrap: nowrap; gap: 0' },
+		zones.map(function(z) {
+			return E('div', { 'style': 'flex: ' + (z.to - z.from) + ' 1 0; background: ' + z.color });
+		}));
+
+	var marks = ticks.map(tickNode);
+
+	if (pct != null)
+		marks.push(E('span', {
+			'style': 'position: absolute; bottom: 6px; left: ' + pct.toFixed(2) + '%; transform: translateX(-50%); font-size: 13px; line-height: 1; color: #3465a4',
+			'title': value.toFixed(2) + ' dBm'
+		}, '▲'));
+
+	return E('div', { 'class': 'ifacebox', 'style': 'flex: 1 1 220px; min-width: 200px; margin: 0' }, [
+		E('div', {
+			'class': 'ifacebox-head',
+			'style': 'padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis'
+		}, title),
+		E('div', {
+			'class': 'ifacebox-body',
+			'style': 'display: flex; flex-direction: column; gap: 5px; padding: 6px 10px'
+		}, [
+			E('div', { 'style': 'display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0' }, [
+				E('strong', {
+					'style': 'font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap'
+				}, (value != null) ? value.toFixed(2) + ' dBm' : '—'),
+				E('span', {
+					'style': 'flex: 0 0 auto; padding: 1px 9px; border-radius: 10px; font-size: 11px; white-space: nowrap; color: #ffffff; background: ' + BADGE_BG[status.severity]
+				}, status.text)
 			]),
-			E('div', { 'style': S_RATE_BLOCK }, buildConnRow(item.conns))
+			bar,
+			E('div', { 'style': 'position: relative; height: 14px; flex-wrap: nowrap; gap: 0' }, marks)
+		])
+	]);
+}
+/*
+ * Module supply voltage and TX bias current as one block, laid out like
+ * the rate panel: voltage on the upper row, bias current on the lower row.
+ */
+function voltAmpPanel(frontend) {
+	function row(label, field, unit, digits) {
+		var value;
+
+		if (frontend == null || frontend.error)
+			value = '读取失败';
+		else if (!Object.prototype.hasOwnProperty.call(frontend, field))
+			value = '不支持';
+		else
+			value = Number(frontend[field]).toFixed(digits) + ' ' + unit;
+
+		return E('div', { 'style': 'display: flex; align-items: baseline; gap: 6px; flex-wrap: nowrap; white-space: nowrap' }, [
+			E('span', { 'style': 'width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.45; flex: 0 0 auto; align-self: center' }),
+			E('span', { 'style': 'font-size: 12px; opacity: 0.6' }, label),
+			E('strong', {
+				'style': 'font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums'
+			}, value)
+		]);
+	}
+
+	return E('div', { 'class': 'ifacebox', 'style': 'flex: 0 0 auto; margin: 0' }, [
+		E('div', {
+			'class': 'ifacebox-head',
+			'style': 'display: flex; align-items: center; gap: 5px; padding: 3px 10px; font-size: 12px; font-weight: 600'
+		}, [
+			E('span', { 'style': 'width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.45; flex: 0 0 auto' }),
+			'模块电压/电流'
+		]),
+		E('div', {
+			'class': 'ifacebox-body',
+			'style': 'display: flex; flex-direction: column; gap: 6px; padding: 6px 10px'
+		}, [
+			row('电压', 'voltage_volts', 'V', 4),
+			row('电流', 'tx_bias_ma', 'mA', 2)
+		])
+	]);
+}
+
+/*
+ * Optical frontend temperature and the OMCI ONU lifecycle state as one
+ * block: the temperature reading on the upper row, the colored O1-O7
+ * badge (full state table as tooltip) on the lower row.
+ */
+function tempStatePanel(frontend, onu) {
+	var value;
+
+	if (frontend == null || frontend.error)
+		value = '读取失败';
+	else if (!Object.prototype.hasOwnProperty.call(frontend, 'temperature_celsius'))
+		value = '不支持';
+	else
+		value = Number(frontend.temperature_celsius).toFixed(2) + ' °C';
+
+	return E('div', { 'class': 'ifacebox', 'style': 'flex: 0 0 auto; margin: 0' }, [
+		E('div', {
+			'class': 'ifacebox-head',
+			'style': 'display: flex; align-items: center; gap: 5px; padding: 3px 10px; font-size: 12px; font-weight: 600'
+		}, [
+			E('span', { 'style': 'width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.45; flex: 0 0 auto' }),
+			'温度/状态'
+		]),
+		E('div', {
+			'class': 'ifacebox-body',
+			'style': 'display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 6px 10px'
+		}, [
+			E('div', { 'style': 'font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap' }, value),
+			onu ? onu : E('span', { 'style': 'font-size: 12px; opacity: 0.6' }, '状态未知')
+		])
+	]);
+}
+
+/*
+ * PON optical module icon with a UPC SC connector, drawn in the same
+ * visual language as the luci-mod-status Ethernet port icons
+ * (icons/port_up.svg / port_down.svg): 48x48 viewBox rendered at a 40px
+ * footprint, metallic cage gradients, #888a85 outlines, round linecaps.
+ * UPC (Ultra Physical Contact) is the flat-polish, blue-coded ferrule
+ * used by PON SC ports, so the connector carries the UPC blue; XPON is
+ * bidirectional over one fiber, so the green TX and blue RX beams both
+ * leave that one port. Up: link LED plus both beams. Down: dimmed
+ * module, dark port and amber LOS ticks like port_down. Inlined as a
+ * data URI so the view stays a single file.
+ */
+var PON_ICON_SVG_UP =
+	'<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48">' +
+	'<defs>' +
+	'<linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">' +
+	'<stop stop-color="#ffffff"/><stop offset="1" stop-color="#d3d7cf"/>' +
+	'</linearGradient>' +
+	'<linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">' +
+	'<stop stop-color="#d3d7cf"/><stop offset="1" stop-color="#babdb6"/>' +
+	'</linearGradient>' +
+	'</defs>' +
+	'<rect x="6" y="27" width="36" height="14" rx="2.5" fill="url(#cg)" stroke="#888a85" stroke-width="1.4"/>' +
+	'<rect x="10" y="34" width="28" height="3.5" rx="1.75" fill="#888a85" opacity="0.3"/>' +
+	'<rect x="12" y="7" width="24" height="22" rx="2" fill="url(#mg)" stroke="#888a85" stroke-width="1.4"/>' +
+	'<path d="M16 7.5V5a8 8 0 0 1 16 0v2.5" fill="none" stroke="#888a85" stroke-width="1.6" stroke-linecap="round"/>' +
+	'<rect x="15.5" y="11.5" width="17" height="12" rx="2.5" fill="none" stroke="#0d76e0" stroke-width="1.6"/>' +
+	'<rect x="17" y="13" width="13" height="9" rx="1.5" fill="#ffffff" stroke="#888a85" stroke-width="1.2"/>' +
+	'<rect x="20" y="15.5" width="7" height="4" rx="1" fill="#0d76e0"/>' +
+	'<circle cx="23.5" cy="17.5" r="0.9" fill="#cfe4f7"/>' +
+	'<circle cx="33" cy="11" r="1.3" fill="#4e9a06"/>' +
+	'<path d="M21 23 17.5 41" stroke="#4e9a06" stroke-width="2.8" stroke-linecap="round" fill="none"/>' +
+	'<path d="M26 23 30.5 41" stroke="#3465a4" stroke-width="2.8" stroke-linecap="round" fill="none"/>' +
+	'</svg>';
+
+var PON_ICON_SVG_DOWN =
+	'<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48">' +
+	'<defs>' +
+	'<linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">' +
+	'<stop stop-color="#ffffff"/><stop offset="1" stop-color="#d3d7cf"/>' +
+	'</linearGradient>' +
+	'<linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">' +
+	'<stop stop-color="#d3d7cf"/><stop offset="1" stop-color="#babdb6"/>' +
+	'</linearGradient>' +
+	'</defs>' +
+	'<g opacity="0.72">' +
+	'<rect x="6" y="27" width="36" height="14" rx="2.5" fill="url(#cg)" stroke="#888a85" stroke-width="1.4"/>' +
+	'<rect x="10" y="34" width="28" height="3.5" rx="1.75" fill="#888a85" opacity="0.45"/>' +
+	'<rect x="12" y="7" width="24" height="22" rx="2" fill="url(#mg)" stroke="#888a85" stroke-width="1.4"/>' +
+	'<path d="M16 7.5V5a8 8 0 0 1 16 0v2.5" fill="none" stroke="#888a85" stroke-width="1.6" stroke-linecap="round"/>' +
+	'<rect x="15.5" y="11.5" width="17" height="12" rx="2.5" fill="none" stroke="#8a8a8a" stroke-width="1.4"/>' +
+	'<rect x="17" y="13" width="13" height="9" rx="1.5" fill="#888a85" stroke="#555753" stroke-width="1.2"/>' +
+	'<rect x="20" y="15.5" width="7" height="4" rx="1" fill="#2e3436" opacity="0.6"/>' +
+	'<circle cx="33" cy="11" r="1.3" fill="#8a8a8a"/>' +
+	'</g>' +
+	'<path d="M18 42v3M24 42v3M30 42v3" stroke="#edd400" stroke-width="1.8" stroke-linecap="round" fill="none"/>' +
+	'</svg>';
+
+function ponIcon(up) {
+	return E('img', {
+		'src': 'data:image/svg+xml,' + encodeURIComponent(up ? PON_ICON_SVG_UP : PON_ICON_SVG_DOWN),
+		'style': 'flex: 0 0 auto'
+	});
+}
+
+/*
+ * The optics figure: the PON module icon with the lifecycle badge
+ * underneath it. The wavelengths live in the power panel titles, so no
+ * separate chips are drawn here.
+ */
+function fiberGraphic(up, state) {
+	return E('div', { 'style': 'flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px' }, [
+		ponIcon(up),
+		E('span', {
+			'style': 'flex: 0 0 auto; padding: 1px 9px; border-radius: 10px; font-size: 12px; white-space: nowrap; color: #ffffff; background: ' + BADGE_BG[state.severity]
+		}, state.text)
+	]);
+}
+
+function onuBadge(registration) {
+	var code = (registration && typeof(registration.onu_state) == 'string')
+		? registration.onu_state.toUpperCase() : '';
+	var info = ONU_STATES[code];
+
+	if (!info)
+		return null;
+
+	var tip = 'ONU 状态（ITU-T G.984.3 / G.987.3）';
+
+	for (var k in ONU_STATES) {
+		if (Object.prototype.hasOwnProperty.call(ONU_STATES, k))
+			tip += '\n' + k + ' ' + ONU_STATES[k].zh + ' ' + ONU_STATES[k].en;
+	}
+
+	return E('span', {
+		'style': 'flex: 0 0 auto; padding: 1px 9px; border-radius: 10px; font-size: 12px; white-space: nowrap; color: #ffffff; background: ' + BADGE_BG[info.severity],
+		'title': tip
+	}, code + ' ' + info.zh);
+}
+
+/*
+ * The card carries no head strip: the device name and the colored title
+ * bar were dropped, so the body row starts directly with the optics
+ * figure. The ifacebox wrapper still provides the panel background and
+ * border from the theme.
+ */
+function renderBox(item) {
+	var state = lineState(item.line);
+	var onu = onuBadge(item.registration);
+	var w = WAVELENGTHS[(item.line && item.line.active_mode) || ''] || WAVELENGTHS['gpon'];
+	var hasSignal = !(item.line && item.line.optical_signal === false);
+
+	return E('div', { 'class': 'ifacebox pon-horizontal-card', 'style': 'width: 100%; max-width: none; box-sizing: border-box' }, [
+		E('div', { 'class': 'ifacebox-body left', 'style': 'display: flex; flex-direction: column; gap: 10px' }, [
+			E('div', { 'style': 'display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap' }, [
+				fiberGraphic(state.severity == 'success', state),
+				powerPanel('rx', '收光功率 Rx · ' + w[1] + ' nm', item.frontend, 'rx_power_dbm', RX_ZONES, RX_RANGE, RX_TICKS, hasSignal),
+				powerPanel('tx', '发光功率 Tx · ' + w[0] + ' nm', item.frontend, 'tx_power_dbm', TX_ZONES, TX_RANGE, TX_TICKS, hasSignal),
+				tempStatePanel(item.frontend, onu),
+				voltAmpPanel(item.frontend),
+				ratePanel(item.rate)
+			])
 		])
 	]);
 }
 
 return baseclass.extend({
-	title: _('PON 光模块'),
+	title: 'PON 光模块',
 	fullwidth: true,
 
 	load: function() {
-		return L.resolveDefault(uci.load('pon'), null).then(function() {
+		return uci.load('pon').then(function() {
 			var sections = uci.sections('pon', 'xpon').filter(function(section) {
-				return typeof section.device == 'string' && /^[a-zA-Z0-9_.:-]+$/.test(section.device);
-			});
-			var devices = Object.create(null);
-			sections = sections.filter(function(section) {
-				if (devices[section.device])
-					return false;
-				devices[section.device] = true;
-				return true;
+				return section.device;
 			});
 
 			if (!sections.length)
-				sections = [{ device: 'pon0' }];
+				return Promise.reject();
 
-			/* 连接数是整机数据，与具体光口无关，一次 exec 所有卡片共用 */
-			return Promise.all([
-				readConns(),
-				Promise.all(sections.map(function(section) {
-					return Promise.all([
-						readFrontend(section.device),
-						readRate(section.device)
-					]).then(function(res) {
-						return {
-							device: section.device,
-							frontend: res[0],
-							rate: res[1]
-						};
-					});
-				}))
-			]).then(function(res) {
-				var conns = res[0];
-
-				res[1].forEach(function(item) {
-					item.conns = conns;
+			return Promise.all(sections.map(function(section) {
+				return Promise.all([
+					readFrontend(section.device),
+					readRate(section.device)
+				]).then(function(res) {
+					return {
+						device: section.device,
+						line: res[0] ? res[0].line : {},
+						frontend: res[0] ? res[0].frontend : null,
+						registration: res[0] ? res[0].registration : {},
+						rate: res[1]
+					};
 				});
+			})).then(function(items) {
+				if (!items.some(function(item) { return item.frontend != null }))
+					return Promise.reject();
 
-				return res[1];
+				return items;
 			});
 		});
 	},
@@ -378,7 +662,6 @@ return baseclass.extend({
 		if (!data || !data.length)
 			return null;
 
-		return E('section', { 'id': 'xg2010g_pon_optics', 'class': 'pon-optics-table', 'style': 'display: flex; flex-direction: column; align-items: stretch; gap: 16px; width: 100% !important; max-width: none !important; min-width: 0; box-sizing: border-box' },
-			data.map(renderBox));
+		return E('div', { 'class': 'network-status-table' }, data.map(renderBox));
 	}
 });

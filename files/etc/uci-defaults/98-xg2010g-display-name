@@ -1,0 +1,9 @@
+#!/bin/sh
+# Change only generic first-boot hostnames; preserve a user's chosen name.
+case "$(uci -q get system.@system[0].hostname)" in
+  ''|OpenWrt|ImmortalWrt|PonWrt|ponwrt)
+    uci set system.@system[0].hostname='XG2010G'
+    uci commit system
+    ;;
+esac
+exit 0

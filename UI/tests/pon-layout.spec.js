@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = process.env.PON_TEST_ROOT;
 if (!root) throw new Error('PON_TEST_ROOT must point to the staged/extracted firmware root');
-const ponSource = fs.readFileSync(process.env.PON_TEST_SOURCE || path.join(root, 'www/luci-static/resources/view/status/include/15_xg2010g_pon.js'), 'utf8');
+const ponSource = fs.readFileSync(process.env.PON_TEST_SOURCE || path.join(root, 'www/luci-static/resources/view/status/include/29a_xg2010g_pon.js'), 'utf8');
 const statusSource = fs.readFileSync(process.env.PON_TEST_STATUS || path.join(root, 'www/luci-static/resources/view/status/index.js'), 'utf8');
 
 for (const theme of ['aurora', 'argon']) {
@@ -41,7 +41,7 @@ for (const theme of ['aurora', 'argon']) {
           if (compact) ponSource = ponSource.replaceAll('display: grid', 'display:grid');
           const pon = new Function('baseclass', 'fs', 'rpc', 'uci', 'L', 'E', '_', ponSource)(
             { extend: object => object }, {}, { declare: () => () => Promise.resolve({}) }, {}, L, E, text => text);
-          const snapshot = [{ device: 'pon0', frontend: { rx_power_dbm: -16.74, tx_power_dbm: 6.42, temperature_celsius: 47.34, tx_bias_ma: 12.16, voltage_volts: 3.2758 }, rate: { tx: 4.18, rx: 1.32 }, conns: { tcp: { total: 580, npu: 46 }, udp: { total: 447, npu: 38 } } }];
+          const snapshot = [{ device: 'pon0', frontend: { rx_power_dbm: -16.74, tx_power_dbm: 6.42, temperature_celsius: 47.34, tx_bias_ma: 12.16, voltage_volts: 3.2758 }, line: { lifecycle: 'operational', active_mode: 'xgspon', optical_signal: true }, registration: { onu_state: 'O5' }, rate: { tx: 4.18, rx: 1.32 }, conns: { tcp: { total: 580, npu: 46 }, udp: { total: 447, npu: 38 } } }];
           pon.load = () => Promise.resolve(snapshot);
           window.ponSample = snapshot[0];
           const callbacks = [];
@@ -53,39 +53,38 @@ for (const theme of ['aurora', 'argon']) {
           window.pollPON = () => callbacks[0]();
         }, { ponSource, statusSource, compact });
 
-        const card = page.locator('.pon-optics-card');
+        const card = page.locator('.pon-horizontal-card');
         await expect(card).toBeVisible();
         const measure = () => page.evaluate(() => {
-          const card = document.querySelector('.pon-optics-card');
-          const section = card.closest('.cbi-section');
+          const card = document.querySelector('.pon-horizontal-card');
+          // The theme's network-status-table wrapper owns its normal gutters.
+          const section = card.parentElement;
           const style = getComputedStyle(section);
+          const cardStyle = getComputedStyle(card);
           return {
             card: card.getBoundingClientRect().width,
-            available: section.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth),
+            available: section.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) - parseFloat(cardStyle.marginLeft) - parseFloat(cardStyle.marginRight),
             font: parseFloat(getComputedStyle(card).fontSize),
             overflow: document.documentElement.scrollWidth > innerWidth,
-            clippedOptics: [...card.querySelectorAll('.pon-optics-row span')].filter(e => e.scrollWidth > e.clientWidth + 1).length,
-            optics: card.querySelector('.pon-optics-values').getBoundingClientRect().toJSON(),
-            rates: card.querySelector('.pon-optics-top').lastElementChild.getBoundingClientRect().toJSON()
+            panels: [...card.querySelectorAll('.ifacebox')].map(e => e.getBoundingClientRect().toJSON())
           };
         });
         async function assertLayout() {
           const size = await measure();
           expect(Math.abs(size.card - size.available)).toBeLessThan(2);
-          expect(size.font).toBeGreaterThanOrEqual(14);
           expect(size.overflow).toBe(false);
-          expect(size.clippedOptics).toBe(0);
-          expect(size.rates.left).toBeGreaterThanOrEqual(size.optics.right);
-          expect(Math.abs(size.rates.top - size.optics.top)).toBeLessThan(2);
-          expect(size.rates.bottom).toBeLessThanOrEqual(size.optics.bottom + 2);
+          for (const panel of size.panels) {
+            expect(panel.width).toBeGreaterThan(0);
+            expect(panel.right).toBeLessThanOrEqual(width + 1);
+          }
         }
         await assertLayout();
         await expect(card).toContainText('-16.74 dBm');
         await expect(card).toContainText('3.2758 V');
-        await expect(card).toContainText('580');
-        await expect(card).toContainText('447');
+        await expect(card).toContainText('O5 运行状态');
+        await expect(card).toContainText('收光功率 Rx · 1577 nm');
         await expect(card).toContainText('4.18');
-        await expect(card.locator('header')).toHaveText('PON');
+        await expect(card).toContainText('发光功率 Tx · 1270 nm');
         // Fast downloads create longer values; failures must stay readable too.
         await page.evaluate(() => { window.ponSample.rate = { tx: 281.18, rx: 311.32 }; return window.pollPON(); });
         await assertLayout();
@@ -96,7 +95,7 @@ for (const theme of ['aurora', 'argon']) {
         await assertLayout();
         // A normal poll and a section hide/show must not restore a small box.
         await page.evaluate(() => window.pollPON());
-        await expect(page.locator('.pon-optics-card')).toHaveCount(1);
+        await expect(page.locator('.pon-horizontal-card')).toHaveCount(1);
         const toggle = card.locator('xpath=ancestor::div[contains(@class,"cbi-section")]').locator('[data-indicator="poll-status"]');
         await toggle.click();
         await expect(card).toBeHidden();

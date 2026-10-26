@@ -1269,7 +1269,6 @@ function renderWifiDetails(wifi, ppe, ti, st) {
 		: aui.empty(_('No entries'));
 	return aui.section({
 		title: _('WiFi Band Details'),
-		hint: _('Per-band airtime efficiency, negotiated and expected rates, failure counts and BND/UNB ownership.'),
 		body: body
 	});
 }
@@ -1363,7 +1362,7 @@ function dropRow(label, value) {
 	return aui.row(label, aui.fmtK(v), v > 0 ? 'ai-err' : '');
 }
 
-function renderCdmCard(c) {
+function renderCdmCard(c, split) {
 	c = c || {};
 	var cpu = Number(c.rx_cpu) || 0, hwf = Number(c.rx_hwf) || 0;
 	var total = cpu + hwf;
@@ -1401,18 +1400,27 @@ function renderCdmCard(c) {
 		// channel's rows made the cards different heights and made a real 0 read
 		// like a field that was never collected.
 		aui.row(_('HW fast path'), aui.fmtK(c.rx_hwf_fast)),
-		aui.row(_('TSO queue'), aui.fmtK(c.rx_oq5)),
 		aui.row(_('Per-CPU RX'), perCpu.map(function(v) { return aui.fmtK(v); }).join(' · ')),
 		dropRow(_('CPU dropped'), c.rx_cpu_drop),
 		dropRow(_('HW dropped'), c.rx_hwf_drop),
-		dropRow(_('HW fast dropped'), c.rx_hwf_fast_drop),
-		dropRow(_('TSO dropped'), c.rx_oq5_drop)
+		dropRow(_('HW fast dropped'), c.rx_hwf_fast_drop)
 	];
-	// QDMA0/1 serve LAN/WAN in the Airoha driver. A PPE table is a different
-	// counting domain, so keep bank counters in PPE Engines.
+	// CDM1 is the CPU port of PPE engine 1 and CDM2 of engine 2, so each card
+	// also carries the flow-table slice counted by that engine. The split comes
+	// from the PPE probe (20 s cadence) and is undefined until it lands, and on
+	// a single-PPE SoC there is no CDM2 slice at all.
+	split = split || {};
+	var eng = Number(c.reg) === 2 ? 'ppe2' : Number(c.reg) === 1 ? 'ppe1' : '';
+	if (eng && typeof split[eng] !== 'undefined')
+		body.push(aui.row(eng === 'ppe2' ? _('PPE2 table') : _('PPE1 table'),
+			aui.fmtK(split[eng]) + ' · BND ' + aui.fmtK(split[eng + '_bound'] || 0)));
+	// The engine identity is the port role, not the direction: the mainline
+	// driver hands QDMA0 (CDM1) to the LAN netdevs and QDMA1 (CDM2) to the WAN
+	// one, and appends the PPE id accordingly (airoha_dev_set_qdma()).
+	var role = Number(c.reg) === 2 ? 'WAN' : Number(c.reg) === 1 ? 'LAN' : '';
 	return aui.card({
 		name: 'CDM' + c.reg,
-		tag: Number(c.reg) === 1 ? 'LAN' : Number(c.reg) === 2 ? 'WAN' : 'CPU DMA',
+		tag: role || 'CPU DMA',
 		accent: 'var(--ai-npu)',
 		body: body
 	});
@@ -1469,11 +1477,9 @@ function frameEngineReason(fe) {
 function renderFrameEngine(fe, topo, split) {
 	fe = fe || {};
 	var head = E('div', { 'class': 'ai-subhead', 'style': 'margin-top:0' }, _('Frame Engine'));
-	var hint = E('p', { 'class': 'ai-hint' },
-		_('Register-level counters for the GDM data MACs and CDM DMA engines.'));
 	if (fe.available === false) {
 		return E('div', { 'style': 'margin-top:var(--ds-sp-4)' }, [
-			head, hint, aui.empty(frameEngineReason(fe))
+			head, aui.empty(frameEngineReason(fe))
 		]);
 	}
 	// Keep only the GDM ports this board actually exposes. When the topology
@@ -1484,7 +1490,7 @@ function renderFrameEngine(fe, topo, split) {
 		return g && (!knownPorts || gdmPort(topo, g.reg));
 	});
 	var cdm = Array.isArray(fe.cdm) ? fe.cdm : [];
-	var blocks = [ head, hint, renderPseBufferCard(fe.pse) ];
+	var blocks = [ head, renderPseBufferCard(fe.pse) ];
 	if (gdm.length) {
 		blocks.push(E('div', { 'class': 'ai-subhead' }, _('GDM Ports')));
 		blocks.push(E('div', { 'class': 'ai-grid ai-grid--3' }, gdm.map(function(g) {
@@ -1494,7 +1500,7 @@ function renderFrameEngine(fe, topo, split) {
 	if (cdm.length) {
 		blocks.push(E('div', { 'class': 'ai-subhead' }, _('CDM Engines')));
 		blocks.push(E('div', { 'class': 'ai-grid ai-grid--3' }, cdm.map(function(c) {
-			return renderCdmCard(c);
+			return renderCdmCard(c, split);
 		})));
 	}
 	return E('div', { 'style': 'margin-top:var(--ds-sp-4)' }, blocks);
@@ -1502,17 +1508,32 @@ function renderFrameEngine(fe, topo, split) {
 
 /* NSS (EIP93) crypto engine. Kept out of the frame-engine block: it is a
  * separate IP block on the SoC and only the user-space half (/dev/crypto via
- * cryptodev + OpenSSL devcrypto) depends on packages rather than the kernel. */
+ * cryptodev + OpenSSL devcrypto) depends on packages rather than the kernel.
+ * The card is returned unbundled so the caller can lay it out side by side
+ * with the PPE Engines and NPU cards in one three-column grid. */
 function renderCryptoStatus(cr) {
-	var head = E('div', { 'class': 'ai-subhead', 'style': 'margin-top:0' }, 'EIP93');
-	var hint = E('p', { 'class': 'ai-hint' },
-		_('EIP93 hardware crypto engine plus the user-space /dev/crypto path (cryptodev + OpenSSL devcrypto).'));
 	if (!cr) {
-		return E('div', { 'style': 'margin-top:var(--ds-sp-4)' }, [ head, hint, aui.empty(_('No data')) ]);
+		return aui.card({
+			name: _('Crypto Engine'), tag: 'EIP93 · AES / DES / authenc',
+			accent: 'var(--ds-border-strong)',
+			body: [ aui.empty(_('No data')) ]
+		});
 	}
 
 	var active = Number(cr.present) === 1;
 	var algos = Number(cr.algos) || 0;
+	/* /proc/crypto prints refcnt as the number of tfm users of an algorithm,
+	 * but every registered algorithm holds a permanent baseline of 1: an idle
+	 * engine still reads refcnt == algos (32/32 measured on 6.18, and the
+	 * generic software blocks read the same 1), so the raw sum is a static
+	 * mirror of the algorithm count and never moves with load. The backend
+	 * publishes `sessions` = sum of max(0, refcnt - 1), the only part that can
+	 * actually change; a backend predating the field falls back to the same
+	 * subtraction here. */
+	var sessions = (cr.sessions === undefined || cr.sessions === null)
+		? Math.max(0, (Number(cr.refcnt) || 0) - algos)
+		: (Number(cr.sessions) || 0);
+
 	var engineRow;
 	if (Number(cr.openssl) !== 1)
 		engineRow = _('openssl-util not installed');
@@ -1524,24 +1545,25 @@ function renderCryptoStatus(cr) {
 		engineRow = '—';
 
 	var rows = [
-		aui.row(_('Status'), active ? aui.pill(_('Activated'), 'ok') : aui.pill(_('Driver unavailable'), 'warn')),
+		// Bound device leads the card: it names the hardware block first, the
+		// run-state pill reads as its qualifier.
 		aui.row(_('Bound device'), active && Number(cr.bound) === 1 ? '1fb70000.crypto' : _('Not bound')),
-		aui.row(_('Algorithms'), String(algos)),
-		// Algorithm references include baseline/module users, not just sessions.
-		aui.row(_('Algorithm references'), String(Number(cr.refcnt) || 0)),
+		aui.row(_('Status'), active ? aui.pill(_('Activated'), 'ok') : aui.pill(_('Driver unavailable'), 'warn')),
 		aui.row('/dev/crypto', Number(cr.devcrypto) === 1 ? aui.pill(_('Available'), 'ok') : aui.pill(_('Unavailable'), 'warn')),
 		aui.row(_('OpenSSL devcrypto'), engineRow),
-		aui.row(_('Hardware IRQs'), typeof cr.irqs === 'number' ? aui.fmtK(cr.irqs) : '—')
+		// Live tfm users above the registration baseline, kept directly above
+		// the cumulative counter it qualifies.
+		aui.row(_('Active sessions'), String(sessions)),
+		// Since-boot completion interrupts: the sum of the leading per-CPU
+		// columns only. The hwirq number on the same /proc/interrupts line is an
+		// identifier, not a count, so it must stay out of the total.
+		aui.row(_('Cumulative IRQs'), typeof cr.irqs === 'number' ? aui.fmtK(cr.irqs) : '—')
 	];
-	var body = [ E('div', {}, rows) ];
-	return E('div', { 'style': 'margin-top:var(--ds-sp-4)' }, [
-		head, hint,
-		aui.card({
-			name: _('Crypto Engine'), tag: 'AES / DES / authenc',
-			accent: active ? 'var(--ai-npu)' : 'var(--ds-border-strong)',
-			body: body
-		})
-	]);
+	return aui.card({
+		name: _('Crypto Engine'), tag: 'EIP93 · AES / DES / authenc',
+		accent: active ? 'var(--ai-npu)' : 'var(--ds-border-strong)',
+		body: rows
+	});
 }
 
 /* ── NPU and PPE engine status ── */
@@ -1584,7 +1606,7 @@ function renderEngineStatus(st, ppe) {
 		]
 	});
 
-	var unbCount = typeof ppe.unbound === 'number' ? ppe.unbound : (Array.isArray(ppe.entries) ? ppe.entries : []).filter(function(e) {
+	var unbCount = (Array.isArray(ppe.entries) ? ppe.entries : []).filter(function(e) {
 		return e && e.state && e.state !== 'BND';
 	}).length;
 	// Per-engine split of the flow table. The backend buckets every scanned
@@ -1625,7 +1647,9 @@ function renderEngineStatus(st, ppe) {
 		body: ppeRows
 	});
 
-	return E('div', { 'class': 'ai-grid ai-grid--2', 'style': 'margin-top:var(--ds-sp-2)' }, [ ppeCard, npuCard ]);
+	/* Both cards come back unbundled: the caller lines them up, together with
+	 * the EIP93 crypto card, as three equal columns of one grid. */
+	return [ ppeCard, npuCard ];
 }
 
 /* ── PPE flow table ── */
@@ -1798,9 +1822,7 @@ return view.extend({
 		// style) — the layout inherits the theme's content width, so the
 		// late-injected stylesheet never changes geometry (no width flash).
 		var view = E('div', { 'class': 'cbi-map airoha-page' }, [
-			E('header', { 'class': 'ai-pagehead' }, [
-				E('h2', {}, _('Airoha SoC Status')),
-		]),
+			E('h2', {}, _('Airoha SoC Status')),
 
 			aui.section({
 				title: _('Ethernet Ports'),
@@ -1834,13 +1856,19 @@ return view.extend({
 			// NPU and hardware offload controls/status.
 			aui.section({
 				title: _('NPU & Offload Engine'),
-				hint: _('Switches here apply the hardware offload settings for this device.'),
 				body: E('div', {}, [
 					renderSummary(st, ti),
 					E('div', { 'id': 'offload-controls', 'style': 'margin-top:var(--ds-sp-3)' },
 						renderOffloadControls(topo, vo, flo, apo, bridgeBlocked)),
-					E('div', { 'id': 'engine-status' }, renderEngineStatus(st, ppe)),
-					E('div', { 'id': 'crypto-status' }, renderCryptoStatus(null)),
+					/* PPE Engines, NPU and EIP93 crypto share one three-column
+					 * grid. The two slots keep their own ids so the 5 s poll and
+					 * the 20 s crypto fetch can refresh their cards without
+					 * touching the neighbours; display:contents keeps the cards
+					 * themselves as the grid items. */
+					E('div', { 'class': 'ai-grid ai-grid--3', 'style': 'margin-top:var(--ds-sp-2)' }, [
+						E('div', { 'id': 'engine-status', 'style': 'display:contents' }, renderEngineStatus(st, ppe)),
+						E('div', { 'id': 'crypto-status', 'style': 'display:contents' }, renderCryptoStatus(null))
+					]),
 					E('div', { 'id': 'frame-engine' }, renderFrameEngine(fe, topo, ppe))
 				])
 			}),
@@ -1884,7 +1912,7 @@ return view.extend({
 			if (deferPpe !== true && requestSequence > latestPpeRequest) {
 				latestPpeRequest = requestSequence;
 				latestPpeEntries = Array.isArray(ppe.entries) ? ppe.entries : [];
-				latestPpeSplit = (typeof ppe.ppe1 !== 'undefined' || typeof ppe.zero_l2 !== 'undefined') ? ppe : null;
+				if (typeof ppe.ppe1 !== 'undefined' || typeof ppe.zero_l2 !== 'undefined') latestPpeSplit = ppe;
 				updatePpeTable(latestPpeEntries, ppe);
 			}
 			updateSummary(st, ti);
@@ -1945,7 +1973,8 @@ return view.extend({
 			}
 
 			var engineEl = document.getElementById('engine-status');
-			if (engineEl) engineEl.replaceChildren(renderEngineStatus(st, latestPpeSplit || ppe));
+			// renderEngineStatus returns the unbundled card pair — spread it.
+			if (engineEl) engineEl.replaceChildren.apply(engineEl, renderEngineStatus(st, latestPpeSplit || ppe));
 			var feEl = document.getElementById('frame-engine');
 			if (feEl) feEl.replaceChildren(renderFrameEngine(fe, topo, latestPpeSplit));
 			var epEl = document.getElementById('ethernet-ports');

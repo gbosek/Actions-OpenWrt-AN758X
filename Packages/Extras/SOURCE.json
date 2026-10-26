@@ -1,0 +1,54 @@
+{
+  "source_repositories": {
+    "luci-app-clients": {
+      "repo": "naoki66/luci-app-airoha",
+      "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567"
+    },
+    "luci-app-pushbot": {
+      "repo": "zzsj0928/luci-app-pushbot",
+      "commit": "d52f746df1daa3ecfabb59b6a61e6b4a4ff09f20",
+      "local_changes": [
+        "Do not install unrelated apk signing key automatically",
+        "LF checkout normalization",
+        "Return from init before launching a disabled service"
+      ]
+    }
+  },
+  "feed_pin": "17f97c0bec190e18d4884ab8204f63c64981edd7",
+  "requested_packages": [
+    "luci-app-clients",
+    "luci-app-pushbot",
+    "luci-app-ddns",
+    "ddns-scripts",
+    "luci-app-pbr",
+    "pbr",
+    "luci-app-watchcat",
+    "watchcat",
+    "luci-app-wol",
+    "etherwake",
+    "luci-app-msd_lite",
+    "msd_lite",
+    "luci-app-rtp2httpd",
+    "rtp2httpd",
+    "luci-app-udpxy",
+    "udpxy",
+    "luci-app-upnp",
+    "miniupnpd-nftables",
+    "luci-app-timewol",
+    "luci-app-ttyd",
+    "ttyd",
+    "luci-app-autoreboot",
+    "luci-app-argon-config",
+    "luci-app-package-manager",
+    "luci-mod-system",
+    "mwan4",
+    "luci-app-mwan4"
+  ],
+  "feed_services": "Default inactive, checked in staged rootfs",
+  "npu_policy": "Retain existing guarded binding path; extra UI is not a replacement driver",
+  "screenshot_multicast_mapping": {
+    "title": "组播转换",
+    "package": "luci-app-msd_lite",
+    "evidence": "Read current router package/menu list; omcproxy is a different feature"
+  }
+}

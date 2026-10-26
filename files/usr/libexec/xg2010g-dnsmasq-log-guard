@@ -1,0 +1,9 @@
+#!/bin/sh
+# A restored base config must not duplicate UCI's log-facility. Called by
+# dnsmasq before its generated configuration is written; no daemon restart.
+conf=${1:-/etc/dnsmasq.conf}
+[ -f "$conf" ] || exit 0
+uci -q show dhcp | grep -Eq "^dhcp\.[^.]+\.logfacility='[^']+'$" || exit 0
+grep -Eq '^[[:space:]]*log-facility[[:space:]]*=' "$conf" || exit 0
+[ -e "$conf.xg2010g-before-log-guard" ] || cp -p "$conf" "$conf.xg2010g-before-log-guard" || exit 1
+sed -i -e 's/^[[:space:]]*log-facility[[:space:]]*=/# xg2010g UCI log path: &/' "$conf"

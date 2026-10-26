@@ -1,5 +1,5 @@
-name: Build PonWrt (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 + RCU bridge STP fix and offload diagnostics + EIP93 + NPU UI r907 - naoki and luanmuc
+name: Build XG2010G (Airoha AN758x PON)
+run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r908 + requested plugins
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -9,7 +9,7 @@ env:
   BUILD_ROOT: /workdir
   SOURCE: ${{ github.event.inputs.source || 'pbs05/ponwrt' }}
   # 唯一真相源：固件版本后缀的作者名（LuCI 概览页「固件版本」）
-  FW_AUTHOR: 'qwe'
+  FW_AUTHOR: 'XG2010G'
   REPO_URL: ${{ (github.event.inputs.source || 'pbs05/ponwrt') == 'pbs05/ponwrt' && 'https://github.com/pbs05/ponwrt' || 'https://github.com/qwe3017/ponwrt' }}
   FEEDS_CONF: ''
   DIY_P1_SH: diy-part1.sh
@@ -19,6 +19,10 @@ env:
   UPLOAD_RELEASE: ${{ github.event.inputs.upload_release || 'true' }}
   USE_DL_CACHE: true
   USE_CCACHE: false
+  USE_HOST_TOOLCHAIN_CACHE: 'true'
+  HOST_CACHE_DIR: /workdir/hosttool-cache
+  HOST_INCLUDE_BUILDDIR: 'false'
+  HOST_RELEASE_BACKUP: 'true'
   TZ: Asia/Shanghai
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   REPO_BRANCH: ${{ github.event.inputs.branch || 'master' }}
@@ -92,9 +96,9 @@ on:
           - 'true'
       # 覆盖口：不填即为 env.FW_AUTHOR 的 "qwe"。保留输入项仅为临时指定其他作者。
       fw_author:
-        description: '覆盖固件版本后缀的作者名（LuCI 概览页「固件版本」）。留空 = qwe'
+        description: '覆盖固件版本后缀的作者名（LuCI 概览页「固件版本」）。留空 = XG2010G'
         required: false
-        default: 'qwe'
+        default: 'XG2010G'
       upload_release:
         description: '固件发布到 Release（false 则只传 Artifact）'
         required: false
@@ -119,13 +123,13 @@ permissions:
 
 jobs:
   build:
-    name: XG2010G 1456 PPE + PON full-width - ${{ matrix.npu }}
+    name: XG2010G 1456 PPE + horizontal PON - ${{ matrix.npu }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        npu: [naoki, luanmuc]
+        npu: [naoki]
     env:
       NPU_VARIANT: ${{ matrix.npu }}
     # 350 分钟接近 GitHub-hosted 6 小时上限；首次冷构建（工具链+全量 kmod）
@@ -518,6 +522,23 @@ jobs:
       #     报错 "Can't open dl/musl-1.2.6.tar.gz" 就是这一步缺失导致的：
       #     make toolchain/install 不会自动补下载，只会去解压 dl 里已有的包
       # =========================================================
+      - name: Generate host toolchain cache key
+        id: host-cache-key
+        if: env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          SCRIPT="$GITHUB_WORKSPACE/scripts/host-toolchain.sh"
+          # 脚本没入仓时只 warning 跳过，绝不让构建死在 chmod 上
+          if [ ! -f "$SCRIPT" ]; then
+            echo "::warning::缺 $SCRIPT，本次跳过 host 工具链缓存（走常规编译）"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dos2unix "$SCRIPT" 2>/dev/null || true
+          chmod +x "$SCRIPT"
+          HOST_INCLUDE_BUILDDIR="$HOST_INCLUDE_BUILDDIR" \
+            bash "$SCRIPT" key "$BUILD_ROOT/openwrt"
+
       - name: Download toolchain sources
         run: |
           cd "$BUILD_ROOT/openwrt"
@@ -654,6 +675,110 @@ jobs:
       #   故这里单独补装 tools/ccache，并在失败时自动关闭 ccache 继续编译，
       #   绝不因 ccache 让整次构建失败。
       # =========================================================
+      - name: Restore host toolchain from actions/cache
+        id: host-cache-restore
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && env.IGNORE_CACHE != 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+        uses: actions/cache/restore@v5
+        with:
+          path: /workdir/hosttool-cache
+          # ⚠ 故意不设 restore-keys。key 里含 go/rust 版本与包 Makefile 的
+          #   md5，前缀回退会命中「版本已经变了」的旧缓存，等于拿错版本的
+          #   rustc 去编包。版本不符就该重编，不做模糊匹配。
+          key: ${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}
+
+      - name: Restore host toolchain from Release backup
+        id: host-release-restore
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && env.IGNORE_CACHE != 'true'
+          && env.HOST_RELEASE_BACKUP == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && steps.host-cache-restore.outputs.cache-hit != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          KEY='${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}'
+          [ -z "$KEY" ] && { echo "restored=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          mkdir -p "$HOST_CACHE_DIR"
+          if ! gh release view hosttool-cache --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "restored=false" >> "$GITHUB_OUTPUT"
+            echo "hosttool-cache Release 不存在，首次运行"
+            exit 0
+          fi
+
+          ASSET="${KEY}.tzst"
+          if gh release view hosttool-cache --repo "$GITHUB_REPOSITORY" \
+               --json assets -q '.assets[].name' 2>/dev/null | grep -qx "$ASSET"; then
+            gh release download hosttool-cache --repo "$GITHUB_REPOSITORY" -p "$ASSET" -D "$HOST_CACHE_DIR"
+            echo "restored=true"        >> "$GITHUB_OUTPUT"
+            echo "need_save_cache=true" >> "$GITHUB_OUTPUT"
+            echo "✅ 已从 Release 下载 host 工具链: $ASSET"
+          else
+            echo "restored=false" >> "$GITHUB_OUTPUT"
+            echo "Release 中无匹配的 host 工具链缓存（同前缀旧资产不复用：版本变了就重编）"
+          fi
+
+      - name: Unpack host toolchain
+        id: host-unpack
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && env.IGNORE_CACHE != 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          KEY='${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}'
+          TARBALL="$HOST_CACHE_DIR/${KEY}.tzst"
+          if [ ! -f "$TARBALL" ]; then
+            echo "unpacked=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::$TARBALL 不存在，将走真实编译"
+            exit 0
+          fi
+          HOST_CACHE_KEY="$KEY" \
+            bash "$GITHUB_WORKSPACE/scripts/host-toolchain.sh" unpack "$BUILD_ROOT/openwrt"
+
+      - name: Verify host gcc
+        continue-on-error: true
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          if [ ! -x staging_dir/host/bin/gcc ]; then
+            echo "::warning::staging_dir/host/bin/gcc 不存在 —— host 工具链无法编译"
+            echo "  （工具链缓存可能不完整；后续 make 会再编一遍，错误照常暴露）"
+            exit 0
+          fi
+          staging_dir/host/bin/gcc --version | head -1
+
+      - name: Build host Go / Rust toolchain
+        id: host-build
+        if: >-
+          env.BUILD_SCOPE == 'toolchain-only'
+          && env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && steps.host-unpack.outputs.unpacked != 'true'
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          JOBS=$(awk -v p="$(nproc)" '/^MemAvailable:/{m=int($2/2097152)+1} END{print m<p?m:p}' /proc/meminfo)
+          JOBS=$(( JOBS < 1 ? 1 : JOBS ))
+          HOST_CACHE_KEY='${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}' \
+          HOST_INCLUDE_BUILDDIR="$HOST_INCLUDE_BUILDDIR" \
+          JOBS="$JOBS" \
+            bash "$GITHUB_WORKSPACE/scripts/host-toolchain.sh" build "$BUILD_ROOT/openwrt"
+
+      - name: Host toolchain status
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && always()
+        continue-on-error: true
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          bash "$GITHUB_WORKSPACE/scripts/host-toolchain.sh" status "$BUILD_ROOT/openwrt"
+
       - name: Setup ccache (opt-in)
         if: env.USE_CCACHE == 'true'
         run: |
@@ -778,6 +903,10 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/check-rtl826x.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir
+          python3 "$GITHUB_WORKSPACE/Upstream/test-maintenance.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.55' -print -quit)"
+          python3 "$GITHUB_WORKSPACE/Runtime/tests/dns-log-guard-test.py"
+          python3 "$GITHUB_WORKSPACE/Runtime/tests/registration-guard-test.py"
+          python3 "$GITHUB_WORKSPACE/Upstream/test-installers.py"
 
       # =========================================================
       # 18. 编译固件
@@ -810,6 +939,7 @@ jobs:
           if [ "$PROFILE" = 'gemtek_xg2010g' ]; then
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
+            python3 "$GITHUB_WORKSPACE/scripts/check-requested-extras.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-bridge-defaults.py" --build-dir build_dir --report bin/targets/airoha/an7581/BRIDGE-DEFAULTS-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-eip93-build.py" . --report bin/targets/airoha/an7581/EIP93-BUILD-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT"
@@ -825,6 +955,64 @@ jobs:
           fi
           echo "status=success" >> "$GITHUB_OUTPUT"
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> "$GITHUB_ENV"
+
+      - name: Pack host toolchain
+        id: host-pack
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && (steps.host-build.outputs.host_build_failed == 'false' || steps.compile.outputs.status == 'success')
+        run: |
+          cd "$BUILD_ROOT/openwrt"
+          HOST_CACHE_KEY='${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}' \
+          HOST_INCLUDE_BUILDDIR="$HOST_INCLUDE_BUILDDIR" \
+            bash "$GITHUB_WORKSPACE/scripts/host-toolchain.sh" pack "$BUILD_ROOT/openwrt"
+
+      - name: Save host toolchain to actions/cache
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && steps.host-cache-restore.outputs.cache-hit != 'true'
+          && (steps.host-pack.outputs.packed == 'true' || steps.host-release-restore.outputs.need_save_cache == 'true')
+        uses: actions/cache/save@v5
+        continue-on-error: true
+        with:
+          path: /workdir/hosttool-cache
+          key: ${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}
+
+      - name: Save host toolchain to Release backup
+        if: >-
+          env.USE_HOST_TOOLCHAIN_CACHE == 'true'
+          && env.HOST_RELEASE_BACKUP == 'true'
+          && steps.host-cache-key.outputs.skip != 'true'
+          && steps.host-release-restore.outputs.restored != 'true'
+          && (steps.host-pack.outputs.packed == 'true' || steps.host-cache-restore.outputs.cache-hit == 'true')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          KEY='${{ steps.host-cache-key.outputs.HOST_CACHE_KEY }}'
+          PREFIX="${{ steps.host-cache-key.outputs.HOST_CACHE_PREFIX }}"
+          TARBALL="$HOST_CACHE_DIR/${KEY}.tzst"
+          if [ ! -f "$TARBALL" ]; then
+            echo "::warning::$TARBALL 不存在，跳过 Release 备份"
+            exit 0
+          fi
+          # 空包不上传：比 1KB 还小多半是打包异常的产物
+          SZ=$(stat -c%s "$TARBALL")
+          if [ "$SZ" -lt 1024 ]; then
+            echo "::warning::$TARBALL 只有 ${SZ} 字节，视为无效缓存，跳过上传"
+            exit 0
+          fi
+          echo "上传 host 工具链到 Release: $(basename "$TARBALL") ($(du -h "$TARBALL" | cut -f1))"
+
+          gh release view hosttool-cache --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create hosttool-cache --repo "$GITHUB_REPOSITORY" \
+              --title "Host Toolchain Cache" --notes "host 侧 go-bootstrap / rustc 缓存，请勿手动删除" --latest=false
+
+          # Keep other variants/runs cache assets; upload only this exact key.
+          gh release upload hosttool-cache "$TARBALL" --repo "$GITHUB_REPOSITORY" --clobber
+          ls -lh "$TARBALL"
 
       - name: Verify PON layout with firmware Aurora and Argon themes
         id: pon-layout
@@ -849,6 +1037,15 @@ jobs:
       # =========================================================
       # 19. 空间检查
       # =========================================================
+      - name: Upload host toolchain report
+        if: always()
+        uses: actions/upload-artifact@v5
+        continue-on-error: true
+        with:
+          name: host-toolchain-${{ env.NPU_VARIANT }}-${{ env.SOC }}-${{ env.PROFILE }}-${{ github.run_attempt }}
+          path: ${{ github.workspace }}/build-reports/
+          retention-days: 7
+
       - name: Check space usage
         if: (!cancelled())
         run: df -hT
@@ -949,7 +1146,7 @@ jobs:
             echo "加入原生 Airoha EIP93 加密驱动、cryptodev、OpenSSL 工具与动态 devcrypto 引擎；保留 stock DIGESTS=NONE，实际模块/引擎与内核 ABI 检查见 EIP93-BUILD-VERIFICATION.json。这是独立加密功能，不以此宣称 PPE BND 增加。"
             echo "954 修复实机发现的 RX/NAPI 桥接路径调用 RTNL-only STP 读取接口问题，使用 RCU 接口并保留全部 STP/VLAN/过滤/生命周期保护；PPE config 新增只读准入门控状态。113项实际函数断言和9个ARM64对象核对见 NAOKI-OFFLOAD-VERIFICATION.json；不据此承诺 BND 数字增加或已修复另一固件未知失联。"
             echo "naoki LuCI 纳入逐核占用率历史和 aui.legend 缺失回退；不更新无关 ONU/PON 业务配置。此构建尚未完成实机稳定性验证，不能据此宣称已修复另一固件的未知 10G 失联原因。"
-            echo "PON fullwidth-v2：独立布局、正常字号、Aurora/Argon 桌面和手机实样式验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
+            echo "PON horizontal-naoki-v1：naoki66 横向光功率卡片、Aurora/Argon 桌面和手机布局验证；新模块 15_xg2010g_pon，布局版本和文件 SHA 见 PON-STATUS-LAYOUT.json。"
             echo "包含上游 059895c 有用修复：SRAM 失败传递对齐上游；QDMA 重试、BQL、分片 DMA、MTU 与 MIB 修复复用已有等效实现，防止重复。看门狗及 RX31 修复由 6.18.55 原生提供。来源及实际源码检查见 UPSTREAM-059895-*.json。"
             echo "MWAN4 版本见 MWAN4-SOURCE.json：刷机后首次启动默认停止并关闭自启动；页面启动/停止同步开机状态；停用时编辑应用保持停止，刷新仅读取状态。双 WAN 默认预设延后至手动启动时应用。"
             echo "兼容性审查修复：naoki ONU 配套 firewall4 zone-device 卸载补丁与原 FullCone 共存；共享 cpufreq 保留原 ondemand 参数。"

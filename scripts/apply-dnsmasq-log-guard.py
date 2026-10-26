@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Guard repeated dnsmasq log-facility before daemon startup, not afterwards."""
+import sys
+from pathlib import Path
+root=Path(sys.argv[1]).resolve()
+path=root/'package/network/services/dnsmasq/files/dnsmasq.init'
+text=path.read_text();marker='\tDEFAULT_INSTANCE=""\n\tconfig_load dhcp\n'
+call='\t/usr/libexec/xg2010g-dnsmasq-log-guard || return 1\n'
+if call not in text:
+    assert text.count(marker)==1,'Unreviewed dnsmasq start layout'
+    text=text.replace(marker,marker+call)
+    path.write_text(text)
+assert text.index(call)<text.index('\t\tdnsmasq_start "$instance"',text.index('start_service()'))
+print('DNS log-facility guard installed before daemon start; no restart loop')

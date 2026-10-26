@@ -12,7 +12,7 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('gbosek/luci-app-airoha', 'f8c1bc6872b36bc5445fd0946103d65b1f736d7b', r'^2\.0\.0-(?:r)?907$'),
+    'naoki': ('naoki66/luci-app-airoha', 'c0abc628cc90043b4a9ea6c0c1dc9e1325190567', r'^2\.0\.0-(?:r)?908$'),
     'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?102$'),
 }
 variant = meta['variant']
@@ -43,7 +43,7 @@ for manifest in manifests:
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
     assert re.match(r'^0\.1\.1-(?:r)?9$', pkgs['mwan4']), 'MWAN4 routing fixes missing'
     assert re.match(r'^1\.0\.0-(?:r)?12$', pkgs['luci-app-mwan4']), 'MWAN4 stopped-state editing fix missing'
-    assert re.search(r'-(?:r)?9$', pkgs['luci-app-pon-status']), 'PON fullwidth-v3 package release missing'
+    assert re.search(r'-(?:r)?14$', pkgs['luci-app-pon-status']), 'PON horizontal-naoki-v1 package release missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
     assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
     assert not any(n in pkgs for n in ('luci-app-nlbwmon','luci-app-statistics')), 'Removed monitor/statistics plugin present'
@@ -94,7 +94,7 @@ for src in (repo/'Runtime/root').rglob('*'):
     rel=src.relative_to(repo/'Runtime/root'); dest=installed/rel
     assert dest.is_file() and dest.read_bytes()==src.read_bytes(), 'Runtime migration/sample differs: '+str(rel)
     if src.suffix != '.awk': assert dest.stat().st_mode & 0o111, 'Nonexecutable runtime: '+str(rel)
-assert "[ _('卸载') ]" in (repo/'UI/15_pon.js').read_text()
+assert '收光功率 Rx' in (repo/'UI/15_pon.js').read_text()
 assert 'HW_OFFLOAD 标记连接' not in (repo/'UI/15_pon.js').read_text()
 assert 'packet_steering' in (installed/'etc/init.d/packet_steering').read_text()
 ppe_rpc=(installed/'usr/libexec/rpcd/luci.airoha_npu').read_text()
@@ -112,11 +112,11 @@ assert all(token in cpu_page for token in ('sample.stale', 'sample.error',
 assert '最后有效样本' not in cpu_page, 'Hidden CPU sampling details remain in image'
 mwan_init=(installed/'etc/init.d/mwan4').read_text()
 assert 'mwan4-rule-guard.sh --cleanup' in mwan_init and 'mwan4-rule-guard.sh --routes-only' in mwan_init
-pon_include = installed / 'www/luci-static/resources/view/status/include/15_xg2010g_pon.js'
+pon_include = installed / 'www/luci-static/resources/view/status/include/29a_xg2010g_pon.js'
 assert pon_include.read_bytes() == (repo / 'UI/15_pon.js').read_bytes(), 'Dedicated full-width PON view missing'
 assert not (pon_include.parent / '15_pon.js').exists(), 'Legacy PON module would create a duplicate/cached card'
 layout = json.loads((installed / 'etc/pon-status-layout.json').read_text())
-assert layout['layout'] == 'fullwidth-v3' and layout['module'] == 'view.status.include.15_xg2010g_pon'
+assert layout['layout'] == 'horizontal-naoki-v1' and layout['module'] == 'view.status.include.29a_xg2010g_pon'
 assert layout['sha256'] == hashlib.sha256(pon_include.read_bytes()).hexdigest(), 'PON layout provenance mismatch'
 overview = (installed / 'www/luci-static/resources/view/mwan4/network/overview.js').read_text()
 assert 'Service stopped' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
@@ -145,7 +145,7 @@ assert wallpaper.is_file() and wallpaper.stat().st_mode & 0o111, 'Argon wallpape
 print(variant + ': Latest Airoha snapshot, MWAN4, Chinese UI, four CPU cores, RPS boot/event policy and CPU/PON/LAN1/LAN2 temperature script verified in staged rootfs')
 print('Verified MWAN4 stop/native-init fixes, RPS boot/event policy, full-width PON, WOL and default LAN 192.168.10.1')
 print('Verified independent overview rendering and Argon Chinese wallpaper configuration with Bing default')
-print('Verified PON fullwidth-v3, compact transparent rate rows, package r9 and layout provenance')
+print('Verified PON horizontal-naoki-v1, compact transparent rate rows, package r14 and layout provenance')
 assert (installed/'etc/config/fstab').is_file(), 'Default fstab missing from delivered rootfs'
 boot = json.loads((installed/'etc/xg2010g-boot-fixes.json').read_text())
 assert boot['phy_patch_sha256'] == hashlib.sha256((repo/'kernel-patches/airoha'/boot['phy_patch']).read_bytes()).hexdigest()

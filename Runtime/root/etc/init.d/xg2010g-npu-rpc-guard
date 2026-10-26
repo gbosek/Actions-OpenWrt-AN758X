@@ -1,0 +1,18 @@
+#!/bin/sh /etc/rc.common
+# One bounded RPC registration check; CPU policy remains in cpufreq.
+START=96
+registered() { ubus list 2>/dev/null | grep -Fxq 'luci.airoha_npu'; }
+start() {
+	[ -x /usr/libexec/rpcd/luci.airoha_npu ] || return 1
+	registered && return 0
+	logger -t xg2010g-npu-rpc-guard 'NPU RPC absent; reloading rpcd once'
+	/etc/init.d/rpcd reload || return 1
+	local attempt=0
+	while [ "$attempt" -lt 10 ]; do
+		registered && return 0
+		sleep 1
+		attempt=$((attempt+1))
+	done
+	logger -t xg2010g-npu-rpc-guard -p daemon.warn 'NPU RPC still absent after bounded reload'
+	return 1
+}

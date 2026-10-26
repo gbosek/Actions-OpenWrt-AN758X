@@ -291,7 +291,7 @@ msgstr ""
 msgid "Idle"
 msgstr ""
 
-msgid "Algorithm references"
+msgid "In use"
 msgstr ""
 
 msgid "Index"
@@ -487,9 +487,6 @@ msgid "Pause"
 msgstr ""
 
 msgid "Peak"
-msgstr ""
-
-msgid "Per-band airtime efficiency, negotiated and expected rates, failure counts and BND/UNB ownership."
 msgstr ""
 
 msgid "Physical Bottleneck"
@@ -795,13 +792,7 @@ msgstr ""
 msgid "PHY / Expected"
 msgstr ""
 
-msgid "Switches here apply the hardware offload settings for this device."
-msgstr ""
-
 msgid "Frame Engine"
-msgstr ""
-
-msgid "Register-level counters for the GDM data MACs and CDM DMA engines."
 msgstr ""
 
 msgid "GDM Ports"
@@ -835,12 +826,6 @@ msgid "HW fast path"
 msgstr ""
 
 msgid "HW fast dropped"
-msgstr ""
-
-msgid "TSO queue"
-msgstr ""
-
-msgid "TSO dropped"
 msgstr ""
 
 msgid "Per-CPU RX"
@@ -880,4 +865,10 @@ msgid "Transmitted"
 msgstr ""
 
 msgid "CPU Usage History"
+msgstr ""
+
+msgid "Active sessions"
+msgstr ""
+
+msgid "Cumulative IRQs"
 msgstr ""

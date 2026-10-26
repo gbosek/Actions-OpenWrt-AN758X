@@ -606,8 +606,10 @@ _gdm_json() {
 #   +0x50..0x5c per-CPU RX_DROP.
 #
 # The +0x00 word keeps the JSON key "tx" (renaming it would break a device
-# still running this older backend behind a newer view). +0x00 is TX_OK_CNT,
-# presented as transmitted frames, separate from the RX CPU/HW delivery split.
+# still running this older backend behind a newer view), but the UI shows it as
+# "Total received": it is a per-engine total of its own and is NOT the sum of
+# the CPU/HW delivery split - on the two test boards it advances on a different
+# frame stream and can stay far below rx_cpu.
 _cdm_json() {
 	local reg="$1" base="$2"
 	local tx rxcpu rxhwf rxcpud rxhwfd
@@ -663,12 +665,10 @@ get_frame_engine() {
 	# [30:16] SHARE_USED_CNT_MAX, [14:0] FQ_CNT_MIN. The shared pool only absorbs
 	# bursts that overrun the per-port reservations, so the instantaneous word at
 	# 0x104 is back to zero within milliseconds; the latched max is what a poll
-	# every few seconds can actually observe. Keep a failed peak read unknown
-	# while retaining the other valid counters on the card.
-	pse_peak=null
-	if pk=$(_devmem32 0x1fb50100); then
-		pse_peak=$(( (pk >> 16) & 0x7FFF ))
-	fi
+	# every few seconds can actually observe. A failed read degrades to 0 rather
+	# than dropping the whole card.
+	pk=$(_devmem32 0x1fb50100) || pk=0
+	pse_peak=$(( (pk >> 16) & 0x7FFF ))
 
 	# Per-port queue occupancy (FE+0x150+4i) is deliberately not exported: every
 	# idle port reports a constant IQ of 2, which reads as a permanent backlog
@@ -720,8 +720,15 @@ get_frame_engine() {
 # and the engine list cannot change before a reboot, so its answer is cached
 # for a minute to keep repeated page loads cheap.
 get_crypto_info() {
-	local present=0 bound=0 algos=0 refs=0 algostat="" chardev=0 openssl=0 engine="" irqs="null"
-	local dir now stamp saved age cache="/tmp/luci-airoha-npu.crypto.cache"
+	local present=0 bound=0 algos=0 refs=0 sess=0 algostat="" chardev=0 openssl=0 engine="" irqs="null"
+	local ciphers="" ciphers_json="[]" dump="" irate="null" p_stamp="" p_irq=""
+	local dir now stamp saved saved_ciphers age cache="/tmp/luci-airoha-npu.crypto.cache"
+	local irc="/tmp/luci-airoha-npu.crypto.irq"
+
+	# One clock read serves the engine-probe cache, the interrupt-rate sample
+	# and the "no baseline yet" answer, so it happens before any probe runs.
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
 
 	[ -d /sys/module/crypto_hw_eip93 ] && present=1
 	[ -e /dev/crypto ] && chardev=1
@@ -732,18 +739,31 @@ get_crypto_info() {
 	for dir in /sys/bus/platform/drivers/*/; do
 		[ -e "$dir/1fb70000.crypto" ] && { bound=1; break; }
 	done
-	[ "$bound" -eq 1 ] && present=1
 
 	# /proc/crypto prints a name line before its driver line, so remember the
 	# name and only count it when the driver is the EIP93 one. The match also
 	# accepts "safexcel" because the compatible string is
 	# inside-secure,safexcel-eip93ies and the driver name varies by kernel.
 	#
-	# Publish counts only. refcnt includes algorithm/module references, not
-	# active sessions or hardware load. The field ordering
-	# (driver before refcnt) holds on both 5.4 and 6.x, but `matched` is reset
-	# on every name line so a reordered or extra field can never leak a count
-	# from another block.
+	# Only the counts are published. The full list is the driver's registered
+	# algorithm set: it cannot change before a reboot, it says nothing about
+	# which of them are in use, and 32 names in one line is unreadable on a
+	# page that redraws every 5 s - the count plus the refcnt below carry the
+	# same information.
+	#
+	# refcnt is the number of live tfm users of that algorithm, and it is the
+	# only built-in counter this driver exposes (there is no debugfs node on the
+	# vendor kernel). It is NOT a load counter as printed: every algorithm in
+	# the registered set carries a permanent baseline of 1, so summing it raw
+	# reproduces the algorithm count (32/32 on a completely idle engine - the
+	# generic software blocks read the same baseline, which proves the value is
+	# registration state and not usage). Only the references above that
+	# baseline are live sessions, hence max(0, refcnt - 1) per block; both the
+	# raw sum (`refcnt`) and the derived `sessions` are published so the card
+	# can show a number that actually moves. The field ordering (driver before
+	# refcnt) holds on both 5.4 and 6.x, but `matched` is reset on every name
+	# line so a reordered or extra field can never leak a count from another
+	# block.
 	if [ -r /proc/crypto ]; then
 		algostat=$(awk '
 			/^name[ \t]*:/ {
@@ -766,24 +786,39 @@ get_crypto_info() {
 					value = $0
 					sub(/^refcnt[ \t]*:[ \t]*/, "", value)
 					sub(/[ \t]+$/, "", value)
-					if (value ~ /^[0-9]+$/) refs += value
+					if (value ~ /^[0-9]+$/) {
+						value += 0
+						refs += value
+						if (value > 1) extra += value - 1
+					}
 				}
 			}
-			END { printf "%d|%d", n + 0, refs + 0 }
+			END { printf "%d|%d|%d", n + 0, refs + 0, extra + 0 }
 		' /proc/crypto 2>/dev/null)
 		algos="${algostat%%|*}"
-		refs="${algostat#*|}"
+		algostat="${algostat#*|}"
+		refs="${algostat%%|*}"
+		sess="${algostat#*|}"
 		case "$algos" in ''|*[!0-9]*) algos=0 ;; esac
 		case "$refs" in ''|*[!0-9]*) refs=0 ;; esac
+		case "$sess" in ''|*[!0-9]*) sess=0 ;; esac
 	fi
 
 	# EIP93 sits on GIC SPI 44; the line name is the platform device
 	# (1fb70000.crypto) on newer kernels and the driver name on older ones, so
-	# both are accepted. Summing the per-CPU columns gives a since-boot total.
+	# both are accepted. The line layout is
+	#   IRQ:  cpu0 cpu1 ...   GICv3  <hwirq>  Level  <device>
+	# so only the leading per-CPU columns are counts and the loop must stop at
+	# the first non-numeric field. Accumulating every numeric field (the old
+	# behaviour) added the hwirq number as well, which is why an engine that had
+	# never fired still reported 76: that is SPI 44 + 32, not 76 interrupts.
 	irqs=$(awk '
 		/crypto@1fb70000|1fb70000\.crypto|eip93/ {
 			found = 1
-			for (i = 2; i <= NF && $i ~ /^[0-9]+$/; i++) sum += $i
+			for (i = 2; i <= NF; i++) {
+				if ($i ~ /^[0-9]+$/) sum += $i
+				else break
+			}
 		}
 		END { if (found) print sum + 0; else print "" }
 	' /proc/interrupts 2>/dev/null)
@@ -791,32 +826,69 @@ get_crypto_info() {
 
 	if command -v openssl >/dev/null 2>&1; then
 		openssl=1
-		now=$(date +%s 2>/dev/null)
-		case "$now" in ''|*[!0-9]*) now="" ;; esac
 		if [ -n "$now" ] && [ -s "$cache" ]; then
-			{ IFS= read -r stamp; IFS= read -r saved; } <"$cache" 2>/dev/null
+			{ IFS= read -r stamp; IFS= read -r saved; IFS= read -r saved_ciphers; } <"$cache" 2>/dev/null
 			case "$stamp" in ''|*[!0-9]*) stamp="" ;; esac
 			case "$saved" in 0|1) ;; *) saved="" ;; esac
 			if [ -n "$stamp" ] && [ -n "$saved" ] && [ "$now" -ge "$stamp" ] 2>/dev/null; then
 				age=$((now - stamp))
-				[ "$age" -lt 60 ] && engine="$saved"
+				[ "$age" -lt 60 ] && { engine="$saved"; ciphers="$saved_ciphers"; }
 			fi
 		fi
 		if [ -z "$engine" ]; then
-			# Success prints "(devcrypto) ..." followed by " [ available ]";
-			# a missing engine prints an ENGINE_by_id error instead.
-			if openssl engine -t -c devcrypto 2>/dev/null | grep -q '\[ available \]'; then
-				engine=1
-			else
-				engine=0
-			fi
-			[ -n "$now" ] && printf '%s\n%s\n' "$now" "$engine" >"$cache" 2>/dev/null
+			# `-pre DUMP_INFO` is the only probe that answers "which algorithms
+			# can actually be offloaded": it walks every cipher the engine knows,
+			# opens a kernel session for it and prints the backing driver with a
+			# "(hw accelerated)" marker, or `CIOCGSESSION … failed` for the ones
+			# the driver refuses (AES-CBC on this board). Advertised = the marked
+			# ones only; the failed lines are exactly what makes a plain
+			# `openssl enc -aes-128-cbc` silently stay on the CPU. `[ available ]`
+			# in the same output is the engine-level check the card already used.
+			# One fork, cached for a minute: none of it can change before a reboot.
+			dump=$(openssl engine -t -c -vv -pre DUMP_INFO devcrypto 2>&1)
+			case "$dump" in
+			*"[ available ]"*) engine=1 ;;
+			*) engine=0 ;;
+			esac
+			ciphers=$(printf '%s\n' "$dump" \
+				| sed -n 's/^Cipher \(.*\), NID=[0-9]*, .*(hw accelerated).*$/\1/p' \
+				| tr '\n' ',' | sed 's/,$//')
+			[ -n "$now" ] && printf '%s\n%s\n%s\n' "$now" "$engine" "$ciphers" >"$cache" 2>/dev/null
 		fi
 	fi
+	# JSON array of the usable ciphers, empty when the engine is absent. The
+	# names come from the engine itself, so they contain no quotes to escape.
+	if [ -n "$ciphers" ]; then
+		ciphers_json="[\"$(printf '%s' "$ciphers" | sed 's/,/","/g')\"]"
+	fi
 
-	printf '{"available":true,"present":%d,"bound":%d,"algos":%d,"refcnt":%d,"devcrypto":%d,"openssl":%d,"engine":%s,"irqs":%s}' \
-		"$present" "$bound" "$algos" "$refs" \
-		"$chardev" "$openssl" "${engine:-null}" "$irqs"
+	# Interrupt rate. There is no packet or byte counter in the register map to
+	# read (PE_CD_COUNT / PE_RD_COUNT are ring depths, not totals), so the only
+	# runtime quantity this engine exposes is its completion-interrupt total -
+	# and a rate needs two samples. The previous sample is kept next to the
+	# engine cache and rewritten on every call, which lines up with the ~20 s
+	# poll cadence of the card rather than with each 5 s page tick.
+	if [ "$irqs" != "null" ] && [ -n "$now" ]; then
+		if [ -s "$irc" ]; then
+			{ IFS= read -r p_stamp; IFS= read -r p_irq; } <"$irc" 2>/dev/null
+			case "$p_stamp" in ''|*[!0-9]*) p_stamp="" ;; esac
+			case "$p_irq" in ''|*[!0-9]*) p_irq="" ;; esac
+			if [ -n "$p_stamp" ] && [ -n "$p_irq" ] && [ "$now" -gt "$p_stamp" ] 2>/dev/null; then
+				if [ "$irqs" -ge "$p_irq" ] 2>/dev/null; then
+					irate=$(( (irqs - p_irq) / (now - p_stamp) ))
+				else
+					# Counter went backwards: the board rebooted between the two
+					# samples, so the delta is meaningless rather than negative.
+					irate=0
+				fi
+			fi
+		fi
+		printf '%s\n%s\n' "$now" "$irqs" >"$irc" 2>/dev/null
+	fi
+
+	printf '{"available":true,"present":%d,"bound":%d,"algos":%d,"refcnt":%d,"sessions":%d,"devcrypto":%d,"openssl":%d,"engine":%s,"irqs":%s,"irq_rate":%s,"ciphers":%s}' \
+		"$present" "$bound" "$algos" "$refs" "$sess" \
+		"$chardev" "$openssl" "${engine:-null}" "$irqs" "$irate" "$ciphers_json"
 }
 
 # Persist CPU governor / max_freq to UCI so the choice survives a reboot.

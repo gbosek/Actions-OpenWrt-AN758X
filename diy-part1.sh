@@ -105,6 +105,9 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   python3 "$GITHUB_WORKSPACE/scripts/apply-driver-fixes.py" . --project pon
   # Complete guarded bridge cache-miss path; no board/PHY/DHCP replacement.
   python3 "$GITHUB_WORKSPACE/scripts/apply-naoki-offload.py" .
+  python3 "$GITHUB_WORKSPACE/scripts/apply-reviewed-upstream.py" . || exit 1
+  python3 "$GITHUB_WORKSPACE/scripts/apply-requested-extras.py" . || exit 1
+  python3 "$GITHUB_WORKSPACE/scripts/apply-dnsmasq-log-guard.py" . || exit 1
   python3 "$GITHUB_WORKSPACE/scripts/apply-bridge-defaults.py" . || exit 1
   python3 "$GITHUB_WORKSPACE/scripts/apply-eip93-packages.py" . || exit 1
 
@@ -382,7 +385,7 @@ if [ -n "$(ls -A "$PKG_DIR" 2>/dev/null)" ]; then
     REQUIRED="$REQUIRED luci-app-natmode luci-app-pon-status"
   fi
   if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-    REQUIRED="$REQUIRED mwan4 luci-app-mwan4 luci-app-wol etherwake flock luci-app-argon-config luci-theme-argon luci-app-aurora-config luci-theme-aurora luci-app-autoreboot luci-app-mini-diskmanager luci-app-partexp luci-app-rtp2httpd rtp2httpd"
+    REQUIRED="$REQUIRED luci-app-clients luci-app-pushbot luci-app-ddns ddns-scripts luci-app-pbr pbr luci-app-watchcat watchcat luci-app-wol etherwake luci-app-msd_lite msd_lite luci-app-rtp2httpd rtp2httpd luci-app-udpxy udpxy luci-app-upnp miniupnpd-nftables luci-app-timewol luci-app-ttyd ttyd luci-app-autoreboot luci-app-argon-config luci-app-package-manager luci-mod-system mwan4 luci-app-mwan4 flock luci-theme-argon luci-app-aurora-config luci-theme-aurora luci-app-mini-diskmanager luci-app-partexp"
   fi
   HARD_MISS=""
   for r in $REQUIRED; do

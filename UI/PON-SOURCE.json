@@ -1,0 +1,16 @@
+{
+  "repository": "naoki66/OpenWrt_ONU_CONFIG",
+  "commit": "3cb13560459f1d51136dac662baa1f399028b2b4",
+  "package": "luci-app-pon-status",
+  "upstream_module": "29a_pon.js",
+  "upstream_sha256": "b2b3db42bffcdecd8cca41aff785769a64285b5e51570ebfff0727bae398f1cc",
+  "local_adjustments": [
+    "Full-width overview integration under a fresh module name; no optical thresholds or datapath changes"
+  ],
+  "current_router_reference": {
+    "pon_js_sha256": "69da0883db36c9604e8eb696aef863c1873b70d627c6c33daeba8dd05f7870fd",
+    "ports_js_sha256": "8454d91b1e1f0df85b768474f4324e4b980a71e47ec826504c310f5c7c8ef43a",
+    "ast_equal_to_pinned_sources": true,
+    "order": "29_ports.js -> 29a_xg2010g_pon.js -> 30_network.js"
+  }
+}

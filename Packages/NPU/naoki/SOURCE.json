@@ -1,16 +1,19 @@
 {
   "variant": "naoki",
-  "upstream": "gbosek/luci-app-airoha",
-  "commit": "f8c1bc6872b36bc5445fd0946103d65b1f736d7b",
+  "upstream": "naoki66/luci-app-airoha",
+  "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
-    "Chinese catalog filenames use airoha-npu basename"
+    "Chinese catalog basename",
+    "Shared existing CPU policy owner",
+    "Existing full PPE export and snapshot safeguards",
+    "Separate bounded RPC registration guard; no second CPU boot owner"
   ],
   "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3",
   "upstream_mirror": {
     "repo": "naoki66/luci-app-airoha",
-    "commit": "d496614002cf21f83e96e4741716eab1e5333ede",
+    "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567",
     "branch": "main"
   },
   "selected_updates": [
@@ -32,6 +35,8 @@
     "Zero-L2 warning at 50 percent or greater",
     "GDM complete drop counters; misleading idle PSE port queue occupancy removed upstream",
     "PSE shared-buffer hardware high-water mark with unknown on read failure",
-    "Compact PPE header count pills with no wrapping"
+    "Compact PPE header count pills with no wrapping",
+    "Upstream 2026-10-26 EIP93/PPE/NPU parallel cards and compact headings",
+    "0fa3530 first-boot RPC registration self-heal"
   ]
 }

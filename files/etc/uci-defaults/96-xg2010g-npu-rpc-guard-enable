@@ -1,0 +1,3 @@
+#!/bin/sh
+/etc/init.d/xg2010g-npu-rpc-guard enable
+exit 0

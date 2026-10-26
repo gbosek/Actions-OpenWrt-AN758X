@@ -1,0 +1,609 @@
+// SPDX-License-Identifier: Apache-2.0
+
+'use strict';
+'require dom';
+'require poll';
+'require ui';
+'require view.status.clients.common as common';
+
+/*
+ * Overview - the totals, and the trend that makes them interpretable.
+ *
+ * The chart is drawn as inline SVG rather than pulled from a charting library.
+ * A router image has no room for one, and the shape needed here is two lines
+ * with a shared axis: a library would add more code than the drawing does.
+ *
+ * The series lives in memory. Points accumulate every SAMPLE_INTERVAL while the
+ * page is open and are dropped when it closes, because a few minutes of history
+ * is not worth writing to a file - and writing it to flash on a timer is
+ * exactly what a status page should not do.
+ *
+ * The totals come from conntrack, so they are floors rather than lifetime
+ * figures. The footnote under the chart says that once instead of repeating it
+ * in every tile.
+ *
+ * This is deliberately NOT a LuCI view module. L.require() instantiates every
+ * class it loads, and instantiating a View takes over #view - spinner first,
+ * then DOM.content() with the render result. Requiring three of those from the
+ * tab frame meant three of them fought over #view, and the tab bar lost. A
+ * plain class is inert on require(); clients.js mounts it into its pane.
+ */
+
+var WINDOWS = [
+	{ label: _('Last 5 minutes'), minutes: 5 },
+	{ label: _('Last 10 minutes'), minutes: 10 },
+	{ label: _('Last 25 minutes'), minutes: 25 }
+];
+
+var TYPES = [
+	{ value: 'total', label: _('Total') },
+	{ value: 'wan', label: _('WAN') }
+];
+
+/* Nice round numbers for the Y axis: a chart whose top reads "3.47 MiB/s" is
+ * harder to read than one whose top reads "4 MiB/s". */
+function niceCeiling(value) {
+	if (!value || value <= 0)
+		return 1;
+
+	var exponent = Math.floor(Math.log(value) / Math.LN2);
+	var base = Math.pow(2, exponent);
+	var steps = [ 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8 ];
+
+	for (var i = 0; i < steps.length; i++)
+		if (steps[i] * base >= value)
+			return steps[i] * base;
+
+	return 2 * base;
+}
+
+/* ---- hover readout, modelled on the SoC page's CPU usage history ---- */
+
+function chartPointer(svg, evt) {
+	try {
+		if (typeof svg.createSVGPoint === 'function' && svg.getScreenCTM) {
+			var m = svg.getScreenCTM();
+			if (m) {
+				var pt = svg.createSVGPoint();
+				pt.x = evt.clientX; pt.y = evt.clientY;
+				return pt.matrixTransform(m.inverse());
+			}
+		}
+	} catch (e) {
+		/* Fall through to the viewBox mapping below. */
+	}
+
+	var rect = svg.getBoundingClientRect();
+	var vb = String(svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+
+	if (!rect.width || vb.length !== 4 || !isFinite(vb[2]) || !isFinite(vb[3]))
+		return null;
+
+	return {
+		x: (evt.clientX - rect.left) / rect.width * vb[2],
+		y: (evt.clientY - rect.top) / Math.max(1, rect.height) * vb[3]
+	};
+}
+
+function chartNearest(xs, x) {
+	var best = 0, bestD = Infinity;
+
+	for (var i = 0; i < xs.length; i++) {
+		var d = Math.abs(xs[i] - x);
+
+		if (d < bestD) { bestD = d; best = i; }
+	}
+
+	return best;
+}
+
+function fmtSampleClock(ms) {
+	var d = new Date(ms);
+
+	function pad(n) { return (n < 10) ? '0' + String(n) : String(n); }
+
+	return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+return L.Class.extend({
+	store: null,
+	clients: null,
+	selectedMac: '',
+	selectedType: 'total',
+	windowMinutes: 10,
+
+	load: function() {
+		this.store = common.createStore();
+
+		return this.store.fetchLeases().then(L.bind(function() {
+			return this.store.fetchSnapshot();
+		}, this));
+	},
+
+	/* ---------------- summary ---------------- */
+
+	summarise: function(clients) {
+		var summary = {
+			online: 0, total: clients.length, wireless: 0,
+			lanUp: 0, lanDown: 0, wanUp: 0, wanDown: 0,
+			lanTotalUp: 0, lanTotalDown: 0, wanTotalUp: 0, wanTotalDown: 0,
+			connections: this.store.state.stats ? this.store.state.stats.conntrack : null,
+			capacity: this.store.state.stats ? this.store.state.stats.conntrack_max : null
+		};
+
+		clients.forEach(function(entry) {
+			if (entry.online)
+				summary.online++;
+			if (entry.wireless)
+				summary.wireless++;
+		});
+
+		/* On a bridge the per-client conntrack counters are frozen by the
+		 * offload; the hardware port counters are the figure that moves. The
+		 * conntrack path stays for routed boxes, where it is the finer
+		 * measurement. */
+		var l2Rates = this.store.bridgeRates(false);
+		var l2Totals = this.store.bridgeRates(true);
+
+		if (l2Rates && l2Totals) {
+			summary.lanUp = l2Rates.lanUp;
+			summary.lanDown = l2Rates.lanDown;
+			summary.wanUp = l2Rates.wanUp;
+			summary.wanDown = l2Rates.wanDown;
+			summary.lanTotalUp = l2Totals.lanUp;
+			summary.lanTotalDown = l2Totals.lanDown;
+			summary.wanTotalUp = l2Totals.wanUp;
+			summary.wanTotalDown = l2Totals.wanDown;
+
+			return summary;
+		}
+
+		clients.forEach(function(entry) {
+			if (!entry.rate)
+				return;
+
+			summary.lanUp += entry.rate.lanUp || 0;
+			summary.lanDown += entry.rate.lanDown || 0;
+			summary.wanUp += entry.rate.wanUp || 0;
+			summary.wanDown += entry.rate.wanDown || 0;
+
+			summary.lanTotalUp += entry.total.lanUp || 0;
+			summary.lanTotalDown += entry.total.lanDown || 0;
+			summary.wanTotalUp += entry.total.wanUp || 0;
+			summary.wanTotalDown += entry.total.wanDown || 0;
+		});
+
+		return summary;
+	},
+
+	renderSummary: function(summary) {
+		function block(label, up, down, totalUp, totalDown) {
+			return E('div', { 'class': 'clients-block' }, [
+				E('div', { 'class': 'clients-block__title' }, label),
+				E('div', { 'class': 'clients-block__row' }, [
+					E('span', { 'class': 'clients-block__dir clients-block__dir--up' }, '↑'),
+					E('span', { 'class': 'clients-block__rate' }, common.formatRate(up)),
+					E('span', { 'class': 'clients-block__total' }, '(' + common.formatSize(totalUp) + ')')
+				]),
+				E('div', { 'class': 'clients-block__row' }, [
+					E('span', { 'class': 'clients-block__dir clients-block__dir--down' }, '↓'),
+					E('span', { 'class': 'clients-block__rate' }, common.formatRate(down)),
+					E('span', { 'class': 'clients-block__total' }, '(' + common.formatSize(totalDown) + ')')
+				])
+			]);
+		}
+
+		var totalUp = summary.lanUp + summary.wanUp;
+		var totalDown = summary.lanDown + summary.wanDown;
+		var totalUpBytes = summary.lanTotalUp + summary.wanTotalUp;
+		var totalDownBytes = summary.lanTotalDown + summary.wanTotalDown;
+
+		dom.content(this.summary, [
+			block(_('WAN traffic'), summary.wanUp, summary.wanDown,
+				summary.wanTotalUp, summary.wanTotalDown),
+			block(_('Total'), totalUp, totalDown, totalUpBytes, totalDownBytes),
+			E('div', { 'class': 'clients-block clients-block--facts' }, [
+				E('div', { 'class': 'clients-block__title' }, _('Clients')),
+				E('div', { 'class': 'clients-block__fact' }, [
+					E('span', { 'class': 'clients-block__value' }, String(summary.online)),
+					E('span', { 'class': 'clients-block__unit' }, _('online of %s').format(String(summary.total)))
+				]),
+				E('div', { 'class': 'clients-block__fact' }, [
+					E('span', { 'class': 'clients-block__value' }, String(summary.wireless)),
+					E('span', { 'class': 'clients-block__unit' }, _('wireless'))
+				]),
+				E('div', { 'class': 'clients-block__fact' }, [
+					E('span', { 'class': 'clients-block__value' }, common.formatCount(summary.connections)),
+					E('span', { 'class': 'clients-block__unit' },
+						summary.capacity ? _('connections of %s').format(String(summary.capacity))
+							: _('connections'))
+				])
+			])
+		]);
+	},
+
+	/* ---------------- chart ---------------- */
+
+	/*
+	 * Two series, one axis. `pick(point)` returns { up, down } in bytes/second
+	 * for a point, which lets the same drawing code serve the totals and a
+	 * single device without a second implementation.
+	 */
+	seriesFor: function() {
+		var type = this.selectedType;
+		var mac = this.selectedMac;
+
+		return function(point) {
+			var source = point;
+
+			if (mac) {
+				source = point.byMac ? point.byMac[mac] : null;
+
+				if (!source)
+					return { up: 0, down: 0 };
+			}
+
+		if (type == 'wan')
+			return { up: source.wanUp || 0, down: source.wanDown || 0 };
+
+		return {
+				up: (source.lanUp || 0) + (source.wanUp || 0),
+				down: (source.lanDown || 0) + (source.wanDown || 0)
+			};
+		};
+	},
+
+	visiblePoints: function() {
+		var trend = this.store.trend || [];
+		var cutoff = Date.now() - this.windowMinutes * 60000;
+
+		return trend.filter(function(point) { return point.t >= cutoff; });
+	},
+
+	renderChart: function() {
+		/* A point whose rate was not measurable (the first sample of a
+		 * session has no baseline to differ against) is skipped entirely:
+		 * drawing it as 0 would fake a rise from the floor and read as a
+		 * triangle, exactly what the CPU usage history chart avoids by
+		 * breaking its line at null samples. */
+		var points = this.visiblePoints().filter(function(p) { return p.valid !== false; });
+		var pick = this.seriesFor();
+
+		var width = 720, height = 220;
+		var padX = 8, padTop = 14, padBottom = 10;
+		var plotW = width - padX * 2;
+		var plotH = height - padTop - padBottom;
+
+		if (!points.length) {
+			dom.content(this.chart, [
+				E('div', { 'class': 'clients-chart__empty' },
+					_('Collecting samples. The chart fills in as the page stays open.'))
+			]);
+			return;
+		}
+
+		var values = points.map(pick);
+		var peak = 0;
+
+		values.forEach(function(v) {
+			peak = Math.max(peak, v.up, v.down);
+		});
+
+		var ceiling = niceCeiling(peak);
+		var t0 = points[0].t;
+		var t1 = points[points.length - 1].t;
+
+		/* A single sample has no span; give it a nominal one so the line lands
+		 * in the middle instead of dividing by zero. */
+		if (t1 <= t0)
+			t1 = t0 + 1000;
+
+		function x(t) { return padX + (t - t0) / (t1 - t0) * plotW; }
+		function y(v) { return padTop + plotH - (v / ceiling) * plotH; }
+
+		function line(key) {
+			return points.map(function(point, index) {
+				var v = values[index][key];
+
+				return (index ? 'L' : 'M') + x(point.t).toFixed(1) + ' ' + y(v).toFixed(1);
+			}).join(' ');
+		}
+
+		/* Three anchor labels only - top, middle, floor - the way the SoC
+		 * page's usage history does it; one per gridline crowds the card. */
+		var grid = '';
+
+		for (var i = 0; i <= 4; i++) {
+			var gy = y(ceiling * i / 4);
+
+			grid += '<line x1="' + padX + '" y1="' + gy.toFixed(1)
+				+ '" x2="' + (width - padX) + '" y2="' + gy.toFixed(1)
+				+ '" stroke="var(--cl-rule)" stroke-width="1" stroke-dasharray="3 3"/>';
+		}
+
+		[4, 2, 0].forEach(function(step) {
+			var gy = y(ceiling * step / 4);
+
+			grid += '<text x="' + (padX + 2) + '" y="' + (gy - 4).toFixed(1)
+				+ '" font-size="10" fill="var(--cl-muted)">'
+				+ common.formatRate(ceiling * step / 4) + '</text>';
+		});
+
+		var lastUp = values[values.length - 1].up;
+		var lastDown = values[values.length - 1].down;
+
+		function esc(text) {
+			return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
+
+		/* document.createElement('svg') yields an HTMLUnknownElement that renders
+		 * nothing - its text children show up as plain inline text instead of a
+		 * chart. SVG nodes only exist when the parser or createElementNS makes
+		 * them, so the chart is assembled as markup and handed to innerHTML,
+		 * which puts every node into the SVG namespace. Everything interpolated
+		 * is a number, a formatted rate or a clock time; only the two
+		 * translatable strings need escaping. */
+		var host = E('div');
+
+		host.innerHTML =
+			'<svg viewBox="0 0 ' + width + ' ' + height + '" width="100%" class="clients-chart__svg"'
+			+ ' style="display:block;cursor:crosshair" role="img">'
+			+ '<title>' + esc(_('Traffic trend')) + '</title>'
+			+ '<desc>' + esc(_('Upload and download rates over the selected window.')) + '</desc>'
+			+ '<g>' + grid + '</g>'
+			+ '<path d="' + line('up') + '" fill="none" stroke="var(--cl-up)" stroke-width="2"'
+			+ ' stroke-linejoin="round" stroke-linecap="round"/>'
+			+ '<path d="' + line('down') + '" fill="none" stroke="var(--cl-down)" stroke-width="2"'
+			+ ' stroke-linejoin="round" stroke-linecap="round"/>'
+			+ '<circle cx="' + x(t1).toFixed(1) + '" cy="' + y(lastUp).toFixed(1) + '" r="3" fill="var(--cl-up)"/>'
+			+ '<circle cx="' + x(t1).toFixed(1) + '" cy="' + y(lastDown).toFixed(1) + '" r="3" fill="var(--cl-down)"/>'
+			+ '</svg>';
+
+		var svg = host.firstChild;
+
+		/* The hover layer: a dashed crosshair snapped to the nearest sample,
+		 * one dot per series, and an HTML readout with the concrete values -
+		 * the same interaction the CPU usage history chart offers. HTML rather
+		 * than SVG text because the box is only measurable once rendered. The
+		 * svg node dies with the next poll, so the listeners never leak. */
+		var wrap = E('div', { 'style': 'position:relative' }, [ svg ]);
+
+		var tip = E('div', {
+			'style': 'position:absolute;display:none;z-index:3;pointer-events:none;min-width:8em;'
+				+ 'padding:.3em .5em;border:1px solid var(--cl-rule);border-radius:6px;'
+				+ 'background:var(--cl-surface);color:var(--cl-text);'
+				+ 'box-shadow:0 2px 8px rgba(15,23,42,.18);font-size:11px;line-height:1.5;'
+				+ 'font-variant-numeric:tabular-nums;text-align:left'
+		});
+		wrap.appendChild(tip);
+
+		function svgChild(tag, attrs) {
+			var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+
+			for (var k in attrs)
+				el.setAttribute(k, attrs[k]);
+
+			return el;
+		}
+
+		var guide = svgChild('line', {
+			'x1': 0, 'x2': 0, 'y1': padTop, 'y2': padTop + plotH,
+			'stroke': 'var(--cl-muted)', 'stroke-width': '1', 'stroke-dasharray': '3 3',
+			'visibility': 'hidden'
+		});
+		svg.appendChild(guide);
+
+		var dotColors = [ 'var(--cl-up)', 'var(--cl-down)' ];
+		var dots = dotColors.map(function(color) {
+			var dot = svgChild('circle', {
+				'cx': 0, 'cy': 0, 'r': '3.5',
+				'fill': color, 'stroke': 'var(--cl-surface)', 'stroke-width': '1.5',
+				'visibility': 'hidden'
+			});
+			svg.appendChild(dot);
+			return dot;
+		});
+
+		var xs = points.map(function(point) { return x(point.t); });
+
+		function hide() {
+			tip.style.display = 'none';
+			guide.setAttribute('visibility', 'hidden');
+			dots.forEach(function(dot) { dot.setAttribute('visibility', 'hidden'); });
+		}
+
+		function show(evt) {
+			var p = chartPointer(svg, evt);
+
+			if (!p || !xs.length)
+				return;
+
+			var i = chartNearest(xs, p.x);
+			var v = values[i];
+
+			guide.setAttribute('x1', xs[i].toFixed(1));
+			guide.setAttribute('x2', xs[i].toFixed(1));
+			guide.setAttribute('visibility', 'visible');
+
+			[ [ v.up, y(v.up) ], [ v.down, y(v.down) ] ].forEach(function(c, d) {
+				dots[d].setAttribute('cx', xs[i].toFixed(1));
+				dots[d].setAttribute('cy', c[1].toFixed(1));
+				dots[d].setAttribute('visibility', 'visible');
+			});
+
+			tip.innerHTML = '';
+			tip.appendChild(E('div', {
+				'style': 'color:var(--cl-muted);font-weight:650;margin-bottom:2px'
+			}, fmtSampleClock(points[i].t)));
+
+			[ { label: _('Upload rate'), value: common.formatRate(v.up), color: dotColors[0] },
+			  { label: _('Download rate'), value: common.formatRate(v.down), color: dotColors[1] } ]
+			.forEach(function(row) {
+				tip.appendChild(E('div', {
+					'style': 'display:flex;align-items:center;gap:.4em;white-space:nowrap'
+				}, [
+					E('span', {
+						'style': 'width:.9em;height:2px;border-radius:2px;background:' + row.color + ';flex:0 0 auto'
+					}),
+					E('span', { 'style': 'color:var(--cl-muted)' }, row.label),
+					E('span', {
+						'style': 'margin-left:auto;padding-left:.6em;font-weight:700'
+					}, row.value)
+				]));
+			});
+
+			var wr = wrap.getBoundingClientRect();
+			var px = evt.clientX - wr.left, py = evt.clientY - wr.top;
+
+			tip.style.display = 'block';
+
+			var left = Math.min(Math.max(0, px - tip.offsetWidth / 2), Math.max(0, wr.width - tip.offsetWidth));
+			var top = py - tip.offsetHeight - 10;
+
+			if (top < 0)
+				top = py + 12;
+
+			tip.style.left = left + 'px';
+			tip.style.top = top + 'px';
+		}
+
+		svg.addEventListener('mousemove', show);
+		svg.addEventListener('mouseleave', hide);
+
+		dom.content(this.chart, [ wrap ]);
+	},
+
+	deviceOptions: function() {
+		var clients = this.clients || [];
+		var options = [ E('option', { 'value': '' }, _('All devices')) ];
+
+		clients.filter(function(entry) { return entry.mac; }).forEach(function(entry) {
+			options.push(E('option', { 'value': entry.mac }, [
+				entry.hostname || entry.ipv4[0] || entry.mac
+			]));
+		});
+
+		return options;
+	},
+
+	refreshDeviceSelect: function() {
+		var select = this.deviceSelect;
+		var current = select.value;
+		var options = this.deviceOptions();
+
+		dom.content(select, options);
+
+		/* Keep the selection across a refresh, and drop it if the device left the
+		 * table - otherwise the chart would silently go flat. */
+		var still = options.some(function(option) { return option.getAttribute('value') == current; });
+
+		select.value = still ? current : '';
+		this.selectedMac = select.value;
+	},
+
+	/* ---------------- view ---------------- */
+
+	update: function() {
+		var clients = this.store.clients();
+
+		this.clients = clients;
+		this.store.pushTrend(clients);
+
+		this.renderSummary(this.summarise(clients));
+		this.refreshDeviceSelect();
+		this.renderChart();
+	},
+
+	render: function() {
+		var self = this;
+
+		common.ensureStylesheet();
+
+		this.summary = E('div', { 'class': 'clients-blocks' });
+		this.chart = E('div', { 'class': 'clients-chart' });
+		this.deviceSelect = E('select', { 'id': 'clients-ov-device', 'name': 'clients-ov-device', 'class': 'cbi-input-select' }, this.deviceOptions());
+
+		this.deviceSelect.addEventListener('change', function() {
+			self.selectedMac = self.deviceSelect.value;
+			self.renderChart();
+		});
+
+		var typeSelect = E('select', { 'id': 'clients-ov-type', 'name': 'clients-ov-type', 'class': 'cbi-input-select' }, TYPES.map(function(type) {
+			return E('option', { 'value': type.value, 'selected': (type.value == self.selectedType) }, type.label);
+		}));
+
+		typeSelect.addEventListener('change', function() {
+			self.selectedType = typeSelect.value;
+			self.renderChart();
+		});
+
+		var windowSelect = E('select', { 'id': 'clients-ov-window', 'name': 'clients-ov-window', 'class': 'cbi-input-select' }, WINDOWS.map(function(win) {
+			return E('option', { 'value': String(win.minutes), 'selected': (win.minutes == self.windowMinutes) }, win.label);
+		}));
+
+		windowSelect.addEventListener('change', function() {
+			self.windowMinutes = parseInt(windowSelect.value, 10) || 10;
+			self.renderChart();
+		});
+
+		this.update();
+
+		poll.add(L.bind(function() {
+			var jobs;
+
+			/* hidden covers two cases: the browser tab being in the background,
+			 * and this pane not being the active tab of the page - the main
+			 * view flips the flag when the user switches tabs. */
+			if (document.hidden || this.hidden)
+				return Promise.resolve();
+
+			jobs = [ this.store.fetchSnapshot() ];
+
+			if ((Date.now() - this.store.lastLeaseLoad) >= common.LEASE_INTERVAL * 1000)
+				jobs.push(this.store.fetchLeases());
+
+			if ((Date.now() - this.store.lastHistoryLoad) >= common.HISTORY_INTERVAL * 1000)
+				jobs.push(this.store.loadHistory());
+
+			return Promise.all(jobs).then(function() {
+				self.update();
+			}).catch(function(error) {
+				L.error(error);
+			});
+		}, this), common.SAMPLE_INTERVAL);
+
+	var bridgeMode = !!(this.store.state.bridge && this.store.state.bridge.mode);
+
+	return E('div', { 'class': 'clients-pane' }, [
+		E('div', { 'class': 'cbi-map-descr' },
+			_('Aggregate traffic of every client this device can see, split between the local network and the internet.')),
+		E('div', { 'class': 'cbi-section' }, [
+			this.summary,
+			E('h3', {}, _('Realtime traffic trends')),
+			E('div', { 'class': 'clients-chart__controls' }, [
+				E('label', { 'class': 'clients-control' }, [
+					E('span', {}, _('Select device')),
+					this.deviceSelect
+				]),
+				E('label', { 'class': 'clients-control' }, [
+					E('span', {}, _('Type')),
+					typeSelect
+				]),
+				E('label', { 'class': 'clients-control' }, [
+					E('span', {}, _('Window')),
+					windowSelect
+				]),
+				E('div', { 'class': 'clients-chart__legend' }, [
+					E('span', { 'class': 'clients-chart__key clients-chart__key--up' }, _('Upload rate')),
+					E('span', { 'class': 'clients-chart__key clients-chart__key--down' }, _('Download rate'))
+				])
+			]),
+			this.chart,
+			E('p', { 'class': 'clients-note' },
+				bridgeMode
+					? _('This device bridges, so the figures come from the hardware port counters: WAN is the traffic through the uplink port. The bracketed figures accumulate while this view is open.')
+					: _('Rates are differentiated from kernel conntrack counters, which keep counting for hardware-offloaded flows. The bracketed figures are what this view has seen while it was open - conntrack counters belong to a flow, so they are a floor, not a lifetime total.'))
+		])
+	]);
+	}
+});

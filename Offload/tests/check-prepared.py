@@ -149,7 +149,7 @@ def check(kernel, compiled=False, images=None):
     result['patches'] = metadata['patches']
     if compiled:
         result['compiled_objects'] = {}
-        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o','net/netfilter/core.o','net/bridge/br_vlan.o','net/bridge/br_if.o','net/bridge/br_stp.o']:
+        for n in ['drivers/net/ethernet/airoha/airoha_ppe.o','drivers/net/ethernet/airoha/airoha_eth.o','drivers/net/ethernet/airoha/airoha_ppe_debugfs.o','drivers/net/ethernet/airoha/airoha_npu.o','net/core/dev.o','net/netfilter/core.o','net/bridge/br_vlan.o','net/bridge/br_if.o','net/bridge/br_stp.o','net/bridge/br.o','net/bridge/br_nf_utils.o','net/netfilter/nf_flow_table_core.o','net/netfilter/nf_flow_table_path.o','net/netfilter/nf_flow_table_offload.o','net/netfilter/nf_flow_table_ip.o','net/netfilter/nft_flow_offload.o']:
             raw=(kernel/n).read_bytes();assert raw[:4]==b'\x7fELF' and raw[18:20]==b'\xb7\0', n
             result['compiled_objects'][n]=hashlib.sha256(raw).hexdigest()
         for name,symbol in [('drivers/net/ethernet/airoha/airoha_ppe.o',' T airoha_ppe_flowtable_ref'),('drivers/net/ethernet/airoha/airoha_eth.o',' U airoha_ppe_flowtable_ref'),('net/core/dev.o',' T __dev_fill_forward_path'),
