@@ -1010,7 +1010,7 @@ jobs:
           gh release upload hosttool-cache "$TARBALL" --repo "$GITHUB_REPOSITORY" --clobber
           ls -lh "$TARBALL"
 
-      - name: Verify PON layout with firmware Aurora and Argon themes
+      - name: Verify PON and clients layouts with firmware Aurora and Argon themes
         id: pon-layout
         if: steps.compile.outputs.status == 'success' && env.PROFILE == 'gemtek_xg2010g'
         run: |

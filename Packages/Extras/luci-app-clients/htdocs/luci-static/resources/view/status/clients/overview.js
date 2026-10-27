@@ -269,7 +269,10 @@ return L.Class.extend({
 		var points = this.visiblePoints().filter(function(p) { return p.valid !== false; });
 		var pick = this.seriesFor();
 
-		var width = 720, height = 220;
+		/* Use screen-sized coordinates: a fixed 720px viewBox scales both
+		 * the height and labels up on wide screens. Polls also remeasure the
+		 * available width after a sidebar or window resize. */
+		var width = this.chart.clientWidth || 720, height = 220;
 		var padX = 8, padTop = 14, padBottom = 10;
 		var plotW = width - padX * 2;
 		var plotH = height - padTop - padBottom;
@@ -547,6 +550,12 @@ return L.Class.extend({
 		});
 
 		this.update();
+		/* render() builds a detached pane. Measure once it has been mounted,
+		 * rather than waiting for the next data sample to fit its width. */
+		requestAnimationFrame(function() {
+			if (self.chart.isConnected)
+				self.renderChart();
+		});
 
 		poll.add(L.bind(function() {
 			var jobs;

@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
         packages = dict.fromkeys(required, '1.0-r1')
         packages.update({
             'luci-theme-argon': '3.1.0-r20261022', 'luci-app-argon-config': '3.1.0-r20261022',
-            'luci-i18n-argon-config-zh-cn': '3.1.0-r20261022', 'luci-app-clients': '0.1.0-r3',
+            'luci-i18n-argon-config-zh-cn': '3.1.0-r20261022', 'luci-app-clients': '0.1.0-r4',
             'kernel': '6.18.55~fixture-r1', 'rtp2httpd': '3.16.0-r1',
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
@@ -62,6 +62,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             ('kmod-mac80211', '1.0-r1'),
             ('luci-theme-argon', '2.4.7-r20260824'), ('luci-app-argon-config', '26.288'),
             ('luci-i18n-argon-config-zh-cn', 'unknown'), ('luci-app-clients', '0.1.0-r2'),
+            ('luci-app-clients', '0.1.0-r3'),
         ]:
             check(packages | {name: version}, pattern, False)
         for name in ('mwan4', 'rtp2httpd', 'luci-app-ttyd', 'luci-app-pon-status'):

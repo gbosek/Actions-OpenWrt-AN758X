@@ -1,6 +1,6 @@
 module.exports = {
   testDir: __dirname,
-  testMatch: 'pon-layout.spec.js',
+  testMatch: ['pon-layout.spec.js', 'clients-layout.spec.js'],
   workers: 1,
   timeout: 20000,
   reporter: 'line',
