@@ -1,5 +1,14 @@
 // Shared export and snapshot semantics in the naoki and luanmuc views.
 var callPpeExport = rpc.declare({object:'luci.airoha_npu',method:'getPpeExport',params:['snapshot','offset']});
+function ppeCounterText(entry, key) {
+    // Also handle old cached responses without a counter_status field.
+    // Direction and fake-IP addresses do not decide offload eligibility.
+    if (entry.state !== 'BND' || entry.type === 'L2B' ||
+        ppeCurrentMeta.flow_stats_available !== true ||
+        (entry.counter_status && entry.counter_status !== 'reported_bound_slot')) return 'N/A';
+    var value = entry[key];
+    return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : 'N/A';
+}
 function exportFullPpe(event) {
     var button=event.currentTarget, all=[], first=null, token='', offset=0;
     button.disabled=true;
@@ -11,7 +20,8 @@ function exportFullPpe(event) {
                 typeof data.has_more!=='boolean' || !/^[a-zA-Z0-9]{6}$/.test(data.export_id))
                 throw new Error(data && data.error || '导出分页校验失败');
             if (!first) { first=data; token=data.export_id; }
-            if (data.export_id!==token || data.total!==first.total || data.captured_at!==first.captured_at)
+            if (data.export_id!==token || data.total!==first.total || data.captured_at!==first.captured_at ||
+                data.boot_id!==first.boot_id || data.counter_schema!==first.counter_schema)
                 throw new Error('导出快照发生变化');
             all=all.concat(data.entries); offset=data.next_offset;
             if (data.has_more) {

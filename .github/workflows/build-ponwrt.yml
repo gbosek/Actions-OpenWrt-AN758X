@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r908 + PON PPPoE MTU +8 + Argon 3.1 + clients memory fix
+run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r909 + PON PPPoE MTU +8 + Argon 3.1 + clients memory fix
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）

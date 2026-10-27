@@ -54,12 +54,16 @@ with tempfile.TemporaryDirectory(prefix='xg-runtime-test-') as temp:
  full=snapshot('get_ppe_export')
  assert full['total']==2100 and len(full['entries'])==128 and full['has_more'] is True
  assert full['entries'][0]['bytes']=='18446744073709551615'
+ assert full['counter_schema']==2 and full['boot_id'] and full['captured_uptime']>0
+ assert full['entries'][0]['counter_status']=='reported_bound_slot'
+ assert full['entries'][0]['raw']['bytes']=='18446744073709551615'
  assert full['flow_stats_available'] is True and full['snapshot_atomic'] is False and full['captured_at']>0
  original=entries.read_text();entries.write_text('')
  all_rows=full['entries'];page=full
  while page['has_more']:
   page=snapshot('_ppe_export_page '+full['export_id']+' '+str(page['next_offset']))
   assert page['export_id']==full['export_id'] and page['captured_at']==full['captured_at'] and page['total']==2100
+  assert page['boot_id']==full['boot_id'] and page['captured_uptime']==full['captured_uptime']
   all_rows+=page['entries']
  assert len(all_rows)==2100 and len({x['index'] for x in all_rows})==2100
  assert not (p/('ppe-export.'+full['export_id'])).exists(), 'Completed snapshot not released'
@@ -67,9 +71,38 @@ with tempfile.TemporaryDirectory(prefix='xg-runtime-test-') as temp:
  assert snapshot('_ppe_export_page ../../etc 0')['error']=='invalid_snapshot'
  assert snapshot('_ppe_export_page ABCDEF 1')['error']=='snapshot_expired'
  cap.write_text('flow_stats_cap: 0\n')
- assert snapshot('get_ppe_export')['flow_stats_available'] is False
+ disabled=snapshot('get_ppe_export')
+ assert disabled['flow_stats_available'] is False and disabled['entries'][0]['bytes'] is None
+ assert disabled['entries'][0]['counter_status']=='driver_disabled'
  cap.write_text('npu_attached: 1\n')
- assert snapshot('get_ppe_export')['flow_stats_available'] is None
+ unknown=snapshot('get_ppe_export')
+ assert unknown['flow_stats_available'] is None and unknown['entries'][0]['packets'] is None
+ assert unknown['entries'][0]['counter_status']=='driver_unreported'
+ # A slot reused for an unbound key may still expose its old NPU counters.
+ # Preserve the raw evidence without attributing it to the new connection.
+ cap.write_text('flow_stats_cap: 1\n')
+ examples=[
+  '00308 UNB IPv4 5T orig=198.18.0.4:443->192.168.10.66:56392 new=9.8.7.6:1->5.4.3.2:2 vlan=65535,1 ib1=10000000 ib2=deadbeef data=12345678 packets=441 bytes=642437',
+  '00309 FIN IPv4 5T orig=192.168.10.66:1->192.0.2.1:2 packets=8 bytes=900',
+  '0030a BND L2B eth=02:00:00:00:00:01->02:00:00:00:00:02 vlan=0,0 packets=0 bytes=0',
+  '0030b BND IPv4 5T orig=192.0.2.1:443->10.90.149.142:12345 new=192.0.2.1:443->192.168.10.2:12345 packets=9 bytes=9876',
+  '0030c BND IPv4 5T orig=192.168.10.66:12345->198.18.0.26:443 new=192.168.10.66:12345->198.18.0.26:443 packets=10 bytes=12345',
+  '0030d BND IPv6 5T orig=2001:db8::1:1->2001:db8::2:2 packets=0 bytes=0',
+ ]
+ entries.write_text('\n'.join(examples)+'\n')
+ checked=snapshot('get_ppe_export'); unb,fin,l2,inbound,bridge,zero=checked['entries']
+ assert checked['bound']==4 and checked['unbound']==1 and checked['finished']==1
+ assert unb['packets'] is None and unb['bytes'] is None and unb['counter_status']=='not_bound'
+ assert unb['new_flow'] is None and unb['vlan'] is None and unb['raw']['new_flow']=='9.8.7.6:1->5.4.3.2:2'
+ assert unb['raw']['packets']=='441' and unb['ib1']=='10000000' and unb['ib2']=='deadbeef' and unb['data']=='12345678'
+ assert fin['packets'] is None and fin['raw']['packets']=='8'
+ assert l2['counter_status']=='unsupported_l2_counter' and l2['packets'] is None and l2['raw']['packets']=='0'
+ assert inbound['packets']=='9' and bridge['bytes']=='12345' and zero['bytes']=='0'
+ examples[0]='00308 UNB IPv6 5T orig=2001:db8::1:1->2001:db8::2:2 packets=441 bytes=642437'
+ entries.write_text('\n'.join(examples)+'\n')
+ reused=snapshot('get_ppe_export')['entries'][0]
+ assert reused['orig']!=unb['orig'] and reused['raw']['bytes']==unb['raw']['bytes']
+ assert reused['bytes'] is None, 'Old slot statistics attributed to a different current flow'
  entries.unlink()
  assert snapshot('get_ppe_export')['error']=='ppe_read_failed_or_timeout'
  # LuCI function: a structured failure must retain its real error, while a

@@ -39,7 +39,10 @@ def adapt_observability(app, variant):
         a = s.index('function ppeCountText('); b = s.index('function ppeRows(', a)
         s = s[:a]+shared+'\n'+s[b:]
         s = s.replace("selectFilter(_('All states')", "E('button', {type:'button', 'class':'cbi-button', click:exportFullPpe}, '完整导出 JSON'),\n\t\tselectFilter(_('All states')", 1)
-        s = re.sub(r'e\.(packets|bytes) === null', r'ppeCurrentMeta.flow_stats_available !== true || e.\1 === null', s)
+        for key in ('packets', 'bytes'):
+            marker = f"e.{key} === null || e.{key} === undefined ? 'N/A' : String(e.{key})"
+            assert s.count(marker) == 1, 'PPE counter renderer changed: ' + key
+            s = s.replace(marker, f"ppeCounterText(e, '{key}')", 1)
         marker = '\t\tpoll.add(pollFetch, 5);'
         assert marker in s
         s = s.replace(marker, marker+"\n\t\tpoll.add(function() { var badge=document.getElementById('ppe-count'); if(badge)badge.textContent=ppeCountText(ppeCurrentEntries); }, 1);", 1)

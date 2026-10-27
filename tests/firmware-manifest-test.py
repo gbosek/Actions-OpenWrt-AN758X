@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
             'luci-app-mwan4': mwan['frontend']['version'],
-            'luci-app-airoha-npu': '2.0.0-r908' if variant == 'naoki' else '1.2.1-r102',
+            'luci-app-airoha-npu': '2.0.0-r909' if variant == 'naoki' else '1.2.1-r103',
         })
         check(packages, pattern, True)
         check({name: version.replace('-r', '-') for name, version in packages.items()}, pattern, True)
@@ -63,6 +63,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             ('luci-theme-argon', '2.4.7-r20260824'), ('luci-app-argon-config', '26.288'),
             ('luci-i18n-argon-config-zh-cn', 'unknown'), ('luci-app-clients', '0.1.0-r2'),
             ('luci-app-clients', '0.1.0-r3'),
+            ('luci-app-airoha-npu', '2.0.0-r908' if variant == 'naoki' else '1.2.1-r102'),
         ]:
             check(packages | {name: version}, pattern, False)
         for name in ('mwan4', 'rtp2httpd', 'luci-app-ttyd', 'luci-app-pon-status'):

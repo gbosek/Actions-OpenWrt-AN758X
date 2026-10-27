@@ -21,6 +21,19 @@ function counter(name,    value) {
 	# Preserve 64-bit values without floating-point rounding.
 	return value ~ /^[0-9]+$/ ? quote(value) : "null"
 }
+function bound_field(name) {
+	return $2 == "BND" ? quote(field(name)) : "null"
+}
+function counter_status() {
+	# NPU stats live in a separate slot-indexed array. A learned UNB key
+	# can reuse a slot whose previous binding left nonzero counters behind.
+	if ($2 != "BND") return "not_bound"
+	# The retained AN7581 driver has no verified native L2B counter layout.
+	if ($3 == "L2B") return "unsupported_l2_counter"
+	if (stats_cap != "1") return stats_cap == "0" ? "driver_disabled" : "driver_unreported"
+	if (counter("packets") == "null" || counter("bytes") == "null") return "missing_counters"
+	return "reported_bound_slot"
+}
 function hexval(s,    i, c, d, n) {
 	n = 0
 	for (i = 1; i <= length(s); i++) {
@@ -76,8 +89,13 @@ $1 ~ /^[0-9a-fA-F]+$/ && $2 ~ /^(BND|UNB|FIN|INV)$/ {
 	if (total <= offset) next
 	if (limit > 0 && shown >= limit) next
 	shown++
-	entry[shown] = sprintf("{\"index\":%s,\"state\":%s,\"type\":%s,\"proto\":%s,\"orig\":%s,\"new_flow\":%s,\"eth\":%s,\"etype\":%s,\"vlan\":%s,\"packets\":%s,\"bytes\":%s}",
+	status = counter_status()
+	entry[shown] = sprintf("{\"index\":%s,\"state\":%s,\"type\":%s,\"proto\":%s,\"orig\":%s,\"new_flow\":%s,\"eth\":%s,\"etype\":%s,\"vlan\":%s,\"packets\":%s,\"bytes\":%s,\"counter_status\":%s,\"ib1\":%s,\"ib2\":%s,\"data\":%s,\"raw\":{\"new_flow\":%s,\"eth\":%s,\"etype\":%s,\"vlan\":%s,\"packets\":%s,\"bytes\":%s}}",
 		quote($1), quote($2), quote(type), quote(proto), quote(field("orig")),
+		bound_field("new"), bound_field("eth"), bound_field("etype"), bound_field("vlan"),
+		(status == "reported_bound_slot" ? counter("packets") : "null"),
+		(status == "reported_bound_slot" ? counter("bytes") : "null"), quote(status),
+		quote(field("ib1")), quote(field("ib2")), quote(field("data")),
 		quote(field("new")), quote(field("eth")), quote(field("etype")),
 		quote(field("vlan")), counter("packets"), counter("bytes"))
 }
@@ -87,7 +105,7 @@ END {
 			ppe1, ppe2, dram, ppe1_bnd, ppe2_bnd, dram_bnd)
 	if (have_records)
 		engine_split = engine_split sprintf(",\"zero_l2\":%d,\"zero_l2_bound\":%d", zero_l2, zero_l2_bnd)
-	printf "{\"available\":true,\"total\":%d,\"ipv4\":%d,\"ipv6\":%d,\"l2b\":%d,\"bound\":%d,\"unbound\":%d,\"finished\":%d,\"truncated\":%s,\"returned\":%d,\"offset\":%d,\"next_offset\":%d,\"has_more\":%s,\"entries\":[",
+	printf "{\"available\":true,\"counter_schema\":2,\"total\":%d,\"ipv4\":%d,\"ipv6\":%d,\"l2b\":%d,\"bound\":%d,\"unbound\":%d,\"finished\":%d,\"truncated\":%s,\"returned\":%d,\"offset\":%d,\"next_offset\":%d,\"has_more\":%s,\"entries\":[",
 		total, n4, n6, l2b, bnd, unb, fin, (total > shown ? "true" : "false"), shown, offset, offset+shown, (offset+shown<total ? "true" : "false")
 	for (i = 1; i <= shown; i++) {
 		if (i > 1) printf ","
