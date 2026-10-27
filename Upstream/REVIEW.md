@@ -4,10 +4,19 @@ This build retains 80e27f7's Linux 6.18.55, NPU 1456-62, guarded PPE path
 (949–954), reliability fixes (930–938), RTL826x PHY fixes, CPU policy,
 R68 PON driver and MWAN4 routing/default-off behavior.
 
-The only Airoha PPE executable source addition in the maintenance patches is
-accepting the flowtable priority action described by upstream patch 957.
+Maintenance patch 957 accepts the flowtable priority action. Patch 958 also
+adds the exact naoki66 8aa505c PPPoE session-header allowance to the PON MTU
+functions; per-device allowance is included before the shared-QDMA maximum.
 No binding-rate, packet-size threshold, ageing or table-statistics change is
 used to inflate BND. Not all packets can become bound hardware flows.
+
+For this dual-WAN XG2010G, physical PON is marked AIROHA_PRIV_F_PON; the
+Ethernet port reused as WANB is not. Only PON gains eight bytes of hardware
+headroom. WANB, PPP MTU, MWAN4, PHY/PON driver versions and binding policy
+are unchanged. Empty aggregation yields zero as in the exact upstream
+patch. The PON probe queue fix 383e43f and Argon 3.1 are not part of this
+request. No claim of fixed packet loss, improved BND or throughput follows
+from compilation/fixture checks alone.
 
 955 revokes ordinary direct-xmit flowtable entries when the destination moves
 to another bridge port; 956 advertises VLAN/CVLAN matches; 957 preserves the

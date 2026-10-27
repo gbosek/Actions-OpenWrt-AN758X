@@ -19,6 +19,13 @@
       "local_patch": 957,
       "purpose": "Preserve flowtable priority with Airoha/MTK action compatibility",
       "scope": "mlx5 companion excluded: CONFIG_MLX5 disabled on XG2010G"
+    },
+    {
+      "sha": "8aa505c865567879767dba88b77d62d031586f3d",
+      "repository": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
+      "local_patch": 958,
+      "purpose": "Account for 8-byte PPPoE session header on physical PON egress only",
+      "adaptation": "Exact upstream patch bytes; numbered 958 after retained guarded/maintenance series"
     }
   ],
   "patches": [
@@ -33,6 +40,10 @@
     {
       "file": "957-netfilter-flowtable-preserve-priority.patch",
       "sha256": "1f7a5222f62cd5362f90567945a93c86202015f66025b281919a0cbafb432dd9"
+    },
+    {
+      "file": "958-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
+      "sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0"
     }
   ],
   "npu_firmware": "1456-62 unchanged",
@@ -43,5 +54,19 @@
     "Bulk pbs05 driver/PCS/PON/LRO merge changes baseline/API",
     "706 forward-path WiFi API refactor not needed on radio-free board"
   ],
-  "hardware_tested": false
+  "hardware_tested": false,
+  "pon_pppoe_mtu": {
+    "upstream": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
+    "commit": "8aa505c865567879767dba88b77d62d031586f3d",
+    "path": "target/linux/airoha/patches-6.18/920-17-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
+    "upstream_blob_sha1": "e6ae52866a74254af876782b43455cccdc693f1c",
+    "local_patch": "958-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
+    "patch_sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0",
+    "expected_prepared_sources": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
+      "drivers/net/ethernet/airoha/airoha_ppe.c": "60dcd29c080a2d56031201e855f2a2f0ff54428143f99aa7c2e0deb9f5e1bf0b"
+    },
+    "scope": "AIROHA_PRIV_F_PON only; per-device allowance before shared-QDMA maximum. Ethernet LAN3 used as second WAN is unchanged. No PPP MTU/UCI/NPU/MWAN4 changes.",
+    "hardware_tested": false
+  }
 }

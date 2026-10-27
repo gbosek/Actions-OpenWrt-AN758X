@@ -8,13 +8,16 @@ with tempfile.TemporaryDirectory(prefix='xg-upstream-install-') as d:
     (queue/'954-rcu.patch').write_text('retained RCU prerequisite\n')
     script=repo/'scripts/apply-reviewed-upstream.py'
     for _ in range(2):subprocess.run([sys.executable,str(script),str(root)],check=True)
-    patches=sorted(queue.glob('95[5-7]-*.patch'));assert len(patches)==3
-    patches[0].write_text('conflicting source\n')
-    assert subprocess.run([sys.executable,str(script),str(root)],capture_output=True).returncode!=0
-    patches[0].unlink()
-    original=repo/'Upstream/patches/955-netfilter-flowtable-revoke-moved-bridge-destinations.patch'
-    (root/'target/linux/generic/708-duplicate.patch').write_bytes(original.read_bytes())
-    assert subprocess.run([sys.executable,str(script),str(root)],capture_output=True).returncode!=0
+    names={x['file'] for x in json.loads((repo/'Upstream/SOURCE.json').read_text())['patches']}
+    patches=sorted(queue/n for n in names);assert all(p.is_file() for p in patches)
+    for path in patches:
+        original=path.read_bytes();path.write_text('conflicting source\n')
+        assert subprocess.run([sys.executable,str(script),str(root)],capture_output=True).returncode!=0
+        path.write_bytes(original)
+        duplicate=root/'target/linux/generic/708-duplicate.patch'
+        duplicate.write_bytes(original)
+        assert subprocess.run([sys.executable,str(script),str(root)],capture_output=True).returncode!=0
+        duplicate.unlink()
     dns=root/'package/network/services/dnsmasq/files/dnsmasq.init';dns.parent.mkdir(parents=True)
     dns.write_text('start_service() {\n\tDEFAULT_INSTANCE=""\n\tconfig_load dhcp\n\tif true; then\n\t\tdnsmasq_start "$instance"\n\tfi\n}\n')
     for _ in range(2):subprocess.run([sys.executable,str(repo/'scripts/apply-dnsmasq-log-guard.py'),str(root)],check=True)

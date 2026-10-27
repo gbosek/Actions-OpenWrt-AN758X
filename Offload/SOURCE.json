@@ -39,8 +39,8 @@
     }
   ],
   "expected_prepared_sources": {
-    "drivers/net/ethernet/airoha/airoha_ppe.c": "8df65e757257f74ca05bd69aa774a5ea116f3e3cb01cb0263f2c032d437f8c61",
-    "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
+    "drivers/net/ethernet/airoha/airoha_ppe.c": "60dcd29c080a2d56031201e855f2a2f0ff54428143f99aa7c2e0deb9f5e1bf0b",
+    "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
     "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
     "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
@@ -96,5 +96,12 @@
     "patch": 954,
     "scope": "Fix accessor contract without relaxing bridge eligibility. BND increase and old naoki66 no-IP root cause remain unproven."
   },
-  "maintenance_backports": "Upstream/SOURCE.json; eligibility guards and NPU microcode retained"
+  "maintenance_backports": "Upstream/SOURCE.json; eligibility guards and NPU microcode retained",
+  "additional_prepared_source_changes": {
+    "pon_pppoe_mtu": {
+      "commit": "8aa505c865567879767dba88b77d62d031586f3d",
+      "metadata": "Upstream/SOURCE.json:pon_pppoe_mtu",
+      "binding_code_changed": false
+    }
+  }
 }

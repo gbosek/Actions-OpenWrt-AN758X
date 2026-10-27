@@ -84,5 +84,20 @@
     "observed_warning": "Current shipped f724c96 firmware: RTNL assertion at br_port_get_stp_state in RX/NAPI bridge preparation",
     "patch": 954,
     "scope": "Fix accessor contract without relaxing bridge eligibility. BND increase and old naoki66 no-IP root cause remain unproven."
+  },
+  "pon_pppoe_mtu_review": {
+    "upstream_commit": "8aa505c865567879767dba88b77d62d031586f3d",
+    "patch_sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0",
+    "previous_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "b676365b7fdb36a366fb8498ad3f15e8c4297083ec5af475b4ef00029252638c",
+      "drivers/net/ethernet/airoha/airoha_ppe.c": "8df65e757257f74ca05bd69aa774a5ea116f3e3cb01cb0263f2c032d437f8c61"
+    },
+    "new_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
+      "drivers/net/ethernet/airoha/airoha_ppe.c": "60dcd29c080a2d56031201e855f2a2f0ff54428143f99aa7c2e0deb9f5e1bf0b"
+    },
+    "fuzz": 0,
+    "scope": "Only PON-tagged MTU allowance and shared-QDMA aggregation; guarded binding functions unchanged",
+    "hardware_tested": false
   }
 }

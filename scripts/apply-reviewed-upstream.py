@@ -19,4 +19,4 @@ for item in meta['patches']:
 	shutil.copyfile(source,queue/source.name)
 dest=root/'files/etc/xg2010g-upstream-source.json';dest.parent.mkdir(parents=True,exist_ok=True)
 dest.write_text(json.dumps(meta,indent=2)+'\n')
-print('Installed reviewed flowtable FDB/VLAN/priority fixes; existing PPE method retained')
+print('Installed reviewed flowtable and PON-only PPPoE MTU fixes; guarded PPE method retained')
