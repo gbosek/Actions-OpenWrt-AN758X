@@ -25,8 +25,9 @@ shutil.copytree(app, dest)
 from adapt_npu import adapt
 adapt(dest, a.variant)
 meta["local_adjustments"].extend(["Shared kernel cpufreq policy adapter", "Compatibility boost enumeration and capability fields", "Local APK-compatible integer package revision", "Direct user-space PLL writes removed", "PPE complete export and snapshot/capability metadata", "Unused WiFi and jitter polling removed for XG2010G"])
-meta["local_package_release"] = {"naoki": 909, "luanmuc": 103}[a.variant]
+meta["local_package_release"] = {"naoki": 910, "luanmuc": 104}[a.variant]
 meta["local_adjustments"].append("State-aware PPE counters, preserved raw slot diagnostics, IB1/IB2/data and snapshot boot identity")
+meta["local_adjustments"].append("Leave non-attributable PPE counter cells empty without modifying hardware or raw export")
 meta["cpu_boost_source"] = "CPU-BOOST-SOURCE.json"
 for file in (dest / 'root').rglob('*'):
     if file.is_file() and ('init.d' in file.parts or 'libexec' in file.parts) and file.suffix != '.awk':

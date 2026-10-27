@@ -5,10 +5,10 @@ const fragment=source.slice(source.indexOf('function exportFullPpe'),source.inde
 const counterFragment=source.slice(source.indexOf('function ppeCounterText'),source.indexOf('function exportFullPpe'));
 const counterFor=meta=>new Function('ppeCurrentMeta',counterFragment+'return ppeCounterText;')(meta);
 const counter=counterFor({flow_stats_available:true});
-assert(counter({state:'UNB',type:'IPv4',packets:'441'},'packets')==='N/A');
-assert(counter({state:'BND',type:'L2B',packets:'0'},'packets')==='N/A');
-assert(counter({state:'BND',type:'IPv4',counter_status:'driver_disabled',packets:'9'},'packets')==='N/A');
-assert(counterFor({flow_stats_available:false})({state:'BND',type:'IPv4',packets:'9'},'packets')==='N/A');
+assert(counter({state:'UNB',type:'IPv4',packets:'441'},'packets')==='');
+assert(counter({state:'BND',type:'L2B',packets:'0'},'packets')==='');
+assert(counter({state:'BND',type:'IPv4',counter_status:'driver_disabled',packets:'9'},'packets')==='');
+assert(counterFor({flow_stats_available:false})({state:'BND',type:'IPv4',packets:'9'},'packets')==='');
 assert(counter({state:'BND',type:'IPv4',packets:'18446744073709551615'},'packets')==='18446744073709551615');
 assert(counter({state:'BND',type:'IPv6',counter_status:'reported_bound_slot',bytes:'0'},'bytes')==='0');
 assert(counter({state:'BND',type:'IPv4',orig:'192.0.2.1:443->10.90.149.142:1',bytes:'9'},'bytes')==='9');
@@ -41,5 +41,5 @@ const factory=rpc=>new Function('callPpeExport','document','URL','Blob','ui','E'
    export_id:'ABCDEF',captured_at:123,counter_schema:2,boot_id:++calls===1?'boot-a':'boot-b',entries:[{}]}))({currentTarget:button});
  assert(clicked===1&&notified===3&&!button.disabled);
  console.log('PASS: bounded RPC pages assemble one complete snapshot; incomplete/mixed snapshots rejected; button restored after errors');
- console.log('PASS: unbound/unsupported/unavailable counters render N/A; genuine zero, uint64, inbound and fake-IP bindings retained');
+ console.log('PASS: unbound/unsupported/unavailable counter cells stay empty; genuine zero, uint64, inbound and fake-IP bindings retained');
 })().catch(e=>{console.error(e);process.exitCode=1;});

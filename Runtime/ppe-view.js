@@ -5,9 +5,9 @@ function ppeCounterText(entry, key) {
     // Direction and fake-IP addresses do not decide offload eligibility.
     if (entry.state !== 'BND' || entry.type === 'L2B' ||
         ppeCurrentMeta.flow_stats_available !== true ||
-        (entry.counter_status && entry.counter_status !== 'reported_bound_slot')) return 'N/A';
+        (entry.counter_status && entry.counter_status !== 'reported_bound_slot')) return '';
     var value = entry[key];
-    return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : 'N/A';
+    return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : '';
 }
 function exportFullPpe(event) {
     var button=event.currentTarget, all=[], first=null, token='', offset=0;

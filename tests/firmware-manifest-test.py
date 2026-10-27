@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
             'luci-app-mwan4': mwan['frontend']['version'],
-            'luci-app-airoha-npu': '2.0.0-r909' if variant == 'naoki' else '1.2.1-r103',
+            'luci-app-airoha-npu': '2.0.0-r910' if variant == 'naoki' else '1.2.1-r104',
         })
         check(packages, pattern, True)
         check({name: version.replace('-r', '-') for name, version in packages.items()}, pattern, True)

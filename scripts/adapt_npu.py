@@ -105,7 +105,7 @@ case "$1" in
     adapt_observability(app, variant)
     make = app / 'Makefile'
     s = make.read_text()
-    revision = 9 if variant == 'naoki' else 3
+    revision = 10 if variant == 'naoki' else 4
     s, n = re.subn(r'^PKG_RELEASE:=(\d+)$', lambda m: 'PKG_RELEASE:='+str(int(m[1])*100+revision), s, flags=re.M)
     if n != 1: raise ValueError('Cannot assign a distinct local package revision')
     make.write_text(s)
