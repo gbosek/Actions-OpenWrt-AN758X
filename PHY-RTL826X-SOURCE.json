@@ -15,7 +15,7 @@
     "target/linux/airoha/patches-6.18/743-net-phy-realtek-add-RTL8261-USXGMII-inband-control.patch": "20afb049cb2f9225ad0d50feee36544dc922bcf20a04457424bf3aff84288744"
   },
   "prepared_source": "drivers/net/phy/realtek/realtek_main.c",
-  "prepared_sha256": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab",
+  "prepared_sha256": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
   "selected": [
     "PKG_MODEL 0x8261 for RTL8261BE/N",
     "2.5G/5G/10G EEE disable",
@@ -39,6 +39,18 @@
     "drivers/net/phy/realtek/realtek.h": "301e47b668f99b2da7c0e9384142b76d9ed4501655680ce2710b12e0944641c7",
     "drivers/net/phy/realtek/phy_patch.h": "4e4c9c13eae369c472b10eabfef9f833533ecdac3fde6bb76be1da542856d91a",
     "drivers/net/phy/realtek/phy_patch.c": "7cd57d10e94cce41b1cda6e4ae7c05921bad50376973b92e33e40500dd1ea961",
-    "drivers/net/phy/realtek/realtek_main.c": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab"
+    "drivers/net/phy/realtek/realtek_main.c": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391"
+  },
+  "match_reset_release": {
+    "upstream_pr": "https://github.com/openwrt/openwrt/pull/25926",
+    "upstream_commit": "a2ed191e4f046276ec95b6330db9f2210351ed39",
+    "pr_head": "e8c8eb16013c22d28b96bbabdb7a118371f04cd2",
+    "merged_upstream": false,
+    "patch": "959-net-phy-realtek-release-reset-before-matching.patch",
+    "patch_sha256": "2ee9ffd6c0acd7a7db13fceafc72c81d276717ae03d797e9d1e66154c4bb2e36",
+    "previous_prepared_sha256": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab",
+    "prepared_sha256": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
+    "scope": "Exact helper and five match call sites; no PHY driver collapse, DT/GPIO/LED/firmware or bind-rate changes",
+    "hardware_tested": false
   }
 }

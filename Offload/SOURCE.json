@@ -40,8 +40,8 @@
   ],
   "expected_prepared_sources": {
     "drivers/net/ethernet/airoha/airoha_ppe.c": "60dcd29c080a2d56031201e855f2a2f0ff54428143f99aa7c2e0deb9f5e1bf0b",
-    "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
-    "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381",
+    "drivers/net/ethernet/airoha/airoha_eth.c": "9a13fe77c2817622efd837539f5842ed9076a4e11d31472ae65f8306dad2ee5d",
+    "drivers/net/ethernet/airoha/airoha_eth.h": "e329673fcb4e8135733896c02f8a95d027a75de10d91427c24fdd015c90eb9e7",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
     "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
     "include/linux/if_bridge.h": "d8a9b9a988a5a96138f88b15ffe99ae6f65ac9da4892275a11378a8fc18a2cc3",

@@ -26,6 +26,25 @@
       "local_patch": 958,
       "purpose": "Account for 8-byte PPPoE session header on physical PON egress only",
       "adaptation": "Exact upstream patch bytes; numbered 958 after retained guarded/maintenance series"
+    },
+    {
+      "sha": "a2ed191e4f046276ec95b6330db9f2210351ed39",
+      "repository": "openwrt/openwrt",
+      "upstream_pr": "https://github.com/openwrt/openwrt/pull/25926",
+      "merged": false,
+      "reviewed_pr_head": "e8c8eb16013c22d28b96bbabdb7a118371f04cd2",
+      "local_patch": 959,
+      "purpose": "Release reset before RTL826x package-model matching after deferred/failed probe",
+      "adaptation": "Exact helper and five call sites on the retained 939-hardened source; unrelated target changes excluded"
+    },
+    {
+      "sha": "d4083ed9ee5d154fc89ee52fb34f1c8e8e4f524e",
+      "repository": "openwrt/openwrt",
+      "upstream_pr": "https://github.com/openwrt/openwrt/pull/25901",
+      "merged": true,
+      "local_patch": 960,
+      "purpose": "ETS u32 wrap and per-channel baseline correctness",
+      "adaptation": "Only embedded 193-02 (Linux 8b9a50881988); retain existing QDMA dereference and no GDM/LRO replacement"
     }
   ],
   "patches": [
@@ -44,6 +63,14 @@
     {
       "file": "958-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
       "sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0"
+    },
+    {
+      "file": "959-net-phy-realtek-release-reset-before-matching.patch",
+      "sha256": "2ee9ffd6c0acd7a7db13fceafc72c81d276717ae03d797e9d1e66154c4bb2e36"
+    },
+    {
+      "file": "960-net-airoha-fix-ets-stats-wrap-and-channel-baselines.patch",
+      "sha256": "af884fd056cd05c904bdeea36e9b3814b42a652f4cd5074248e1240d2b08e907"
     }
   ],
   "npu_firmware": "1456-62 unchanged",
@@ -63,10 +90,40 @@
     "local_patch": "958-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
     "patch_sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0",
     "expected_prepared_sources": {
-      "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
+      "drivers/net/ethernet/airoha/airoha_eth.c": "9a13fe77c2817622efd837539f5842ed9076a4e11d31472ae65f8306dad2ee5d",
       "drivers/net/ethernet/airoha/airoha_ppe.c": "60dcd29c080a2d56031201e855f2a2f0ff54428143f99aa7c2e0deb9f5e1bf0b"
     },
     "scope": "AIROHA_PRIV_F_PON only; per-device allowance before shared-QDMA maximum. Ethernet LAN3 used as second WAN is unchanged. No PPP MTU/UCI/NPU/MWAN4 changes.",
     "hardware_tested": false
+  },
+  "ets_stats_review": {
+    "previous_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
+      "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381"
+    },
+    "new_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "9a13fe77c2817622efd837539f5842ed9076a4e11d31472ae65f8306dad2ee5d",
+      "drivers/net/ethernet/airoha/airoha_eth.h": "e329673fcb4e8135733896c02f8a95d027a75de10d91427c24fdd015c90eb9e7"
+    },
+    "scope": "Only optional ETS statistics, not PPE UNB/BND display, binding, queue policy or throughput",
+    "hardware_tested": false
+  },
+  "screenshot_review": {
+    "date": "2026-10-28",
+    "document": "Upstream/REVIEW-20261028.md",
+    "sources": [
+      "openwrt/openwrt",
+      "immortalwrt/immortalwrt"
+    ],
+    "selected_patches": [
+      959,
+      960
+    ],
+    "retained_rx_ethernet_fixes": true,
+    "npu_dma_window_rfc_added": false,
+    "ipv6_shared_updmem_proposal_added": false,
+    "whole_gdm_qos_lro_replacement_added": false,
+    "mt7988_or_uboot_changes_added": false,
+    "firmware_hardware_validated": false
   }
 }

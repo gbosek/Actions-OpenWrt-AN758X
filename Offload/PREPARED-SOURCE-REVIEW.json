@@ -99,5 +99,19 @@
     "fuzz": 0,
     "scope": "Only PON-tagged MTU allowance and shared-QDMA aggregation; guarded binding functions unchanged",
     "hardware_tested": false
+  },
+  "ets_stats_followup": {
+    "previous_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "1dc49dd2575b111ba169595888167ddab949a94a0f2d33476ae793909e2696d8",
+      "drivers/net/ethernet/airoha/airoha_eth.h": "9272c406fea4b23b4d96c6e6191c98c31c04210c9ead8553b267dac00cfec381"
+    },
+    "new_source_sha256": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "9a13fe77c2817622efd837539f5842ed9076a4e11d31472ae65f8306dad2ee5d",
+      "drivers/net/ethernet/airoha/airoha_eth.h": "e329673fcb4e8135733896c02f8a95d027a75de10d91427c24fdd015c90eb9e7"
+    },
+    "patch": 960,
+    "upstream": "openwrt/openwrt@d4083ed9ee5d154fc89ee52fb34f1c8e8e4f524e",
+    "scope": "Retain all binding functions and RCU QDMA dereference; u32 wrap and independent ETS channel baselines only",
+    "hardware_tested": false
   }
 }

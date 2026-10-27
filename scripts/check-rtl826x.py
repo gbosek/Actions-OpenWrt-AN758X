@@ -41,7 +41,7 @@ FIXTURE = r'''
 struct phy_driver {int unused;};
 struct mii_bus {bool read_c45;};
 static struct mii_bus bus={true};
-struct phy_device {struct {struct mii_bus *bus;} mdio;int calls,fail,release_fail,releases,patches,polarity,patch_error,polarity_error,last_delay,pkg,version,read_error;bool c45;};
+struct phy_device {struct {struct mii_bus *bus;} mdio;int calls,fail,release_fail,releases,patches,polarity,patch_error,polarity_error,last_delay,pkg,version,read_error,reset_requests;bool c45,asserted;};
 static struct phy_device *active;
 static int op(struct phy_device *p) {return ++p->calls==p->fail?-5:0;}
 static int phy_write_mmd(struct phy_device *p,int m,int r,int v) {(void)m;(void)r;(void)v;return op(p);}
@@ -53,7 +53,8 @@ static void msleep(int n) {active->last_delay=n;}
 static int rtlgen_phy_patch(struct phy_device *p) {if(p->last_delay!=150)abort();p->patches++;return p->patch_error;}
 static int rtl826x_config_serdes_polarity(struct phy_device *p) {p->polarity++;return p->polarity_error;}
 static bool rtlgen_is_c45_match(struct phy_device *p,int id,bool c45) {(void)id;(void)c45;return p->c45;}
-static int phy_read_mmd(struct phy_device *p,int m,int r) {(void)m;if(r==p->read_error)return -5;return r==0x103?p->pkg:p->version;}
+static void phy_device_reset(struct phy_device *p,int value) {p->reset_requests++;p->asserted=value;}
+static int phy_read_mmd(struct phy_device *p,int m,int r) {(void)m;if(p->asserted)return 0xffff;if(r==p->read_error)return -5;return r==0x103?p->pkg:p->version;}
 '''
 CASES = r'''
 int main(void) {
@@ -82,7 +83,17 @@ int main(void) {
         if(rtl8261be_match_phy_device(&p,NULL) || rtl8261n_match_phy_device(&p,NULL))abort();
         matches++;
     }
-    printf("{\"reset_cases\":8,\"match_cases\":%d,\"failures\":0}",matches);
+    for(int be=0;be<2;be++) {
+        struct phy_device p={.mdio={&bus},.c45=true,.pkg=0x8261,.version=be?0x1140:0,.asserted=true};
+        int actual=be?rtl8261be_match_phy_device(&p,NULL):rtl8261n_match_phy_device(&p,NULL);
+        if(!actual || p.asserted || p.reset_requests!=1)abort();
+        matches++;
+    }
+    bus.read_c45=false;
+    struct phy_device no_c45={.mdio={&bus},.c45=true,.pkg=0x8261,.asserted=true};
+    if(rtl8261be_match_phy_device(&no_c45,NULL) || rtl8261n_match_phy_device(&no_c45,NULL) || no_c45.reset_requests)abort();
+    bus.read_c45=true;
+    printf("{\"reset_cases\":8,\"match_cases\":%d,\"deferred_probe_reset_cases\":2,\"unsupported_bus_kept_in_reset\":true,\"failures\":0}",matches);
     return 0;
 }
 '''
@@ -99,14 +110,15 @@ def check(kernel, compiled=False, require_staged=False):
     for speed in ['100', '1000', '2500', '5000', '10000']:
         assert 'phy_disable_eee_mode(phydev, ETHTOOL_LINK_MODE_' + speed + 'baseT_Full_BIT)' in probe
     assert 'rtl826x_link_change_notify' in source and 'RTL826X_SDS_MAX_RESETS' in source
-    body = '\n'.join(function(source, n) for n in ['rtl826x_config_init', 'rtl8261be_match_phy_device', 'rtl8261n_match_phy_device'])
+    assert source.count('data = rtl826x_read_pkg_model(phydev);') == 5
+    body = '\n'.join(function(source, n) for n in ['rtl826x_config_init', 'rtl826x_read_pkg_model', 'rtl8261be_match_phy_device', 'rtl8261n_match_phy_device'])
     with tempfile.TemporaryDirectory(prefix='rtl826x-actual-functions-') as d:
         c, exe = Path(d) / 'test.c', Path(d) / 'test'
         c.write_text(FIXTURE + body + CASES)
         subprocess.run(['cc', '-std=gnu11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter', str(c), '-o', str(exe)], check=True)
         cases = json.loads(subprocess.check_output([str(exe)], text=True))
     result = dict(cases, source_sha256=hashes, compiled_arm64=compiled,
-                  upstream_commit=meta['commit'], hardware_tested=False)
+                  upstream_commit=meta['commit'], match_reset_release=meta['match_reset_release'], hardware_tested=False)
     if compiled:
         objects = {}
         for name in ['realtek_main.o', 'phy_patch.o', 'phy_patch_rtl826x.o', 'realtek.o']:

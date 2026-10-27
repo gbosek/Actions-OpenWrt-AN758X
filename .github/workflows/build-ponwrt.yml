@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - guarded PPE + NPU r911 raw counter display + Argon 3.1 + clients fixes + PHY pre-ID reset
+run-name: XG2010G 6.18.55 - guarded PPE + NPU r911 + Argon 3.1 + clients + RTL826x reset + ETS stats fixes
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -895,6 +895,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/check-rtl826x.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Upstream/test-pppoe-mtu.py" --build-dir build_dir
+          python3 "$GITHUB_WORKSPACE/Upstream/test-ets-stats.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Upstream/test-maintenance.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.55' -print -quit)"
           python3 "$GITHUB_WORKSPACE/Runtime/tests/dns-log-guard-test.py"
@@ -945,6 +946,7 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-phy-pre-id-reset.py" . --report bin/targets/airoha/an7581/PHY-PRE-ID-RESET-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir --report bin/targets/airoha/an7581/UPSTREAM-059895-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/Upstream/test-pppoe-mtu.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/PON-PPPOE-MTU-VERIFICATION.json
+            python3 "$GITHUB_WORKSPACE/Upstream/test-ets-stats.py" --build-dir build_dir --report bin/targets/airoha/an7581/ETS-STATS-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir --compiled --images bin/targets/airoha/an7581 --report bin/targets/airoha/an7581/NAOKI-OFFLOAD-VERIFICATION.json
             UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/mwan4-default-off-test.py" .
             UCODE="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/Runtime/tests/routing-functions-test.py" .
