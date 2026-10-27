@@ -20,3 +20,11 @@ assert (installed/'usr/bin/pushbot/package_manager.sh').is_file(), 'Pushbot sour
 for name in ['timewol','watchcat','ddns','pbr','udpxy','msd_lite','upnp']:
     assert any(name in p.name for p in (installed/'usr/share/luci/menu.d').glob('*.json')) or (installed/'usr/lib/lua/luci/controller'/ (name+'.lua')).exists(),name
 print('Verified requested plugin/backends, XG2010G brand, pre-start DHCP log guard and inactive Watchcat default')
+
+import hashlib
+clients = meta['source_repositories']['luci-app-clients']
+assert hashlib.sha256((installed/'usr/libexec/clients-probe').read_bytes()).hexdigest() == clients['files_sha256']['root/usr/libexec/clients-probe'], 'Clients OOM fix absent from staged rootfs'
+print('Verified exact clients-probe parser memory fix in staged firmware')
+assert hashlib.sha256((installed/'usr/libexec/clients-dns').read_bytes()).hexdigest() == clients['files_sha256']['root/usr/libexec/clients-dns'], 'Clients DNS offset/batch fix absent from staged rootfs'
+assert '/etc/localtime /tmp/localtime' in (installed/'etc/init.d/dnsmasq').read_text(), 'DNS jail lacks zoneinfo mounts'
+assert (installed/'etc/uci-defaults/95-clients-query-log').read_bytes() == (repo/'Packages/Extras/luci-app-clients/root/etc/uci-defaults/95-clients-query-log').read_bytes(), 'First-boot DNS logging initialization missing'

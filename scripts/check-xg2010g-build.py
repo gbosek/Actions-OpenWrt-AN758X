@@ -39,6 +39,10 @@ for manifest in manifests:
                  'luci-app-wol', 'luci-i18n-wol-zh-cn', 'etherwake', 'flock',
                  'luci-theme-argon', 'luci-app-argon-config', 'luci-i18n-argon-config-zh-cn'):
         assert name in pkgs, f'{manifest.name}: missing {name}'
+    for name in ('luci-theme-argon', 'luci-app-argon-config'):
+        assert re.match(r'^3\.1\.0-(?:r)?20261022$', pkgs[name]), 'Argon 3.1.0 migration package missing: ' + name
+    assert pkgs['luci-i18n-argon-config-zh-cn'] in ('v3.1.0', '3.1.0-r20261022', '3.1.0-20261022'), 'Argon 3.1 Chinese catalog missing'
+    assert re.match(r'^0\.1\.0-(?:r)?3$', pkgs.get('luci-app-clients', '')), 'Clients unbounded parser fix missing'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
     assert re.match(r'^0\.1\.1-(?:r)?10$', pkgs['mwan4']), 'MWAN4 no-preset/routing release missing'

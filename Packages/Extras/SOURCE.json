@@ -2,7 +2,22 @@
   "source_repositories": {
     "luci-app-clients": {
       "repo": "naoki66/luci-app-airoha",
-      "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567"
+      "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567",
+      "local_package_release": 3,
+      "local_changes": [
+        "Fix ucode two-argument index API misuse causing infinite tuple growth and OOM",
+        "Bound each connection to original/reply tuples, with monotonically advancing cursor and direction-local counters",
+        "Use seek/read for DNS log offsets and bound each read to 64 KiB",
+        "Rotate fully consumed default RAM DNS log after 1 MiB; preserve latest 1000 archived rows, refuse symlinks/custom paths",
+        "Mount zoneinfo into dnsmasq jail so native DNS log times match the router and collector",
+        "First boot initializes missing DNS query-log settings only when collection is enabled; preserve existing choices and run the existing duplicate-log guard"
+      ],
+      "files_sha256": {
+        "Makefile": "dbfe696919feba63ba08ba703bb46a101986447e48fb2ad488cef05a57000467",
+        "root/usr/libexec/clients-probe": "2519fbe1061a21809678cb078a0f8f5b015c0ec60c1aef560cea063dbed8587d",
+        "root/usr/libexec/clients-dns": "e3d4accb3e82554c7e7a9168af4958e20b969b576c22824f8ef6e6965d8cd9e6",
+        "root/etc/uci-defaults/95-clients-query-log": "7e415efa302b13ea37b30091650ac96f7de068e0fea5a5d567272634dcef64a9"
+      }
     },
     "luci-app-pushbot": {
       "repo": "zzsj0928/luci-app-pushbot",
@@ -63,7 +78,7 @@
   "feed_services": "Default inactive, checked in staged rootfs",
   "npu_policy": "Retain existing guarded binding path; extra UI is not a replacement driver",
   "screenshot_multicast_mapping": {
-    "title": "组播转换",
+    "title": "\u7ec4\u64ad\u8f6c\u6362",
     "package": "luci-app-msd_lite",
     "evidence": "Read current router package/menu list; omcproxy is a different feature"
   }

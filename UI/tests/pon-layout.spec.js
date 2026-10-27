@@ -5,6 +5,7 @@ const path = require('node:path');
 const root = process.env.PON_TEST_ROOT;
 if (!root) throw new Error('PON_TEST_ROOT must point to the staged/extracted firmware root');
 const ponSource = fs.readFileSync(process.env.PON_TEST_SOURCE || path.join(root, 'www/luci-static/resources/view/status/include/29a_xg2010g_pon.js'), 'utf8');
+const systemSource = fs.readFileSync(path.join(root, 'www/luci-static/resources/view/status/include/10_system.js'), 'utf8');
 const statusSource = fs.readFileSync(process.env.PON_TEST_STATUS || path.join(root, 'www/luci-static/resources/view/status/index.js'), 'utf8');
 
 for (const theme of ['aurora', 'argon']) {
@@ -17,7 +18,7 @@ for (const theme of ['aurora', 'argon']) {
         await page.setContent('<body data-page="admin-status-overview"><div class="main"><div class="main-right"><main id="maincontent"><div class="container"><h2>状态</h2><div id="view"></div></div></main></div></div></body>');
         const css = theme === 'aurora' ? 'www/luci-static/aurora/main.css' : 'www/luci-static/argon/css/cascade.css';
         await page.addStyleTag({ content: fs.readFileSync(path.join(root, css), 'utf8') });
-        await page.evaluate(({ ponSource, statusSource, compact }) => {
+        await page.evaluate(({ ponSource, statusSource, systemSource, compact }) => {
           function E(tag, attrs, children) {
             if (Array.isArray(tag)) { children = tag; tag = null; attrs = {}; }
             if (typeof attrs !== 'object' || attrs == null || Array.isArray(attrs) || attrs instanceof Node) { children = attrs; attrs = {}; }
@@ -48,13 +49,22 @@ for (const theme of ['aurora', 'argon']) {
           const overview = new Function('view', 'dom', 'poll', 'fs', 'network', 'ui', 'L', 'E', '_', statusSource)(
             { extend: object => object }, { content: (node, content) => node.replaceChildren(content) }, { add: fn => callbacks.push(fn) }, {},
             { flushCache: () => Promise.resolve() }, { createHandlerFn: (self, name, ...args) => self[name].bind(self, ...args) }, L, E, text => text);
-          const system = { title: '系统', render: () => E('table', { class: 'table' }, E('tr', {}, [E('td', {}, '主机名'), E('td', {}, 'ponwrt')])) };
+          const system = new Function('baseclass', 'fs', 'rpc', 'uci', 'L', 'E', '_', systemSource)(
+            { extend: object => object }, {}, { declare: () => () => Promise.resolve({}) }, { get: () => null }, L, E, text => text);
+          system.load = () => Promise.resolve([
+            { hostname: 'XG2010G', model: 'Gemtek XG2010G', system: 'ARMv8', kernel: '6.18.55', release: { target: 'airoha/an7581', description: 'XG2010G' } },
+            {}, { cpubench: '' }, { cpuinfo: 'ARMv8 · 4 cores' },
+            { cpuusage: 'USR 4% · SYS 2%\nCPU0 10% · CPU1 4% · CPU2 2% · CPU3 1%' },
+            { tempinfo: 'CPU 52.5°C · PON 46.3°C · LAN1 51°C · LAN2 48°C' }, { branch: 'LuCI', revision: 'fixed' }, 0
+          ]);
           document.getElementById('view').replaceChildren(overview.render([system, pon]));
           window.pollPON = () => callbacks[0]();
-        }, { ponSource, statusSource, compact });
+        }, { ponSource, statusSource, systemSource, compact });
 
         const card = page.locator('.pon-horizontal-card');
         await expect(card).toBeVisible();
+        await expect(page.locator('.cpu-sample-values')).toContainText('CPU3');
+        await expect(page.locator('#view')).toContainText('52.5°C');
         const measure = () => page.evaluate(() => {
           const card = document.querySelector('.pon-horizontal-card');
           // The theme's network-status-table wrapper owns its normal gutters.

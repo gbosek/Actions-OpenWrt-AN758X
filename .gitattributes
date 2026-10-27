@@ -1,3 +1,6 @@
 * text=auto eol=lf
 # Unified patches contain context prefixes before tabs and blank lines.
 *.patch -whitespace
+
+# Preserve pinned third-party release bytes, including its original SVG EOL.
+Packages/Themes/** -text -whitespace

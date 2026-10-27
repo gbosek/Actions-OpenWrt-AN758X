@@ -19,9 +19,10 @@ with tempfile.TemporaryDirectory(prefix='xg-upstream-install-') as d:
         assert subprocess.run([sys.executable,str(script),str(root)],capture_output=True).returncode!=0
         duplicate.unlink()
     dns=root/'package/network/services/dnsmasq/files/dnsmasq.init';dns.parent.mkdir(parents=True)
-    dns.write_text('start_service() {\n\tDEFAULT_INSTANCE=""\n\tconfig_load dhcp\n\tif true; then\n\t\tdnsmasq_start "$instance"\n\tfi\n}\n')
+    dns.write_text('dnsmasq_start() {\n\tprocd_add_jail_mount /etc/passwd /etc/group /etc/TZ /etc/hosts /etc/ethers\n}\nstart_service() {\n\tDEFAULT_INSTANCE=""\n\tconfig_load dhcp\n\tif true; then\n\t\tdnsmasq_start "$instance"\n\tfi\n}\n')
     for _ in range(2):subprocess.run([sys.executable,str(repo/'scripts/apply-dnsmasq-log-guard.py'),str(root)],check=True)
     assert dns.read_text().count('xg2010g-dnsmasq-log-guard')==1
+    assert dns.read_text().count('/etc/localtime /tmp/localtime')==1
     for _ in range(2):subprocess.run([sys.executable,str(repo/'scripts/apply-requested-extras.py'),str(root)],check=True)
     assert (root/'package/custom/luci-app-clients/root/usr/libexec/clients-probe').stat().st_mode&0o111
     msd = root/'package/custom/msd_lite'

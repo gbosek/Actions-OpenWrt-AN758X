@@ -34,4 +34,4 @@ dest.write_text(json.dumps({'repo':'pbs05/openwrt-pon-drivers', 'commit':ref, 'x
     'reason':'Retain the R68 driver from the delivered 20261018 runtime-led image; no unrelated PON driver upgrade'}, indent=2)+'\n')
 (root/'files/etc/firmware-feed-pins.json').write_text(json.dumps({'basis':metadata['basis'], 'selected':selected}, indent=2)+'\n')
 print('Retained PON driver R68 at', ref)
-print('Pinned compatible feeds; retained pre-merge Argon UI and reviewed ONU selection')
+print('Pinned compatible baseline feeds and reviewed ONU selection; optional Argon override is separately verified')

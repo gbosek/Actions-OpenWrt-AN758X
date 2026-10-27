@@ -28,7 +28,7 @@ LUCI_DEPENDS:=+luci-base +ucode +ucode-mod-fs +ucode-mod-ubus +rpcd-mod-iwinfo
 LUCI_DESCRIPTION:=One place for every LAN client: addresses with their source, \
 	WAN traffic, and the DNS lookups each device made.
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_LICENSE:=Apache-2.0
 

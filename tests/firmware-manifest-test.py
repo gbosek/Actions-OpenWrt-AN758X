@@ -18,7 +18,7 @@ expected = ast.literal_eval(expected_node.value)
 code = compile(ast.Module(body=[loop], type_ignores=[]), str(checker), 'exec')
 mwan = json.loads((repo / 'MWAN4-SOURCE.json').read_text())
 required = [
-    'ttyd', 'luci-app-ttyd', 'luci-app-rtp2httpd',
+    'ttyd', 'luci-app-ttyd', 'luci-app-rtp2httpd', 'luci-app-clients',
     'mwan4', 'luci-app-mwan4', 'luci-i18n-mwan4-zh-cn',
     'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn',
     'xg2010g-rps', 'luci-app-pon-status', 'luci-app-wol',
@@ -45,6 +45,8 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
     for variant, (_, _, pattern) in expected.items():
         packages = dict.fromkeys(required, '1.0-r1')
         packages.update({
+            'luci-theme-argon': '3.1.0-r20261022', 'luci-app-argon-config': '3.1.0-r20261022',
+            'luci-i18n-argon-config-zh-cn': '3.1.0-r20261022', 'luci-app-clients': '0.1.0-r3',
             'kernel': '6.18.55~fixture-r1', 'rtp2httpd': '3.16.0-r1',
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
@@ -58,6 +60,8 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             ('luci-app-mwan4', '1.0.0-r11'), ('kernel', '6.18.54-r1'),
             ('luci-app-airoha-npu', '2.0.0-r907'), ('mwan3', '1.0-r1'),
             ('kmod-mac80211', '1.0-r1'),
+            ('luci-theme-argon', '2.4.7-r20260824'), ('luci-app-argon-config', '26.288'),
+            ('luci-i18n-argon-config-zh-cn', 'unknown'), ('luci-app-clients', '0.1.0-r2'),
         ]:
             check(packages | {name: version}, pattern, False)
         for name in ('mwan4', 'rtp2httpd', 'luci-app-ttyd', 'luci-app-pon-status'):

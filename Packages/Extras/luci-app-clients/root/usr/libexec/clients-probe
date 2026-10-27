@@ -733,6 +733,13 @@ function wifi_state() {
  * dozen tokens - most of them empty - per entry, and every intermediate table
  * costs an allocation. Scanning straight to the three keys we need avoids both.
  */
+// ucode index() accepts only two arguments, unlike JS indexOf().
+// Search a suffix explicitly or the parser keeps appending the first tuple.
+function find_from(text, needle, start) {
+	let at = index(substr(text, start), needle);
+	return at < 0 ? -1 : start + at;
+}
+
 function split_tuple(line) {
 	let family;
 
@@ -746,50 +753,51 @@ function split_tuple(line) {
 	let len = length(line);
 	let tuples = [], pos = 0;
 
-	while (true) {
-		let src_at = index(line, 'src=', pos);
+	while (pos < len && length(tuples) < 2) {
+		let src_at = find_from(line, 'src=', pos);
 
 		if (src_at < 0)
 			break;
 
+		let next_src = find_from(line, 'src=', src_at + 4);
+		let limit = next_src < 0 ? len : next_src;
 		let start = src_at + 4;
 		let end = start;
 
-		while (end < len && ord(line, end) != 32)
+		while (end < limit && ord(line, end) != 32 && ord(line, end) != 9)
 			end++;
 
 		let src = substr(line, start, end - start);
-		let dst = null, bytes = 0, cursor = end;
+		let dst = null, bytes = 0;
 
-		let dst_at = index(line, 'dst=', end);
+		let dst_at = find_from(line, 'dst=', end);
 
-		if (dst_at >= 0) {
+		if (dst_at >= 0 && dst_at < limit) {
 			start = dst_at + 4;
 			end = start;
 
-			while (end < len && ord(line, end) != 32)
+			while (end < limit && ord(line, end) != 32 && ord(line, end) != 9)
 				end++;
 
 			dst = substr(line, start, end - start);
 		}
 
-		let bytes_at = index(line, 'bytes=', end);
+		let bytes_at = find_from(line, 'bytes=', end);
 
-		if (bytes_at >= 0) {
+		if (bytes_at >= 0 && bytes_at < limit) {
 			start = bytes_at + 6;
 			end = start;
 
-			while (end < len && ord(line, end) != 32)
+			while (end < limit && ord(line, end) != 32 && ord(line, end) != 9)
 				end++;
 
 			bytes = int(substr(line, start, end - start)) ?? 0;
-			cursor = end;
 		}
 
 		push(tuples, { src: src, dst: dst, bytes: bytes });
 
-		/* Skip past this tuple's own counters so the next src= is the reply. */
-		pos = cursor;
+		/* Monotonic progress, even when accounting or a tuple is incomplete. */
+		pos = limit;
 	}
 
 	return { family: family, tuples: tuples };

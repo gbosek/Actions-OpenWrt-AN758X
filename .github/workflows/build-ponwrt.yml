@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r908 + PON PPPoE MTU +8
+run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r908 + PON PPPoE MTU +8 + Argon 3.1 + clients memory fix
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -191,6 +191,8 @@ jobs:
           python3 CPU/tests/npu-telemetry-test.py
           python3 Packages/xg2010g-rps/tests/rps-test.py
           python3 CPU/tests/network-defaults-test.py
+          python3 tests/build-environment-test.py
+          python3 tests/argon31-test.py
           python3 tests/firmware-manifest-test.py
           python3 CPU/tests/pon-selection-test.py
           python3 tests/ppe-prepare-test.py
@@ -222,6 +224,7 @@ jobs:
             }
 
       - name: Free disk space & init build environment
+        timeout-minutes: 25
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
@@ -239,22 +242,8 @@ jobs:
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile && sudo swapon /swapfile
 
-          # --- 安装编译依赖 ---
-          sudo -E apt-get -yqq update
-          sudo -E apt-get -yqq install build-essential clang llvm dwarves \
-            libssl-dev libelf-dev bc flex bison python3 python3-distutils \
-            xz-utils tar unzip zip zstd dos2unix ccache gettext \
-            rsync file wget curl git subversion 2>/dev/null || true
-
-          # 初始化编译环境：建议将该脚本入仓并按 commit sha 校验，
-          # 避免 `curl | bash` 的供应链风险。
-          if [ -x "$GITHUB_WORKSPACE/scripts/init_build_environment.sh" ]; then
-            bash "$GITHUB_WORKSPACE/scripts/init_build_environment.sh" || true
-          else
-            sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)' || true
-          fi
-
-          sudo -E apt-get -yqq autoremove --purge
+          # Checked-in prerequisites, bounded downloads, no remote full-upgrade.
+          bash "$GITHUB_WORKSPACE/scripts/init_build_environment.sh"
           sudo -E apt-get -yqq clean
           sudo -E timedatectl set-timezone "$TZ"
 
@@ -943,6 +932,9 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-requested-extras.py" .
+            python3 "$GITHUB_WORKSPACE/scripts/check-argon31.py" .
+            UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/argon31-runtime-test.py" . --report bin/targets/airoha/an7581/ARGON31-VERIFICATION.json
+            UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/clients-probe-test.py" --report bin/targets/airoha/an7581/CLIENTS-MEMORY-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-bridge-defaults.py" --build-dir build_dir --report bin/targets/airoha/an7581/BRIDGE-DEFAULTS-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-eip93-build.py" . --report bin/targets/airoha/an7581/EIP93-BUILD-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT"
