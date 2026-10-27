@@ -191,6 +191,7 @@ jobs:
           python3 CPU/tests/npu-telemetry-test.py
           python3 Packages/xg2010g-rps/tests/rps-test.py
           python3 CPU/tests/network-defaults-test.py
+          python3 tests/firmware-manifest-test.py
           python3 CPU/tests/pon-selection-test.py
           python3 tests/ppe-prepare-test.py
           python3 tests/feed-pin-test.py
