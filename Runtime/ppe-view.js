@@ -1,13 +1,11 @@
 // Shared export and snapshot semantics in the naoki and luanmuc views.
 var callPpeExport = rpc.declare({object:'luci.airoha_npu',method:'getPpeExport',params:['snapshot','offset']});
 function ppeCounterText(entry, key) {
-    // Also handle old cached responses without a counter_status field.
-    // Direction and fake-IP addresses do not decide offload eligibility.
-    if (entry.state !== 'BND' || entry.type === 'L2B' ||
-        ppeCurrentMeta.flow_stats_available !== true ||
-        (entry.counter_status && entry.counter_status !== 'reported_bound_slot')) return '';
-    var value = entry[key];
-    return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : '';
+    // User-selected original display: show the driver's raw decimal counters.
+    // Export validity is retained separately; displayed raw data is not a rate.
+    var source = entry.raw || entry;
+    var value = source[key];
+    return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : 'N/A';
 }
 function exportFullPpe(event) {
     var button=event.currentTarget, all=[], first=null, token='', offset=0;
