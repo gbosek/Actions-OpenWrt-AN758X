@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - retained guarded PPE + flowtable fixes + horizontal PON + NPU r909 + PON PPPoE MTU +8 + Argon 3.1 + clients memory fix
+run-name: XG2010G 6.18.55 - guarded PPE + NPU r909 + Argon 3.1 + clients fixes + PHY pre-ID reset
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -201,6 +201,7 @@ jobs:
           python3 Upstream/test-installers.py
           python3 UI/tests/pon-install-test.py
           python3 CPU/tests/driver-fixes-test.py
+          python3 tests/phy-preid-test.py
           node UI/tests/overview-test.js
           python3 Runtime/tests/runtime-test.py
           python3 Runtime/tests/route-test.py
@@ -941,6 +942,7 @@ jobs:
             python3 "$GITHUB_WORKSPACE/scripts/check-compatible-boost.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-driver-fixes.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-rtl826x.py" --build-dir build_dir --compiled --require-staged --report bin/targets/airoha/an7581/PHY-RTL826X-VERIFICATION.json
+            python3 "$GITHUB_WORKSPACE/scripts/check-phy-pre-id-reset.py" . --report bin/targets/airoha/an7581/PHY-PRE-ID-RESET-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-upstream-backports.py" --build-dir build_dir --report bin/targets/airoha/an7581/UPSTREAM-059895-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/Upstream/test-pppoe-mtu.py" --build-dir build_dir --compiled --report bin/targets/airoha/an7581/PON-PPPOE-MTU-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir --compiled --images bin/targets/airoha/an7581 --report bin/targets/airoha/an7581/NAOKI-OFFLOAD-VERIFICATION.json
@@ -1077,6 +1079,7 @@ jobs:
           cp "$BUILD_ROOT/openwrt/files/etc/pon-status-layout.json" PON-STATUS-LAYOUT.json
           cp "$BUILD_ROOT/openwrt/files/etc/an7581-driver-fixes.json" AN7581-DRIVER-FIXES-SOURCE.json
           cp "$BUILD_ROOT/openwrt/files/etc/phy-rtl826x-source.json" PHY-RTL826X-SOURCE.json
+          cp "$BUILD_ROOT/openwrt/files/etc/xg2010g-phy-pre-id-reset.json" PHY-PRE-ID-SOURCE.json
           [ ! -f "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" ] || cp "$BUILD_ROOT/openwrt/files/etc/pon-build-source.json" PON-SOURCE.json
           cp "$GITHUB_WORKSPACE/CPU-USAGE-SOURCE.json" CPU-USAGE-SOURCE.json
           cp "$GITHUB_WORKSPACE/PLUGIN-COMPATIBILITY-VALIDATION.json" PLUGIN-COMPATIBILITY-VALIDATION.json

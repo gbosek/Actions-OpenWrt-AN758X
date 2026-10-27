@@ -66,10 +66,15 @@ source=''.join(f'{idx} BND IPv4 5T orig=192.0.2.1:1->198.51.100.1:443 packets=18
 parsers=[root/'root/usr/libexec/airoha-ppe.awk']
 if a.runtime_parser:parsers.append(a.runtime_parser)
 for parser in parsers:
-    raw=subprocess.check_output(['awk','-v','limit=1','-f',str(parser)],input=source,text=True)
+    # Counters are valid only when the driver explicitly reports support.
+    raw=subprocess.check_output(['awk','-v','stats_cap=1','-v','limit=1','-f',str(parser)],input=source,text=True)
     obj=json.loads(raw)
     assert (obj['ppe1'],obj['ppe2'],obj['dram'])==(2,2,1) and obj['total']==5 and len(obj['entries'])==1
     assert obj['entries'][0]['packets']=='18446744073709551615'
+    if parser==a.runtime_parser:
+        unreported=json.loads(subprocess.check_output(['awk','-v','limit=1','-f',str(parser)],input=source,text=True))
+        assert unreported['entries'][0]['packets'] is None
+        assert unreported['entries'][0]['counter_status']=='driver_unreported'
     legacy=json.loads(subprocess.check_output(['awk','-f',str(parser)],input='1234\n',text=True))
     assert legacy['bound']==1234 and 'ppe1' not in legacy and 'zero_l2' not in legacy
     mixed=source+'4001 UNB IPv4 5T eth=00:00:00:00:00:00->00:00:00:00:00:00 etype=0000\n'

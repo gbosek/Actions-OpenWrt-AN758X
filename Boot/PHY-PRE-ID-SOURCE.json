@@ -1,0 +1,14 @@
+{
+  "board": "gemtek,xg2010g",
+  "dts": "target/linux/airoha/dts/an7581-gemtek-xg2010g.dts",
+  "core_patch": "target/linux/generic/hack-6.18/705-net-phy-reset-PHY-before-reading-its-ID-when-requested.patch",
+  "core_patch_sha256": "14261ac1ebeda140e87dbb036c7f2ffccc7c36fdc846b6b16bb6f564d19cef6f",
+  "core_support_already_in_baseline": true,
+  "reference_image_sha256": "1661b12447c22547c0db7acdc81dbb6411888038dd38a7b3705288113ca4c70c",
+  "phys": {"5": 29, "8": 27},
+  "reset_assert_us": 200000,
+  "reset_deassert_us": 200000,
+  "change": "Opt in to existing per-PHY reset before Clause 45 ID discovery; retain GPIO, polarity and timing",
+  "crc_root_cause_proven": false,
+  "hardware_tested": false
+}
