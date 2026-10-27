@@ -39,6 +39,8 @@ assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
 init=(root/'package/custom/mwan4/files/etc/init.d/mwan4').read_text()
 assert 'enabled || return 0' in init and 'service_running || return 0' in init
 assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in init
+assert (root/'files/etc/config/mwan4').read_bytes() == (repo/'files/etc/config/mwan4').read_bytes()
+assert (root/'package/custom/mwan4/files/etc/config/mwan4').read_bytes() == (repo/'files/etc/config/mwan4').read_bytes()
 metadata=json.loads((repo/'MWAN4-SOURCE.json').read_text())
 for kind,name in [('backend','mwan4'),('frontend','luci-app-mwan4')]:
  expected=metadata[kind]['version'].rsplit('-r',1)[1]

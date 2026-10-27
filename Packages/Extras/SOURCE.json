@@ -12,6 +12,22 @@
         "LF checkout normalization",
         "Return from init before launching a disabled service"
       ]
+    },
+    "msd_lite": {
+      "repo": "immortalwrt/packages",
+      "commit": "6d68ffeb270860be5d73ee2898d58e7c6019d9a4",
+      "path": "net/msd_lite",
+      "version": "2025.05.02~79a6c62c-r3",
+      "source_commit": "79a6c62c8fced6128a5e445ee110709b3b51bb78",
+      "source_archive_sha256": "533a2d08722d41790834252196cd0fb66296c48602ed24cb8cdfd9fee0d47249",
+      "files_sha256": {
+        "Makefile": "c8be97e0d7d74a9fd74a9f6b05a920da22fddd46c1b211ed9365fc5bf5fbfd62",
+        "files/msd_lite.config": "194ab83f568769aac094298be58208292abf9cc93fb21a7bac31ed5b30aa633c",
+        "files/msd_lite.init": "d0cc0f7c388be3341f3abbcb62676cbdfb1a920216d02f4975a4a7fef2bfacc7",
+        "files/msd_lite.sample": "d0048354a8b270ab5f869b463c465ab5035980beec3be66a5d15394fa066138d"
+      },
+      "local_changes": [],
+      "default_enabled": false
     }
   },
   "feed_pin": "17f97c0bec190e18d4884ab8204f63c64981edd7",

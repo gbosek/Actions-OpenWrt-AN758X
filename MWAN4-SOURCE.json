@@ -4,16 +4,16 @@
     "fork": "gbosek/mwan4",
     "branch": "main",
     "fork_commit": "c3cc7f50b4658d881fd33452056363fdaf2cc08c",
-    "version": "0.1.1-r9",
+    "version": "0.1.1-r10",
     "upstream_package_version": "0.1.1-r6",
     "local_adjustments": [
       "Family-aware DNS guard called at native startup, and owned DNS cleanup on native stop",
-      "Default stopped on first boot after flashing; boot and config reload respect stopped state; preset only on explicit start; LuCI controls persist autostart state",
+      "Default stopped on first boot after flashing; boot and config reload respect stopped state; no automatic policy presets; LuCI controls persist autostart state",
       "Service status uses actual procd processes instead of writable state directories; status RPC uses read-only initialization",
       "DNS rules precede WAN marks; migrate only ledger-owned legacy rules",
       "Recover missing PPP IPv4 table defaults on startup/interface events only",
       "Do not cache blackhole/unreachable sticky marks; synchronize snapshot routes with replace",
-      "Fresh preset keeps IPv6 source-prefix routing and uses received ISP DNS for multi-packet tracking"
+      "Fresh config contains globals only; compatibility preset hook never writes UCI or routing state"
     ]
   },
   "frontend": {
@@ -27,8 +27,8 @@
   },
   "default_state": {
     "first_boot_after_flash": "stopped and boot autostart disabled",
-    "start": "enable autostart and start; applies untouched preset",
+    "start": "enable autostart and start only; no automatic interface, metric, tracking or policy configuration",
     "stop": "disable autostart and stop",
-    "configuration": "editable while stopped; applying settings does not start service"
+    "configuration": "fresh globals only; configure after flashing; retained user conffiles preserved"
   }
 }

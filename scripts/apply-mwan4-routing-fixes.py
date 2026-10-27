@@ -15,7 +15,7 @@ if subprocess.run(base+['--dry-run'],capture_output=True).returncode==0:
 elif subprocess.run(base+['-R','--dry-run'],capture_output=True).returncode!=0:
     raise SystemExit('MWAN4 routing patch does not match the pinned backend')
 make=backend/'Makefile'
-release=10 if (repo/'Config/AIROHA.txt').exists() else 9
+release=11 if (repo/'Config/AIROHA.txt').exists() else 10
 text,n=re.subn(r'^PKG_RELEASE:=.*$','PKG_RELEASE:='+str(release),make.read_text(),flags=re.M)
 assert n==1
 make.write_text(text)

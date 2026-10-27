@@ -167,7 +167,8 @@ assert 'route add table' not in rtmon and rtmon.count('route replace table') == 
 assert not (installed/'etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
 for rel in ('etc/uci-defaults/99-xg2010g-mwan4-default-off', 'usr/libexec/xg2010g-mwan4-preset'):
     assert (installed/rel).stat().st_mode & 0o111 and (installed/rel).read_bytes() == (repo/'files'/rel).read_bytes(), rel
-assert (installed/'usr/share/xg2010g/mwan4-stock.config').is_file()
+assert not (installed/'usr/share/xg2010g/mwan4-stock.config').exists()
+assert (installed/'etc/config/mwan4').read_bytes() == (repo/'files/etc/config/mwan4').read_bytes(), 'Personal/default policy presets remain in image'
 assert json.loads((installed/'etc/xg2010g-mwan4-source.json').read_text()) == json.loads((repo/'MWAN4-SOURCE.json').read_text())
 print('Verified LAN3/LAN4 migration, provider-DNS routing, reserved sticky marks, repeatable route snapshots and explicit-start defaults')
 compat = json.loads((installed/'etc/firmware-package-compat.json').read_text())
@@ -177,3 +178,9 @@ assert binary[:4] == b'\x7fELF' and binary[18:20] == b'\xb7\0', 'RTP backend mis
 for name, path in [('files/rtp2httpd.config', 'etc/config/rtp2httpd'), ('files/rtp2httpd.init', 'etc/init.d/rtp2httpd')]:
     assert hashlib.sha256((installed/path).read_bytes()).hexdigest() == compat['files_sha256'][name], path
 print('Verified existing rtp2httpd backend and unchanged disabled default in actual staged rootfs')
+msd_meta=json.loads((repo/'Packages/Extras/SOURCE.json').read_text())['source_repositories']['msd_lite']
+msd_binary=(installed/'usr/bin/msd_lite').read_bytes()
+assert msd_binary[:4]==b'\x7fELF' and msd_binary[18:20]==b'\xb7\0', 'msd_lite backend is not AArch64'
+for source_rel,image_rel in [('files/msd_lite.config','etc/config/msd_lite'),('files/msd_lite.init','etc/init.d/msd_lite'),('files/msd_lite.sample','etc/msd_lite/msd_lite.conf.sample')]:
+    assert hashlib.sha256((installed/image_rel).read_bytes()).hexdigest()==msd_meta['files_sha256'][source_rel],image_rel
+print('Verified immutable msd_lite backend and unchanged disabled configuration')

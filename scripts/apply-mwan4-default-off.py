@@ -26,9 +26,15 @@ def install(root):
         dest.parent.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(repo/'files'/relative,dest)
         dest.chmod(0o755)
-    reference=root/'files/usr/share/xg2010g/mwan4-stock.config'
-    reference.parent.mkdir(parents=True,exist_ok=True)
-    shutil.copyfile(backend/'files/etc/config/mwan4',reference)
+    # Fresh installs have no interfaces, strategies or destination rules.
+    # Saved user conffiles are restored by sysupgrade/package management.
+    config = repo / 'files/etc/config/mwan4'
+    overlay = root / 'files/etc/config/mwan4'
+    overlay.parent.mkdir(parents=True, exist_ok=True)
+    if config.resolve() != overlay.resolve():
+        shutil.copyfile(config, overlay)
+    shutil.copyfile(config, backend / 'files/etc/config/mwan4')
+    (root / 'files/usr/share/xg2010g/mwan4-stock.config').unlink(missing_ok=True)
     replace_once(init, 'service_running() {\n\t[ -d "$MWAN4_STATUS_DIR" ]\n}',
                  'service_running() {\n\t[ ! -e /var/run/mwan4-rule-guard.stopped ] &&\n'
                  '\t\tprocd_running mwan4 "${1:-*}"\n}')
@@ -38,8 +44,12 @@ def install(root):
     replace_once(init, 'service_triggers() {',
                  'boot() {\n\t# A boot queue may still contain a link removed by first-boot defaults.\n'
                  '\tenabled || return 0\n\tstart\n}\n\nservice_triggers() {')
+    # Migrate the earlier comment/hook without installing a second call.
+    init.write_text(init.read_text().replace(
+        '# Apply an untouched preset only when MWAN4 is requested.',
+        '# Compatibility hook never creates routing policies.'))
     replace_once(init, '\tconfig_load mwan4\n',
-                 '\t# Apply an untouched preset only when MWAN4 is requested.\n'
+                 '\t# Compatibility hook never creates routing policies.\n'
                  '\t/usr/libexec/xg2010g-mwan4-preset || return 1\n\tconfig_load mwan4\n')
     replace_once(init, '|| /usr/bin/mwan4-rule-guard.sh --routes-only',
                  '|| MWAN4_STARTUP=init /usr/bin/mwan4-rule-guard.sh --routes-only')

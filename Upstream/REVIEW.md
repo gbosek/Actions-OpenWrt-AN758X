@@ -53,3 +53,16 @@ is updated to validate the three fields, per-block baseline subtraction,
 zero clipping and exclusion of unrelated software algorithms. It is still a
 derived indicator, not measured hardware utilization or crypto throughput.
 PSE register read failure remains null rather than a fabricated zero.
+
+The user's latest requirement excludes all embedded routing policies. Fresh
+MWAN4 config now contains globals only; its compatibility start hook does
+not write UCI, network metrics or strategy/rule entries. Start/stop controls
+still persist the requested service state. Retained user conffiles are not
+cleared. Speed-test, website and device rules are configured after flashing.
+
+Run 40420628470 failed before kernel compilation because the pinned feed has
+luci-app-msd_lite but lacks its msd_lite backend. The immutable recipe and its
+three service/config files are restored from immortalwrt/packages 6d68ffeb,
+keeping upstream 2025.05.02~79a6c62c-r3, source archive hash and enabled=0.
+The installer rejects duplicate providers; staged-image checks require the
+AArch64 ELF and exact unchanged config/init/sample hashes.

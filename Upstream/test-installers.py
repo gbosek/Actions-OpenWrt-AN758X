@@ -21,4 +21,13 @@ with tempfile.TemporaryDirectory(prefix='xg-upstream-install-') as d:
     assert dns.read_text().count('xg2010g-dnsmasq-log-guard')==1
     for _ in range(2):subprocess.run([sys.executable,str(repo/'scripts/apply-requested-extras.py'),str(root)],check=True)
     assert (root/'package/custom/luci-app-clients/root/usr/libexec/clients-probe').stat().st_mode&0o111
+    msd = root/'package/custom/msd_lite'
+    meta=json.loads((repo/'Packages/Extras/SOURCE.json').read_text())['source_repositories']['msd_lite']
+    import hashlib
+    for rel,digest in meta['files_sha256'].items():
+        assert hashlib.sha256((msd/rel).read_bytes()).hexdigest()==digest,rel
+    assert "option 'enabled' '0'" in (msd/'files/msd_lite.config').read_text()
+    duplicate=root/'feeds/packages/net/msd_lite/Makefile';duplicate.parent.mkdir(parents=True)
+    duplicate.write_text((msd/'Makefile').read_text())
+    assert subprocess.run([sys.executable,str(repo/'scripts/apply-requested-extras.py'),str(root)],capture_output=True).returncode!=0
 print('PASS: patch installer idempotency, prefix/semantic duplicate rejection, DNS hook and extras install')

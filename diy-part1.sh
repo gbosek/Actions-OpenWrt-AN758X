@@ -125,8 +125,6 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
 
   clone_at https://github.com/gbosek/mwan4 c3cc7f50b4658d881fd33452056363fdaf2cc08c "$PKG_DIR/mwan4" || exit 1
   clone_at https://github.com/gbosek/luci-app-mwan4 281aa575c2cd12c364817f25082cc40088a3e1b0 "$PKG_DIR/luci-app-mwan4" || exit 1
-  mkdir -p files/usr/share/xg2010g
-  cp "$PKG_DIR/mwan4/files/etc/config/mwan4" files/usr/share/xg2010g/mwan4-stock.config
   mkdir -p files/etc
   cp "$GITHUB_WORKSPACE/MWAN4-SOURCE.json" files/etc/xg2010g-mwan4-source.json
   for p in mwan4 luci-app-mwan4; do

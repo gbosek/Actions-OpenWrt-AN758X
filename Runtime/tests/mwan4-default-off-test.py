@@ -94,6 +94,9 @@ ucode() { echo "ucode $*" >> "$TEST_LOG"; }
         assert marker.exists()
     assert not (root / 'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
     assert (root / 'files/usr/libexec/xg2010g-mwan4-preset').stat().st_mode & 0o111
+    assert (backend / 'files/etc/config/mwan4').read_bytes() == (repo / 'files/etc/config/mwan4').read_bytes()
+    assert (root / 'files/etc/config/mwan4').read_bytes() == (repo / 'files/etc/config/mwan4').read_bytes()
+    assert not (root / 'files/usr/share/xg2010g/mwan4-stock.config').exists()
 
     # Run the actual ucode RPC method with command capture, no host service access.
     rpc = (backend / 'files/usr/share/rpcd/ucode/mwan4').read_text()

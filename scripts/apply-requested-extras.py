@@ -14,4 +14,4 @@ for name in meta['source_repositories']:
         if path.is_file() and path.read_bytes().startswith(b'#!'):path.chmod(0o755)
 dest=root/'files/etc/xg2010g-requested-plugins.json';dest.parent.mkdir(parents=True,exist_ok=True)
 dest.write_text(json.dumps(meta,indent=2)+'\n')
-print('Installed pinned clients/Pushbot; feed plugin dependencies checked by package index')
+print('Installed pinned clients/Pushbot/msd_lite; feed plugin dependencies checked by package index')
