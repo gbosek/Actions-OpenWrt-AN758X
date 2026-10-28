@@ -8,8 +8,8 @@ meta=json.loads((R/'AIROHA-UPDATE-REVIEW.json').read_text())
 sha=lambda b:hashlib.sha256(b).hexdigest()
 for name,digest in meta['files_sha256'].items():
  assert sha((R/name).read_bytes())==digest,'Reviewed source mismatch: '+name
-assert meta['fork']['commit']=='69a1b62c835b922e03add9953a92db2f728fb9e5'
-assert meta['upstream_commit']=='d3669ce663ed39ae05c3cb56c82a9a1ed29cee9e'
+assert meta['fork']['commit']=='015d457c2c9c3dc01535fe1419119f13fe817f7a'
+assert meta['upstream_commit']=='cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210'
 assert 'CONFIG_PACKAGE_nlbwmon=y' in (R/'configs/gemtek_xg2010g.config').read_text()
 if a.source:
  source=a.source;installed,=list((source/'build_dir').glob('target-*/root-airoha'))

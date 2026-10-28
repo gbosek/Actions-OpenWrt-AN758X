@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - retained PPE/PHY fixes + MWAN4 r29 LuCI r16 - three fixes + Airoha d3669ce CPU/clients sync + Argon 3.1
+run-name: XG2010G 6.18.55 - retained PPE/PHY fixes + MWAN4 r29 LuCI r16 - three fixes + Airoha cf9c4c1 history JSON fix + Argon 3.1
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）

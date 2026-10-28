@@ -1,7 +1,7 @@
 {
   "variant": "naoki",
   "upstream": "naoki66/luci-app-airoha",
-  "commit": "d3669ce663ed39ae05c3cb56c82a9a1ed29cee9e",
+  "commit": "cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210",
   "package": "luci-app-airoha-npu",
   "upstream_version": "2.0.0-r9",
   "local_adjustments": [
@@ -13,7 +13,7 @@
   "cpu_overview": "Repository /sbin/cpuusage: USR/SYS and CPU0–CPU3",
   "upstream_mirror": {
     "repo": "naoki66/luci-app-airoha",
-    "commit": "d3669ce663ed39ae05c3cb56c82a9a1ed29cee9e",
+    "commit": "cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210",
     "branch": "main"
   },
   "selected_updates": [
@@ -40,7 +40,8 @@
     "0fa3530 first-boot RPC registration self-heal",
     "2026-10-28: tmpfs CPU/frequency history and monotonic load gate",
     "10 s dashboard, 20 s frame/PPE and 60 s crypto; successful topology/frame caches only",
-    "PON bridge UI support exposed upstream; default remains disabled; no kernel binding change or hardware validation"
+    "PON bridge UI support exposed upstream; default remains disabled; no kernel binding change or hardware validation",
+    "cf9c4c1: AWK-compatible history JSON publication; actual BusyBox negative/positive regression"
   ],
   "crypto_display": {
     "mode": "upstream algorithm-derived active sessions",
@@ -52,6 +53,6 @@
   "reviewed_fork": {
     "repository": "gbosek/luci-app-airoha",
     "branch": "work/xg2010g-reviewed-20261029",
-    "commit": "69a1b62c835b922e03add9953a92db2f728fb9e5"
+    "commit": "015d457c2c9c3dc01535fe1419119f13fe817f7a"
   }
 }

@@ -1,13 +1,13 @@
 {
   "upstream": "naoki66/luci-app-airoha",
-  "upstream_commit": "d3669ce663ed39ae05c3cb56c82a9a1ed29cee9e",
+  "upstream_commit": "cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210",
   "fork": {
     "repository": "gbosek/luci-app-airoha",
     "branch": "work/xg2010g-reviewed-20261029",
-    "commit": "69a1b62c835b922e03add9953a92db2f728fb9e5"
+    "commit": "015d457c2c9c3dc01535fe1419119f13fe817f7a"
   },
   "baseline_actions_commit": "61add44a31d704dd4b9938b71cbec6cc2b78c23e",
-  "npu_local_release": 912,
+  "npu_local_release": 913,
   "clients_local_release": 5,
   "mwan4": "r29/r16 unchanged",
   "kernel_driver_binding_changes": false,
@@ -49,11 +49,25 @@
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/airoha-ppe.awk": "783b9010156f2d6c31f2e2f8f3462bf1bdc206a8e9400413a793d71016eeee93",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/npu-jitter-daemon": "bc5677c88eb303bc9a2d16dc5fdabe171b8c65104b4999e44da20d12d2732cc5",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/airoha-common.sh": "1a3c7b1c9d16cfc8c30c377ef5eb07cf290990230aeb7b32add211f90a44153b",
-    "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu": "90a5fcf9c7945ddbb0519e8b946a1aaaf7126aaaaaa1365a6cbd79a3ef214692",
+    "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu": "be5a70c3492c910545020a9f27a10c003884c02ca09ae57a335ee294eac33c6f",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/share/luci/menu.d/luci-app-airoha-npu.json": "37ec39b014b37ddf79e58ddee14ffa86babf138fb94b21085bab823e90b4bd24",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/share/rpcd/acl.d/luci-app-airoha-npu.json": "382d35f3e062f92bef6f7c617733fbbd5878c8a2dbd4d28c256b29a6f1718b64",
-    "scripts/adapt_npu.py": "a85a77383eb459a6fb2641c7b3af2f4947576f5cd8ed6c7921ae240a550e8c58",
+    "scripts/adapt_npu.py": "be5043f9ab38e230b0ddaecc79687e2083c97b905bfbd67fb36291656cc68a83",
     "scripts/observability.py": "c4bf5d690fc84a3d12539e1cf80ba2b286a7754a5312e466fa83cba984177305",
-    "scripts/select-npu.py": "e3b3180f071c1ee976d9df671a44f462e9ef3a5af95472ef2c91172595049d2b"
+    "scripts/select-npu.py": "f6c6f4072cdf0c4d26a1ab5eeeff60683333c9628059acc2e5f0f8f970dd8c5e"
+  },
+  "history_publication_fix": {
+    "upstream_commit": "cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210",
+    "negative_control_reproduced": true,
+    "local_awk_engines": [
+      "Ubuntu host awk",
+      "BusyBox 1.37.0 static awk"
+    ],
+    "tested_actual_functions": [
+      "_cpu_hist_sample",
+      "_cpu_hist_json",
+      "_cpu_hist"
+    ],
+    "target_device_tested": false
   }
 }
