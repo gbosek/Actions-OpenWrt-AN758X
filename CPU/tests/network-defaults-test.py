@@ -6,7 +6,7 @@ repo=Path(__file__).resolve().parents[2]
 config=repo/'files/etc/config/mwan4'
 sections=re.findall(r"^config\s+(\S+)\s+['\"]?(\w+)",config.read_text(),re.M)
 assert sections==[('globals','globals')],sections
-assert re.findall(r"^\s*option\s+(\S+)",config.read_text(),re.M)==['mmx_mask']
+assert re.findall(r"^\s*option\s+(\S+)",config.read_text(),re.M)==['mmx_mask','rule_mask','source_routing','xg2010g_rule_semantics']
 with tempfile.TemporaryDirectory(prefix='mwan4-no-preset-') as directory:
  root=Path(directory);binpath=root/'bin';binpath.mkdir();log=root/'calls'
  for name in ['uci','ubus','ip','nft','logger']:

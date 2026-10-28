@@ -22,7 +22,7 @@ let system=function(s) {push(commands,s);return 0;};
 let iface_active=function(iface,fam) {return true;};
 let m={update_dev_to_table:function(){},
  uci_foreach:function(type,fn){fn({'.name':'wan'});fn({'.name':'wanb'});},
- get_iface_id:function(n){return n=='wan'?1:2;},get_families:function(n){return ['ipv4'];},
+ get_iface_id:function(n){return n=='wan'?51:52;},get_iface_table_id:function(n){return n=='wan'?1:2;},get_families:function(n){return ['ipv4'];},
  get_routes:function(f){return ['default dev pppoe-wan','192.168.10.0/24 dev br-lan','default dev other','fe80::/64 dev other'];},
  route_line_dev:function(line,f){return line=='default dev pppoe-wan'?1:null;},
  cmd_lines:function(s){push(commands,s);return index(s,'route add')>=0?['File exists']:[];},
@@ -34,15 +34,11 @@ let m={update_dev_to_table:function(){},
     commands=result['commands'];assert len(commands)==6 and commands[:3]==commands[3:]
     assert all('route replace table' in s for s in commands)
     assert not any('dev other' in s for s in commands)
-    body=function((backend/'mwan4.uc').read_text(),'set_user_rules')
+    body=function((backend/'mwan4.uc').read_text(),'sticky_chain_lines')
     fixture='''let NFT_TABLE='mwan4', NFT_PREFIX='mwan4';
 let mwan4={mmx_mask:'0x3f00',mmx_default:'0x3f00',mmx_blackhole:'0x3d00',mmx_unreachable:'0x3e00',no_ipv6:0};
-let uci_foreach=function(type,fn){fn({'.name':'https'});};
-let _build_user_rule=function(s,fam){return {rule:'https',is_strategy_jump:true,sticky:true,timeout:600,use_strategy:'balanced',match_str:'tcp dport 443'};};
-let _collect_sticky_ifaces=function(...args){return ['wan','wanb'];};
-let nft_file=function(...args){print(join('\\n',slice(args,2)));};
 '''
-    path.write_text(fixture+body+'\nset_user_rules();')
+    path.write_text(fixture+body+"\nfor(let fam in ['ipv4','ipv6']) print(join('\\n',sticky_chain_lines({rule:'https',use_strategy:'balanced'},fam)));")
     nft=subprocess.check_output([ucode,str(path)],text=True)
     lines=[s for s in nft.splitlines() if 'update @mwan4_rule_' in s]
     assert len(lines)==2 and any('ip6 saddr' in s for s in lines)

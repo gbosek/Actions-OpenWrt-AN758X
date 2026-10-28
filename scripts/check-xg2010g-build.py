@@ -45,8 +45,8 @@ for manifest in manifests:
     assert re.match(r'^0\.1\.0-(?:r)?4$', pkgs.get('luci-app-clients', '')), 'Clients memory fix or compact chart missing'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
-    assert re.match(r'^0\.1\.1-(?:r)?10$', pkgs['mwan4']), 'MWAN4 no-preset/routing release missing'
-    assert re.match(r'^1\.0\.0-(?:r)?12$', pkgs['luci-app-mwan4']), 'MWAN4 stopped-state editing fix missing'
+    assert re.match(r'^0\.1\.1-(?:r)?28$', pkgs['mwan4']), 'MWAN4 no-preset/routing release missing'
+    assert re.match(r'^1\.0\.0-(?:r)?15$', pkgs['luci-app-mwan4']), 'MWAN4 stopped-state editing fix missing'
     assert re.search(r'-(?:r)?14$', pkgs['luci-app-pon-status']), 'PON horizontal-naoki-v1 package release missing'
     assert not any(n in pkgs for n in ('mwan3', 'mwan3-nft', 'luci-app-mwan3')), 'Mixed MWAN stacks'
     assert re.match(version_pattern, pkgs['luci-app-airoha-npu']), 'Wrong NPU package/local adapter revision'
@@ -123,7 +123,7 @@ layout = json.loads((installed / 'etc/pon-status-layout.json').read_text())
 assert layout['layout'] == 'horizontal-naoki-v1' and layout['module'] == 'view.status.include.29a_xg2010g_pon'
 assert layout['sha256'] == hashlib.sha256(pon_include.read_bytes()).hexdigest(), 'PON layout provenance mismatch'
 overview = (installed / 'www/luci-static/resources/view/mwan4/network/overview.js').read_text()
-assert 'Service stopped' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
+assert 'MultiWAN 4 service stopped.' in overview and 'Service did not reach the requested state.' in overview, 'MWAN4 stop confirmation missing'
 assert '192.168.10.1' in (installed / 'bin/config_generate').read_text(), 'Default LAN IP missing'
 assert 'create_iface_rules(iface, l3_device)' in (installed / 'lib/mwan4/mwan4.uc').read_text(), 'Native MWAN4 init rules missing'
 assert not (installed / 'etc/uci-defaults/98-xg2010g-mwan4-defaults').exists(), 'Automatic routing preset remains in image'
@@ -135,7 +135,7 @@ assert 'procd_running mwan4' in mwan_init, 'Status directory must not be treated
 assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in mwan_init
 assert 'wasRunning' in overview and 'Service remains stopped.' in overview
 assert 'withButtonBusy(eventButton(ev), refreshRuntime)' in overview
-assert "action == 'stop' ? 'disable' : 'enable'" in (installed / 'usr/share/rpcd/ucode/mwan4').read_text()
+assert "/etc/init.d/mwan4 disable && /etc/init.d/mwan4 stop" in (installed / 'lib/mwan4/mwan4.uc').read_text()
 assert 'm.init();' not in (installed / 'usr/share/rpcd/ucode/mwan4').read_text()
 assert json.loads((installed / 'etc/xg2010g-mwan4-source.json').read_text()) == json.loads((repo / 'MWAN4-SOURCE.json').read_text())
 assert (installed / 'etc/upstream-059895-source.json').read_bytes() == (repo / 'UPSTREAM-059895-SOURCE.json').read_bytes()
@@ -165,7 +165,7 @@ assert led['patch_sha256'] == hashlib.sha256((repo/'Boot/xg2010g-lan34-leds.patc
 rel = 'etc/uci-defaults/99-xg2010g-lan34-led-mode'
 assert (installed/rel).stat().st_mode & 0o111 and (installed/rel).read_bytes() == (repo/'Boot/root'/rel).read_bytes()
 library = (installed/'lib/mwan4/mwan4.uc').read_text()
-assert 'mwan4.mmx_default, mwan4.mmx_mask, mwan4.mmx_blackhole, mwan4.mmx_mask, mwan4.mmx_unreachable' in library, 'Reserved marks must not enter sticky cache'
+assert 'mask, mask, mwan4.mmx_default, mask, mwan4.mmx_blackhole, mask, mwan4.mmx_unreachable' in library, 'Reserved marks must not enter sticky cache'
 rtmon = (installed/'lib/mwan4/mwan4rtmon.uc').read_text().split('function add_all_routes() {',1)[1].split('function handle_route(',1)[0]
 assert 'route add table' not in rtmon and rtmon.count('route replace table') == 2, 'Route snapshots are not idempotent'
 assert not (installed/'etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
@@ -188,3 +188,7 @@ assert msd_binary[:4]==b'\x7fELF' and msd_binary[18:20]==b'\xb7\0', 'msd_lite ba
 for source_rel,image_rel in [('files/msd_lite.config','etc/config/msd_lite'),('files/msd_lite.init','etc/init.d/msd_lite'),('files/msd_lite.sample','etc/msd_lite/msd_lite.conf.sample')]:
     assert hashlib.sha256((installed/image_rel).read_bytes()).hexdigest()==msd_meta['files_sha256'][source_rel],image_rel
 print('Verified immutable msd_lite backend and unchanged disabled configuration')
+
+from check_mwan4_pair import verify_sources,verify_installed
+verify_sources(root,repo)
+verify_installed(installed,repo)

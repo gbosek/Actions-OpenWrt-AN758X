@@ -98,38 +98,17 @@ ucode() { echo "ucode $*" >> "$TEST_LOG"; }
     assert (root / 'files/etc/config/mwan4').read_bytes() == (repo / 'files/etc/config/mwan4').read_bytes()
     assert not (root / 'files/usr/share/xg2010g/mwan4-stock.config').exists()
 
-    # Run the actual ucode RPC method with command capture, no host service access.
-    rpc = (backend / 'files/usr/share/rpcd/ucode/mwan4').read_text()
+    # Control moved into the shared paired library; test the actual new owner.
+    rpc=(backend/'files/usr/share/rpcd/ucode/mwan4').read_text()
     assert 'm.init();' not in rpc and 'm.load();' in rpc
-    ucode = os.environ.get('UCODE', '/workspace/scratch/ucode-native-build/ucode')
-    assert Path(ucode).is_file(), 'ucode required for RPC lifecycle checks'
-    program = '''let commands = [], active = false;
-let system = function(command) { push(commands, command); return 0; };
-let m = {
- reload_config: function() {},
- ubus_call: function() { return {mwan4:{instances:{rtmon_ipv4:{running:active}}}}; },
- uci_foreach: function(kind, cb) { cb({'.name':'wan',enabled:'1',track_ip:['192.0.2.1']}); },
- uci_bool: function(x) { return x == '1'; }, get_families: function() { return ['ipv4']; }
-};
-''' + function(rpc, 'runtime_summary') + '\n' + function(rpc, 'control_call') + '''
-for (let action in ['start', 'stop', 'restart']) {
- let r = control_call({args:{action,interface:null}});
- if (!r.ok) exit(1);
-}
-let before = length(commands);
-let r = control_call({args:{action:'ifup',interface:'wan'}});
-if (r.ok || length(commands) != before) exit(2);
-active = true;
-r = control_call({args:{action:'ifup',interface:'wan'}});
-if (!r.ok) exit(3);
-printf('%J\\n',commands);
-'''
-    path = temp / 'rpc.uc'
-    path.write_text(program)
-    commands = json.loads(subprocess.check_output([ucode, str(path)], text=True))
-    assert 'enable && /etc/init.d/mwan4 start' in commands[0]
-    assert 'disable && /etc/init.d/mwan4 stop' in commands[1]
-    assert 'enable && /etc/init.d/mwan4 restart' in commands[2]
+    ucode=os.environ['UCODE']
+    library=(backend/'files/lib/mwan4/mwan4.uc').read_text()
+    program="let commands=[]; let system=function(s){push(commands,s);return 0;};\n"+function(library,'service_control')+"\nfor(let a in ['start','stop','restart']) { if(service_control(a)!=0) exit(1); } printf('%J',commands);"
+    path=temp/'rpc.uc';path.write_text(program)
+    commands=json.loads(subprocess.check_output([ucode,str(path)],text=True))
+    assert commands==['/etc/init.d/mwan4 enable && /etc/init.d/mwan4 start',
+                      '/etc/init.d/mwan4 disable && /etc/init.d/mwan4 stop',
+                      '/etc/init.d/mwan4 enable && /etc/init.d/mwan4 restart']
 
     overview = (frontend / 'htdocs/luci-static/resources/view/mwan4/network/overview.js').read_text()
     js = '''const assert = require('node:assert/strict');
@@ -147,6 +126,7 @@ const callStatus = () => Promise.resolve({diagnostics:{service_running:sequence.
 const uci = {save:()=>{changes.push('save');return Promise.resolve();},apply:()=>Promise.resolve(),unload:()=>{},load:()=>Promise.resolve()};
 const runMwan4 = (args) => {changes.push(args[0]);return Promise.resolve(true);};
 const renderApp = () => null;
+const reloadOverview = () => Promise.resolve();
 const refreshRuntime = () => {changes.push('refresh');return Promise.resolve();};
 ''' + function(overview, 'saveApplyRestart') + '\n' + function(overview, 'renderServiceActions') + '''
 (async () => {

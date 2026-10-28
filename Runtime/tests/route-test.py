@@ -17,6 +17,9 @@ with tempfile.TemporaryDirectory(prefix='xg-routes-test-') as temp:
  (p/'functions').write_text('''config_load() { :; }
 config_get() {
  local value="$4"
+ if [ -f "$FIXTURE/custom-ids" ]; then
+  case "$2:$3" in wanb_6:id) value=24;; wanb_6:table_id) value=204;; wanb_6:mark) value=0x1800;; esac
+ fi
  case "$2:$3" in globals:mmx_mask) value=0x3f00;; *:enabled) value=1;; *_6:family) value=ipv6;; *:family) value=ipv4;; esac
  eval "$1=\\\"$value\\\""
 }
@@ -32,7 +35,7 @@ if cmd=='ip':
   tid=a[a.index('table')+1]
   if tid=='all':
    for t in (('1','2') if f=='4' else ('3','4')):print('default dev pppoe-wan table '+t)
-  elif f=='4' and tid in ('1','2') or f=='6' and tid in ('3','4'):print('default dev pppoe-wan')
+  elif f=='4' and tid in ('1','2') or f=='6' and tid in ('3','4','204'):print('default dev pppoe-wan')
   else:
    print('Dump terminated',file=sys.stderr);sys.exit(2)
  elif a[:2]==['rule','show']:print('\\n'.join(rules[f]))
@@ -96,4 +99,11 @@ elif cmd=='jsonfilter':
  assert not any('to 2400:' in x for x in current['6'])
  (state/'mwan4').rmdir();call('--routes-only')
  assert current==json.loads((p/'rules.json').read_text()),'Stopped MWAN4 was resurrected'
+ # Stable identity must not be confused with section order or routing table ID.
+ ready.touch();(state/'mwan4').mkdir();(p/'custom-ids').touch()
+ custom=call('--plan')
+ assert 'pref 1024 iif pppoe-wanb lookup 204' in custom,custom
+ assert 'pref 2024 fwmark 0x1800/0x3f00 lookup 204' in custom,custom
+ assert 'pref 3024 fwmark 0x1800/0x3f00 unreachable' in custom,custom
+ assert 'pref 1204' not in custom and 'fwmark 0x400/0x3f00 lookup 204' not in custom,custom
 print('PASS: family table 1/2 vs 3/4, DNS pinning, idempotence, down-event reconciliation, stop cleanup, preserved source-prefix/user rules')

@@ -38,10 +38,17 @@ mask=$(printf '0x%x' "$((mask))")
 MAP=''
 ID=0
 map_iface() {
-    local name="$1" enabled family dev up fam data
+    local name="$1" enabled family dev up fam data id tid mark
     ID=$((ID+1))
     config_get enabled "$name" enabled 0
     [ "$enabled" = 1 ] || return
+    # Paired MWAN4 persists identity independently of UCI order and table number.
+    config_get id "$name" id "$ID"
+    config_get tid "$name" table_id "$id"
+    config_get mark "$name" mark ''
+    case "$id:$tid" in *[!0-9:]*|:*|*:) return ;; esac
+    [ "$id" -gt 0 ] && [ "$id" -le 254 ] && [ "$tid" -gt 0 ] && [ "$tid" -le 2147483647 ] || return
+    case "$mark" in ''|0x[0-9a-fA-F]*|[0-9]*) ;; *) return ;; esac
     config_get family "$name" family ipv4
     data=$(ubus call "network.interface.$name" status 2>/dev/null)
     dev=$(printf '%s' "$data" | jsonfilter -e '@.l3_device')
@@ -50,7 +57,7 @@ map_iface() {
     case "$dev" in ''|*[!a-zA-Z0-9_.:-]*) return ;; esac
     case "$family" in ipv4) family=4 ;; ipv6) family=6 ;; 'ipv4 ipv6'|'ipv6 ipv4'|any) family='4 6' ;; *) return ;; esac
     for fam in $family; do
-        MAP="${MAP}${fam} ${name} ${ID} ${dev}
+        MAP="${MAP}${fam} ${name} ${tid} ${dev} ${id} ${mark:-auto}
 "
     done
 }
@@ -125,28 +132,30 @@ ensure_ppp_default() {
     fi
 }
 
-printf '%s' "$MAP" | while read -r fam name tid dev; do
+printf '%s' "$MAP" | while read -r fam name tid dev id mark; do
     [ -n "$tid" ] || continue
     ensure_ppp_default "$fam" "$name" "$tid" "$dev"
     [ -n "$(ip "-$fam" route show table "$tid")" ] || continue
-    mark=$(mark_for_id "$tid")
-    add_exact "$fam" $((tid+1000)) "iif $dev lookup $tid"
-    add_exact "$fam" $((tid+2000)) "fwmark $mark/$mask lookup $tid"
-    add_exact "$fam" $((tid+3000)) "fwmark $mark/$mask unreachable"
+    [ "$mark" != auto ] || mark=$(mark_for_id "$id")
+    add_exact "$fam" $((id+1000)) "iif $dev lookup $tid"
+    add_exact "$fam" $((id+2000)) "fwmark $mark/$mask lookup $tid"
+    add_exact "$fam" $((id+3000)) "fwmark $mark/$mask unreachable"
     if [ "$PLAN" = 0 ]; then
-        has_exact "$fam" $((tid+1000)) "iif $dev lookup $tid" &&
-        has_exact "$fam" $((tid+2000)) "fwmark $mark/$mask lookup $tid" &&
-        has_exact "$fam" $((tid+3000)) "fwmark $mark/$mask unreachable" || continue
+        has_exact "$fam" $((id+1000)) "iif $dev lookup $tid" &&
+        has_exact "$fam" $((id+2000)) "fwmark $mark/$mask lookup $tid" &&
+        has_exact "$fam" $((id+3000)) "fwmark $mark/$mask unreachable" || continue
     fi
     # Remove only the exact legacy v6 rules after the native replacement exists.
     if [ "$fam" = 6 ]; then
         base=${name%_6}; old=$(find_id 4 "$base")
         if [ -n "$old" ] && [ "$old" != "$tid" ] && table_is_empty 6 "$old" &&
            [ -n "$(ip -6 route show table "$tid")" ]; then
-            oldmark=$(mark_for_id "$old")
-            del_exact 6 $((old+1000)) "iif $dev lookup $old"
-            del_exact 6 $((old+2000)) "fwmark $oldmark/$mask lookup $old"
-            del_exact 6 $((old+3000)) "fwmark $oldmark/$mask unreachable"
+            oldid=$(printf '%s' "$MAP" | awk -v n="$base" '$1==4 && $2==n {print $5;exit}')
+            oldmark=$(printf '%s' "$MAP" | awk -v n="$base" '$1==4 && $2==n {print $6;exit}')
+            [ "$oldmark" != auto ] || oldmark=$(mark_for_id "$oldid")
+            del_exact 6 $((oldid+1000)) "iif $dev lookup $old"
+            del_exact 6 $((oldid+2000)) "fwmark $oldmark/$mask lookup $old"
+            del_exact 6 $((oldid+3000)) "fwmark $oldmark/$mask unreachable"
         fi
     fi
 done
