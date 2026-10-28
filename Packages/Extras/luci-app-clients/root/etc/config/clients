@@ -12,6 +12,33 @@ config clients 'global'
 	# /tmp on purpose: a status page must not wear the flash. Point this at
 	# persistent storage deliberately if the history has to survive a reboot.
 	option history_path '/tmp/clients-history.json'
+	# How often the live snapshot behind the Clients page is refreshed. The
+	# collector samples on this clock whether or not anyone is looking, which
+	# is what lets the page read a file instead of walking conntrack per
+	# viewer; the rates it shows are averages over this window. Raising it
+	# costs freshness, not correctness.
+	option live_interval '10'
+	# The snapshot the page reads, also in /tmp for the same reason.
+	option snapshot_path '/tmp/clients-snapshot.json'
+	# How often the overview tiles are measured, on their own clock and in
+	# their own process. The sampler reads the port counters straight from
+	# sysfs - no conntrack, no nlbwmon, no shell - and costs about 8 ms a
+	# pass, so one second is affordable and is what the tiles are set to.
+	# Raise it to 2 or 5 on a box that should not be touched at all; 0
+	# switches the loop off and the tiles fall back to the snapshot's own
+	# cadence.
+	option tick_interval '1'
+	# The ring the page reads for the tiles and the fine-grained part of the
+	# chart, in /tmp like the rest.
+	option samples_path '/tmp/clients-samples.json'
+	# Ceiling in bytes for each cache file this app keeps in /tmp (history,
+	# snapshot, DNS archive, snoop table, PTR cache). A file that grows past
+	# it drops its least useful rows before being written, so the worst case
+	# is a constant rather than a function of how busy the network was. 256 KB
+	# is several times what a /24 of real clients needs. Zero or an unreadable
+	# value falls back to the built-in 262144 - there is no way to switch the
+	# cap off from here.
+	option max_bytes '262144'
 
 config clients 'dns'
 	# Turning this off stops the collector but keeps the dnsmasq query log

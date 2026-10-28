@@ -116,7 +116,6 @@ html[data-argon-mode="dark"] {
 
 .clients-block__dir--up { color: var(--cl-up); }
 .clients-block__dir--down { color: var(--cl-down); }
-
 .clients-block__rate {
 	font-size: 1.05rem;
 	font-weight: 500;

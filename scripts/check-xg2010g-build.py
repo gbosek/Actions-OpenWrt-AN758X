@@ -12,7 +12,7 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('naoki66/luci-app-airoha', 'c0abc628cc90043b4a9ea6c0c1dc9e1325190567', r'^2\.0\.0-(?:r)?911$'),
+    'naoki': ('naoki66/luci-app-airoha', 'd3669ce663ed39ae05c3cb56c82a9a1ed29cee9e', r'^2\.0\.0-(?:r)?912$'),
     'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?105$'),
 }
 variant = meta['variant']
@@ -42,7 +42,7 @@ for manifest in manifests:
     for name in ('luci-theme-argon', 'luci-app-argon-config'):
         assert re.match(r'^3\.1\.0-(?:r)?20261022$', pkgs[name]), 'Argon 3.1.0 migration package missing: ' + name
     assert pkgs['luci-i18n-argon-config-zh-cn'] in ('v3.1.0', '3.1.0-r20261022', '3.1.0-20261022'), 'Argon 3.1 Chinese catalog missing'
-    assert re.match(r'^0\.1\.0-(?:r)?4$', pkgs.get('luci-app-clients', '')), 'Clients memory fix or compact chart missing'
+    assert re.match(r'^0\.1\.0-(?:r)?5$', pkgs.get('luci-app-clients', '')), 'Clients memory fix or compact chart missing'
     assert pkgs['xg2010g-rps'].startswith('20261013'), 'Old RPS package'
     assert re.match(r'^20261013-(?:r)?3$', pkgs['xg2010g-rps']), 'RPS read/singleton fix missing'
     assert re.match(r'^0\.1\.1-(?:r)?29$', pkgs['mwan4']), 'MWAN4 no-preset/routing release missing'

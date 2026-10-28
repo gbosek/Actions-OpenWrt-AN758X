@@ -13,10 +13,12 @@
  * A router image has no room for one, and the shape needed here is two lines
  * with a shared axis: a library would add more code than the drawing does.
  *
- * The series lives in memory. Points accumulate every SAMPLE_INTERVAL while the
- * page is open and are dropped when it closes, because a few minutes of history
- * is not worth writing to a file - and writing it to flash on a timer is
- * exactly what a status page should not do.
+ * The series comes from the collector, in the snapshot the page already reads:
+ * one point per sampling pass, kept in /tmp so it survives a page reload and is
+ * already there when the page opens. It used to be built here, which meant the
+ * chart started at "whenever this page was opened" and a reload threw the
+ * history away. Only the fallback path - no cache, collector stopped - still
+ * accumulates points in memory while the page is open.
  *
  * The totals come from conntrack, so they are floors rather than lifetime
  * figures. The footnote under the chart says that once instead of repeating it
@@ -37,8 +39,14 @@ var WINDOWS = [
 
 var TYPES = [
 	{ value: 'total', label: _('Total') },
-	{ value: 'wan', label: _('WAN') }
+	{ value: 'wan', label: _('WAN') },
+	{ value: 'lan', label: _('LAN traffic') }
 ];
+
+/* Unique id counter for the chart's <linearGradient> defs: ids live in the
+ * document, so two renders alive at once (a re-render racing a poll) must not
+ * reuse the same id or one chart would borrow the other's gradient. */
+var chartSeq = 0;
 
 /* Nice round numbers for the Y axis: a chart whose top reads "3.47 MiB/s" is
  * harder to read than one whose top reads "4 MiB/s". */
@@ -108,7 +116,6 @@ function fmtSampleClock(ms) {
 return L.Class.extend({
 	store: null,
 	clients: null,
-	selectedMac: '',
 	selectedType: 'total',
 	windowMinutes: 10,
 
@@ -154,41 +161,91 @@ return L.Class.extend({
 			summary.lanTotalDown = l2Totals.lanDown;
 			summary.wanTotalUp = l2Totals.wanUp;
 			summary.wanTotalDown = l2Totals.wanDown;
+		}
+		else {
+			clients.forEach(function(entry) {
+				if (!entry.rate)
+					return;
 
-			return summary;
+				summary.lanUp += entry.rate.lanUp || 0;
+				summary.lanDown += entry.rate.lanDown || 0;
+				summary.wanUp += entry.rate.wanUp || 0;
+				summary.wanDown += entry.rate.wanDown || 0;
+
+				summary.lanTotalUp += entry.total.lanUp || 0;
+				summary.lanTotalDown += entry.total.lanDown || 0;
+				summary.wanTotalUp += entry.total.wanUp || 0;
+				summary.wanTotalDown += entry.total.wanDown || 0;
+			});
+
+			/* Client-to-client traffic is LAN traffic, so it is added here
+			 * rather than shown as a figure of its own - that is what the tile
+			 * means by "LAN", and Total picks it up through the same sum. It
+			 * has no direction, so it goes under both arrows, the way a
+			 * switched frame always shows up as rx on one port and tx on
+			 * another.
+			 *
+			 * Not on a bridge: there the port counters behind the branch above
+			 * already contain those frames. */
+			var intra = this.store.state.intra;
+
+			if (intra && intra.ok === true) {
+				summary.lanUp += intra.rate || 0;
+				summary.lanDown += intra.rate || 0;
+				summary.lanTotalUp += intra.total || 0;
+				summary.lanTotalDown += intra.total || 0;
+			}
 		}
 
-		clients.forEach(function(entry) {
-			if (!entry.rate)
-				return;
+		/*
+		 * The fast ring, where the box has one, replaces the four rates - and
+		 * only the rates: it carries no running totals, so the figures in
+		 * brackets stay on the snapshot's clock. The ring is measured every
+		 * couple of seconds against the snapshot's ten, which is the whole
+		 * reason it exists; leaving the snapshot's numbers here would make the
+		 * finer series in the chart disagree with the tile that sits above it.
+		 */
+		var live = this.store.liveScopes();
 
-			summary.lanUp += entry.rate.lanUp || 0;
-			summary.lanDown += entry.rate.lanDown || 0;
-			summary.wanUp += entry.rate.wanUp || 0;
-			summary.wanDown += entry.rate.wanDown || 0;
-
-			summary.lanTotalUp += entry.total.lanUp || 0;
-			summary.lanTotalDown += entry.total.lanDown || 0;
-			summary.wanTotalUp += entry.total.wanUp || 0;
-			summary.wanTotalDown += entry.total.wanDown || 0;
-		});
+		if (live) {
+			summary.lanUp = live.lanUp;
+			summary.lanDown = live.lanDown;
+			summary.wanUp = live.wanUp;
+			summary.wanDown = live.wanDown;
+		}
 
 		return summary;
 	},
 
 	renderSummary: function(summary) {
-		function block(label, up, down, totalUp, totalDown) {
-			return E('div', { 'class': 'clients-block' }, [
+		/* `idle` renders the tile as "not applicable" rather than "zero": on a
+		 * routed box with one LAN subnet the counter can never move, and a hard
+		 * 0 B/s there reads as a broken figure instead of an empty scope. */
+		function block(label, up, down, totalUp, totalDown, title, idle) {
+			var attrs = { 'class': 'clients-block' };
+
+			if (title)
+				attrs.title = title;
+
+			function rate(value) {
+				return idle ? '—' : common.formatRate(value);
+			}
+
+			function total(value) {
+				return idle ? '' : '(' + common.formatSize(value) + ')';
+			}
+
+			return E('div', attrs, [
 				E('div', { 'class': 'clients-block__title' }, label),
 				E('div', { 'class': 'clients-block__row' }, [
 					E('span', { 'class': 'clients-block__dir clients-block__dir--up' }, '↑'),
-					E('span', { 'class': 'clients-block__rate' }, common.formatRate(up)),
-					E('span', { 'class': 'clients-block__total' }, '(' + common.formatSize(totalUp) + ')')
+					E('span', { 'class': 'clients-block__rate' }, rate(up)),
+					E('span', { 'class': 'clients-block__total' }, total(totalUp))
 				]),
 				E('div', { 'class': 'clients-block__row' }, [
 					E('span', { 'class': 'clients-block__dir clients-block__dir--down' }, '↓'),
-					E('span', { 'class': 'clients-block__rate' }, common.formatRate(down)),
-					E('span', { 'class': 'clients-block__total' }, '(' + common.formatSize(totalDown) + ')')
+					E('span', { 'class': 'clients-block__rate' }, rate(down)),
+					E('span', { 'class': 'clients-block__total' }, total(totalDown))
 				])
 			]);
 		}
@@ -197,8 +254,24 @@ return L.Class.extend({
 		var totalDown = summary.lanDown + summary.wanDown;
 		var totalUpBytes = summary.lanTotalUp + summary.wanTotalUp;
 		var totalDownBytes = summary.lanTotalDown + summary.wanTotalDown;
+		var viaPorts = !!(this.store.state.bridge && (this.store.state.bridge.mode || this.store.state.bridge.wan));
 
+		/* No LAN-scope byte since the collector started, on a box that would
+		 * have to route them to see them: nothing has crossed between LAN
+		 * subnets, so there is no number to show rather than a zero. */
+		var lanIdle = !viaPorts &&
+			!(summary.lanUp || summary.lanDown || summary.lanTotalUp || summary.lanTotalDown);
+
+		/* The LAN figure means different things depending on the role of this
+		 * box, so it says which one it is instead of leaving the reader to
+		 * wonder why a busy LAN can read zero. */
 		dom.content(this.summary, [
+			block(_('LAN traffic'), summary.lanUp, summary.lanDown,
+				summary.lanTotalUp, summary.lanTotalDown,
+				viaPorts
+					? _('LAN is a residual estimate from bridge-port counters after subtracting detected WAN traffic. Counter layers differ; this is not an exact switched-byte measurement.')
+					: _('What stayed inside the LAN: traffic this box routed between LAN subnets, plus the frames two clients exchanged with each other, counted by an nftables rule on the bridge. A switched frame has no direction, so it is counted under both arrows.'),
+				lanIdle),
 			block(_('WAN traffic'), summary.wanUp, summary.wanDown,
 				summary.wanTotalUp, summary.wanTotalDown),
 			block(_('Total'), totalUp, totalDown, totalUpBytes, totalDownBytes),
@@ -225,28 +298,43 @@ return L.Class.extend({
 	/* ---------------- chart ---------------- */
 
 	/*
-	 * Two series, one axis. `pick(point)` returns { up, down } in bytes/second
-	 * for a point, which lets the same drawing code serve the totals and a
-	 * single device without a second implementation.
+	 * The series the chart draws for the selected type: `key` picks the value
+	 * out of `seriesFor()`, and the label is what the legend and the tooltip
+	 * call it.
+	 *
+	 * Everything but inner-LAN traffic is a pair. Client-to-client frames have
+	 * no direction - both ends are clients, and the counter in the bridge
+	 * family sees each frame once - so that one is a single line, and the
+	 * drawing code iterates this list instead of assuming two.
+	 */
+	chartSeries: function() {
+		return [
+			{ key: 'up', cls: 'up', label: _('Upload rate'), color: 'var(--cl-up)' },
+			{ key: 'down', cls: 'down', label: _('Download rate'), color: 'var(--cl-down)' }
+		];
+	},
+
+	/*
+	 * `pick(point)` returns { up, down } in bytes/second for a point, which
+	 * lets the same drawing code serve every scope without a second
+	 * implementation. There is no per-device mode: the tiles and this chart
+	 * answer the same question - how busy is the network - and a chart of one
+	 * station belongs on the devices tab, where the numbers are per station
+	 * anyway.
 	 */
 	seriesFor: function() {
 		var type = this.selectedType;
-		var mac = this.selectedMac;
 
 		return function(point) {
 			var source = point;
 
-			if (mac) {
-				source = point.byMac ? point.byMac[mac] : null;
+			if (type == 'wan')
+				return { up: source.wanUp || 0, down: source.wanDown || 0 };
 
-				if (!source)
-					return { up: 0, down: 0 };
-			}
+			if (type == 'lan')
+				return { up: source.lanUp || 0, down: source.lanDown || 0 };
 
-		if (type == 'wan')
-			return { up: source.wanUp || 0, down: source.wanDown || 0 };
-
-		return {
+			return {
 				up: (source.lanUp || 0) + (source.wanUp || 0),
 				down: (source.lanDown || 0) + (source.wanDown || 0)
 			};
@@ -255,7 +343,15 @@ return L.Class.extend({
 
 	visiblePoints: function() {
 		var trend = this.store.trend || [];
-		var cutoff = Date.now() - this.windowMinutes * 60000;
+
+		if (!trend.length)
+			return [];
+
+		/* The window is measured back from the newest sample, not from this
+		 * browser's clock: the points are stamped by the router, and a box
+		 * without a battery-backed clock is not always right about the time -
+		 * a skewed router would otherwise empty the chart. */
+		var cutoff = trend[trend.length - 1].t - this.windowMinutes * 60000;
 
 		return trend.filter(function(point) { return point.t >= cutoff; });
 	},
@@ -268,6 +364,15 @@ return L.Class.extend({
 		 * breaking its line at null samples. */
 		var points = this.visiblePoints().filter(function(p) { return p.valid !== false; });
 		var pick = this.seriesFor();
+		var series = this.chartSeries();
+
+		/* The legend names whatever is drawn, so switching type has to rebuild
+		 * it: a single-series view showing two keys would promise a line that
+		 * is not there. */
+		if (this.legend)
+			dom.content(this.legend, series.map(function(one) {
+				return E('span', { 'class': 'clients-chart__key clients-chart__key--' + one.cls }, one.label);
+			}));
 
 		/* Use screen-sized coordinates: a fixed 720px viewBox scales both
 		 * the height and labels up on wide screens. Polls also remeasure the
@@ -280,7 +385,7 @@ return L.Class.extend({
 		if (!points.length) {
 			dom.content(this.chart, [
 				E('div', { 'class': 'clients-chart__empty' },
-					_('Collecting samples. The chart fills in as the page stays open.'))
+					_('No samples yet. The chart appears as soon as the background collector records one.'))
 			]);
 			return;
 		}
@@ -289,7 +394,9 @@ return L.Class.extend({
 		var peak = 0;
 
 		values.forEach(function(v) {
-			peak = Math.max(peak, v.up, v.down);
+			series.forEach(function(one) {
+				peak = Math.max(peak, v[one.key] || 0);
+			});
 		});
 
 		var ceiling = niceCeiling(peak);
@@ -312,6 +419,23 @@ return L.Class.extend({
 			}).join(' ');
 		}
 
+		/* Close a series down to the plot floor so it can be filled as an area,
+		 * not just stroked. Both series are filled, each in its own colour, so
+		 * the chart reads as two bands rather than two hairlines; the stroke
+		 * paths below are drawn on top to keep the boundary crisp. */
+		function area(key) {
+			var base = (padTop + plotH).toFixed(1);
+			var d = line(key);
+
+			if (!d)
+				return '';
+
+			return d
+				+ ' L' + x(t1).toFixed(1) + ' ' + base
+				+ ' L' + x(t0).toFixed(1) + ' ' + base
+				+ ' Z';
+		}
+
 		/* Three anchor labels only - top, middle, floor - the way the SoC
 		 * page's usage history does it; one per gridline crowds the card. */
 		var grid = '';
@@ -332,8 +456,7 @@ return L.Class.extend({
 				+ common.formatRate(ceiling * step / 4) + '</text>';
 		});
 
-		var lastUp = values[values.length - 1].up;
-		var lastDown = values[values.length - 1].down;
+		var last = values[values.length - 1];
 
 		function esc(text) {
 			return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -347,19 +470,34 @@ return L.Class.extend({
 		 * is a number, a formatted rate or a clock time; only the two
 		 * translatable strings need escaping. */
 		var host = E('div');
+		var gid = 'clim' + (++chartSeq);
+
+		/* Built from the series list rather than written out twice: the shape
+		 * of the drawing is the same for one series and for two, and the
+		 * inner-LAN type proves it. */
+		var defs = '', marks = '';
+
+		series.forEach(function(one) {
+			defs += '<linearGradient id="' + gid + '-' + one.key + '" x1="0" y1="0" x2="0" y2="1">'
+				+ '<stop offset="0" style="stop-color:' + one.color + ';stop-opacity:.40"/>'
+				+ '<stop offset="1" style="stop-color:' + one.color + ';stop-opacity:0"/>'
+				+ '</linearGradient>';
+
+			marks += '<path d="' + area(one.key) + '" fill="url(#' + gid + '-' + one.key + ')" stroke="none"/>'
+				+ '<path d="' + line(one.key) + '" fill="none" stroke="' + one.color + '" stroke-width="2"'
+				+ ' stroke-linejoin="round" stroke-linecap="round"/>'
+				+ '<circle cx="' + x(t1).toFixed(1) + '" cy="' + y(last[one.key] || 0).toFixed(1)
+				+ '" r="3" fill="' + one.color + '"/>';
+		});
 
 		host.innerHTML =
 			'<svg viewBox="0 0 ' + width + ' ' + height + '" width="100%" class="clients-chart__svg"'
 			+ ' style="display:block;cursor:crosshair" role="img">'
 			+ '<title>' + esc(_('Traffic trend')) + '</title>'
 			+ '<desc>' + esc(_('Upload and download rates over the selected window.')) + '</desc>'
+			+ '<defs>' + defs + '</defs>'
 			+ '<g>' + grid + '</g>'
-			+ '<path d="' + line('up') + '" fill="none" stroke="var(--cl-up)" stroke-width="2"'
-			+ ' stroke-linejoin="round" stroke-linecap="round"/>'
-			+ '<path d="' + line('down') + '" fill="none" stroke="var(--cl-down)" stroke-width="2"'
-			+ ' stroke-linejoin="round" stroke-linecap="round"/>'
-			+ '<circle cx="' + x(t1).toFixed(1) + '" cy="' + y(lastUp).toFixed(1) + '" r="3" fill="var(--cl-up)"/>'
-			+ '<circle cx="' + x(t1).toFixed(1) + '" cy="' + y(lastDown).toFixed(1) + '" r="3" fill="var(--cl-down)"/>'
+			+ marks
 			+ '</svg>';
 
 		var svg = host.firstChild;
@@ -396,11 +534,10 @@ return L.Class.extend({
 		});
 		svg.appendChild(guide);
 
-		var dotColors = [ 'var(--cl-up)', 'var(--cl-down)' ];
-		var dots = dotColors.map(function(color) {
+		var dots = series.map(function(one) {
 			var dot = svgChild('circle', {
 				'cx': 0, 'cy': 0, 'r': '3.5',
-				'fill': color, 'stroke': 'var(--cl-surface)', 'stroke-width': '1.5',
+				'fill': one.color, 'stroke': 'var(--cl-surface)', 'stroke-width': '1.5',
 				'visibility': 'hidden'
 			});
 			svg.appendChild(dot);
@@ -428,9 +565,11 @@ return L.Class.extend({
 			guide.setAttribute('x2', xs[i].toFixed(1));
 			guide.setAttribute('visibility', 'visible');
 
-			[ [ v.up, y(v.up) ], [ v.down, y(v.down) ] ].forEach(function(c, d) {
+			series.forEach(function(one, d) {
+				var value = v[one.key] || 0;
+
 				dots[d].setAttribute('cx', xs[i].toFixed(1));
-				dots[d].setAttribute('cy', c[1].toFixed(1));
+				dots[d].setAttribute('cy', y(value).toFixed(1));
 				dots[d].setAttribute('visibility', 'visible');
 			});
 
@@ -439,8 +578,13 @@ return L.Class.extend({
 				'style': 'color:var(--cl-muted);font-weight:650;margin-bottom:2px'
 			}, fmtSampleClock(points[i].t)));
 
-			[ { label: _('Upload rate'), value: common.formatRate(v.up), color: dotColors[0] },
-			  { label: _('Download rate'), value: common.formatRate(v.down), color: dotColors[1] } ]
+			series.map(function(one) {
+				return {
+					label: one.label,
+					value: common.formatRate(v[one.key] || 0),
+					color: one.color
+				};
+			})
 			.forEach(function(row) {
 				tip.appendChild(E('div', {
 					'style': 'display:flex;align-items:center;gap:.4em;white-space:nowrap'
@@ -476,34 +620,6 @@ return L.Class.extend({
 		dom.content(this.chart, [ wrap ]);
 	},
 
-	deviceOptions: function() {
-		var clients = this.clients || [];
-		var options = [ E('option', { 'value': '' }, _('All devices')) ];
-
-		clients.filter(function(entry) { return entry.mac; }).forEach(function(entry) {
-			options.push(E('option', { 'value': entry.mac }, [
-				entry.hostname || entry.ipv4[0] || entry.mac
-			]));
-		});
-
-		return options;
-	},
-
-	refreshDeviceSelect: function() {
-		var select = this.deviceSelect;
-		var current = select.value;
-		var options = this.deviceOptions();
-
-		dom.content(select, options);
-
-		/* Keep the selection across a refresh, and drop it if the device left the
-		 * table - otherwise the chart would silently go flat. */
-		var still = options.some(function(option) { return option.getAttribute('value') == current; });
-
-		select.value = still ? current : '';
-		this.selectedMac = select.value;
-	},
-
 	/* ---------------- view ---------------- */
 
 	update: function() {
@@ -513,7 +629,6 @@ return L.Class.extend({
 		this.store.pushTrend(clients);
 
 		this.renderSummary(this.summarise(clients));
-		this.refreshDeviceSelect();
 		this.renderChart();
 	},
 
@@ -524,12 +639,10 @@ return L.Class.extend({
 
 		this.summary = E('div', { 'class': 'clients-blocks' });
 		this.chart = E('div', { 'class': 'clients-chart' });
-		this.deviceSelect = E('select', { 'id': 'clients-ov-device', 'name': 'clients-ov-device', 'class': 'cbi-input-select' }, this.deviceOptions());
-
-		this.deviceSelect.addEventListener('change', function() {
-			self.selectedMac = self.deviceSelect.value;
-			self.renderChart();
-		});
+		/* Created here, not inline in the tree below: update() renders the
+		 * chart before the tree exists, and the first paint must already name
+		 * the series it drew. */
+		this.legend = E('div', { 'class': 'clients-chart__legend' });
 
 		var typeSelect = E('select', { 'id': 'clients-ov-type', 'name': 'clients-ov-type', 'class': 'cbi-input-select' }, TYPES.map(function(type) {
 			return E('option', { 'value': type.value, 'selected': (type.value == self.selectedType) }, type.label);
@@ -566,7 +679,15 @@ return L.Class.extend({
 			if (document.hidden || this.hidden)
 				return Promise.resolve();
 
-			jobs = [ this.store.fetchSnapshot() ];
+			/* The ring is the cheap read and sets the pace. The snapshot is
+			 * still read, on its own slower interval: it is the roster - eighty
+			 * kilobytes of clients, addresses and names - and parsing that
+			 * every two seconds would cost more than the fresher figure is
+			 * worth. */
+			jobs = [ this.store.fetchSamples() ];
+
+			if ((Date.now() - this.store.lastSnapshotLoad) >= common.SAMPLE_INTERVAL * 1000)
+				jobs.push(this.store.fetchSnapshot());
 
 			if ((Date.now() - this.store.lastLeaseLoad) >= common.LEASE_INTERVAL * 1000)
 				jobs.push(this.store.fetchLeases());
@@ -579,9 +700,9 @@ return L.Class.extend({
 			}).catch(function(error) {
 				L.error(error);
 			});
-		}, this), common.SAMPLE_INTERVAL);
+		}, this), common.TICK_INTERVAL);
 
-	var bridgeMode = !!(this.store.state.bridge && this.store.state.bridge.mode);
+	var bridgeMode = !!(this.store.state.bridge && (this.store.state.bridge.mode || this.store.state.bridge.wan));
 
 	return E('div', { 'class': 'clients-pane' }, [
 		E('div', { 'class': 'cbi-map-descr' },
@@ -591,10 +712,6 @@ return L.Class.extend({
 			E('h3', {}, _('Realtime traffic trends')),
 			E('div', { 'class': 'clients-chart__controls' }, [
 				E('label', { 'class': 'clients-control' }, [
-					E('span', {}, _('Select device')),
-					this.deviceSelect
-				]),
-				E('label', { 'class': 'clients-control' }, [
 					E('span', {}, _('Type')),
 					typeSelect
 				]),
@@ -602,16 +719,13 @@ return L.Class.extend({
 					E('span', {}, _('Window')),
 					windowSelect
 				]),
-				E('div', { 'class': 'clients-chart__legend' }, [
-					E('span', { 'class': 'clients-chart__key clients-chart__key--up' }, _('Upload rate')),
-					E('span', { 'class': 'clients-chart__key clients-chart__key--down' }, _('Download rate'))
-				])
+				this.legend
 			]),
 			this.chart,
 			E('p', { 'class': 'clients-note' },
 				bridgeMode
-					? _('This device bridges, so the figures come from the hardware port counters: WAN is the traffic through the uplink port. The bracketed figures accumulate while this view is open.')
-					: _('Rates are differentiated from kernel conntrack counters, which keep counting for hardware-offloaded flows. The bracketed figures are what this view has seen while it was open - conntrack counters belong to a flow, so they are a floor, not a lifetime total.'))
+					? _('WAN rates sum the detected logical uplink counters without counting PPPoE parent ports twice. LAN is a port-counter residual estimate. Per-device figures use conntrack and nlbwmon where available; they are not a hardware offload ratio.')
+					: _('These per-device figures use available conntrack and nlbwmon counters. Offloaded or short-lived flows may be missed; totals are estimates, not a lifetime total or a hardware offload ratio.'))
 		])
 	]);
 	}

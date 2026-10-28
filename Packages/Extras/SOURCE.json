@@ -2,21 +2,31 @@
   "source_repositories": {
     "luci-app-clients": {
       "repo": "naoki66/luci-app-airoha",
-      "commit": "c0abc628cc90043b4a9ea6c0c1dc9e1325190567",
-      "local_package_release": 3,
+      "commit": "d3669ce663ed39ae05c3cb56c82a9a1ed29cee9e",
+      "local_package_release": 5,
       "local_changes": [
         "Fix ucode two-argument index API misuse causing infinite tuple growth and OOM",
         "Bound each connection to original/reply tuples, with monotonically advancing cursor and direction-local counters",
         "Use seek/read for DNS log offsets and bound each read to 64 KiB",
         "Rotate fully consumed default RAM DNS log after 1 MiB; preserve latest 1000 archived rows, refuse symlinks/custom paths",
         "Mount zoneinfo into dnsmasq jail so native DNS log times match the router and collector",
-        "First boot initializes missing DNS query-log settings only when collection is enabled; preserve existing choices and run the existing duplicate-log guard"
+        "First boot initializes missing DNS query-log settings only when collection is enabled; preserve existing choices and run the existing duplicate-log guard",
+        "Retain bounded original/reply parser with actual ucode two-argument index suffix searches, including whitespace and direction-local counters",
+        "Merge bounded tmpfs snapshot/ring/history and nlbwmon per-MAC fallback; explicit nlbwmon package dependency",
+        "Discover all active default-route L3 WAN devices through netifd, deduplicate IPv6 aliases, sum both PPPoE links in backend and browser",
+        "Do not automatically install a bridge nft counter hook; aggregate uses port counters; its LAN residual is not an exact layer-2 byte measurement",
+        "Keep compact 220px chart and resize/hover behaviour"
       ],
       "files_sha256": {
-        "Makefile": "dbfe696919feba63ba08ba703bb46a101986447e48fb2ad488cef05a57000467",
-        "root/usr/libexec/clients-probe": "2519fbe1061a21809678cb078a0f8f5b015c0ec60c1aef560cea063dbed8587d",
-        "root/usr/libexec/clients-dns": "e3d4accb3e82554c7e7a9168af4958e20b969b576c22824f8ef6e6965d8cd9e6",
+        "Makefile": "be0f5ab888b8288eb910ef063dcad3764a641988467441be293b97e83a1ff0fd",
+        "root/usr/libexec/clients-probe": "bceb22e91dbafe729456ba3bb38335744b1eaac194d169d1f145a2a4dff374e2",
+        "root/usr/libexec/clients-dns": "56afb455dadf234d3e9a9a3720c8de7db46d792f88760f6698212879903ae5d9",
         "root/etc/uci-defaults/95-clients-query-log": "7e415efa302b13ea37b30091650ac96f7de068e0fea5a5d567272634dcef64a9"
+      },
+      "reviewed_fork": {
+        "repository": "gbosek/luci-app-airoha",
+        "branch": "work/xg2010g-reviewed-20261029",
+        "commit": "69a1b62c835b922e03add9953a92db2f728fb9e5"
       }
     },
     "luci-app-pushbot": {
@@ -73,12 +83,13 @@
     "luci-app-package-manager",
     "luci-mod-system",
     "mwan4",
-    "luci-app-mwan4"
+    "luci-app-mwan4",
+    "nlbwmon"
   ],
   "feed_services": "Default inactive, checked in staged rootfs",
   "npu_policy": "Retain existing guarded binding path; extra UI is not a replacement driver",
   "screenshot_multicast_mapping": {
-    "title": "\u7ec4\u64ad\u8f6c\u6362",
+    "title": "组播转换",
     "package": "luci-app-msd_lite",
     "evidence": "Read current router package/menu list; omcproxy is a different feature"
   }

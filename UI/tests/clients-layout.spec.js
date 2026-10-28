@@ -31,7 +31,7 @@ for (const theme of ['aurora', 'argon']) {
           append(children); return el;
         }
         const common = {
-          ensureStylesheet() {}, SAMPLE_INTERVAL: 5,
+          ensureStylesheet() {}, SAMPLE_INTERVAL: 5, TICK_INTERVAL: 1,
           formatRate: v => `${v} B/s`, formatSize: v => `${v} B`, formatCount: String
         };
         const chart = new Function('dom', 'poll', 'ui', 'common', 'L', 'E', '_', source)(
@@ -39,7 +39,7 @@ for (const theme of ['aurora', 'argon']) {
           { Class: { extend: object => object }, bind: (fn, self) => fn.bind(self) }, E, text => text);
         const now = Date.now();
         chart.store = {
-          state: {}, clients: () => [], bridgeRates: () => null, pushTrend() {},
+          state: {}, clients: () => [], bridgeRates: () => null, liveScopes: () => null, pushTrend() {},
           trend: [100, 200, 300].map((rate, i) => ({ t: now - (2 - i) * 1000, wanUp: rate, wanDown: rate / 2 }))
         };
         document.getElementById('view').appendChild(chart.render());

@@ -43,7 +43,7 @@ for name,base,expect in [('_gdm_json',256,{'tx':260,'rx':328,'rx_rc_drop':336,'r
     assert failed.returncode and not failed.stdout
 # Run the shipped frame-engine function; a read failure must differ from a
 # successfully measured zero without suppressing the other valid counters.
-frame=re.search(r'^get_frame_engine\(\) \{.*?^\}',rpc,re.M|re.S).group()
+frame=re.search(r'^_get_frame_engine_live\(\) \{.*?^\}',rpc,re.M|re.S).group()
 for peak_read,expected in [('echo 589824',9),('echo 0',0),('return 1',None)]:
     code=r'''
 devmem() { :; }
@@ -56,7 +56,7 @@ _devmem32() {
 }
 _gdm_json() { printf '{"reg":%s}' "$1"; }
 _cdm_json() { printf '{"reg":%s}' "$1"; }
-'''.replace('PEAK_READ',peak_read)+frame+'\nget_frame_engine\n'
+'''.replace('PEAK_READ',peak_read)+frame+'\n_get_frame_engine_live\n'
     obj=json.loads(subprocess.check_output(['sh','-c',code],text=True))
     assert obj['available'] and obj['pse']=={'used':5,'free':12,'peak':expected},obj
     assert len(obj['gdm'])==3 and len(obj['cdm'])==2,obj

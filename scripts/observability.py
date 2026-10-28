@@ -8,6 +8,13 @@ def adapt_observability(app, variant):
     text = rpc.read_text()
     text, n = re.subn(r'^get_ppe_entries\(\) \{.*?^\}', '. /usr/libexec/airoha-ppe-snapshot.sh', text, count=1, flags=re.M|re.S)
     assert n == 1, 'Cannot identify PPE backend'
+    if variant == 'naoki':
+        # Keep the upstream orphan sweep when replacing its limited PPE reader.
+        text = text.replace('. /usr/libexec/airoha-ppe-snapshot.sh', '''. /usr/libexec/airoha-ppe-snapshot.sh
+get_ppe_entries() {
+	_airoha_tmp_sweep "$(date +%s 2>/dev/null)"
+	_ppe_snapshot_json 1024
+}''', 1)
     text = text.replace('"getPpeEntries":{}', '"getPpeEntries":{},"getPpeExport":{"snapshot":"str","offset":"int"}', 1)
     marker = '\t\t\tgetPpeEntries)'
     assert text.count(marker) == 1
@@ -43,7 +50,7 @@ def adapt_observability(app, variant):
             marker = f"e.{key} === null || e.{key} === undefined ? 'N/A' : String(e.{key})"
             assert s.count(marker) == 1, 'PPE counter renderer changed: ' + key
             s = s.replace(marker, f"ppeCounterText(e, '{key}')", 1)
-        marker = '\t\tpoll.add(pollFetch, 5);'
+        marker = '\t\tpoll.add(pollFetch, POLL_SECS);'
         assert marker in s
         s = s.replace(marker, marker+"\n\t\tpoll.add(function() { var badge=document.getElementById('ppe-count'); if(badge)badge.textContent=ppeCountText(ppeCurrentEntries); }, 1);", 1)
     else:
