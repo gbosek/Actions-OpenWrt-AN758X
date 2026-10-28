@@ -5,7 +5,7 @@ import json,re
 repo=Path(__file__).resolve().parents[1]
 meta=json.loads((repo/'MWAN4-SOURCE.json').read_text())
 clone=(repo/'diy-part1.sh').read_text()
-for kind,name,version in [('backend','mwan4','0.1.1-r28'),('frontend','luci-app-mwan4','1.0.0-r15')]:
+for kind,name,version in [('backend','mwan4','0.1.1-r29'),('frontend','luci-app-mwan4','1.0.0-r16')]:
     entry=meta[kind]
     assert entry['version']==version
     assert 'clone_at https://github.com/gbosek/'+name+' '+entry['fork_commit']+' ' in clone

@@ -21,12 +21,16 @@ config_get() {
   case "$2:$3" in wanb_6:id) value=24;; wanb_6:table_id) value=204;; wanb_6:mark) value=0x1800;; esac
  fi
  case "$2:$3" in globals:mmx_mask) value=0x3f00;; *:enabled) value=1;; *_6:family) value=ipv6;; *:family) value=ipv4;; esac
+ case "$2:$3" in
+  wanb_6:mark) [ ! -f "$FIXTURE/custom-mark" ] || value=$(cat "$FIXTURE/custom-mark");;
+  globals:mmx_mask) [ ! -f "$FIXTURE/custom-mask" ] || value=$(cat "$FIXTURE/custom-mask");;
+ esac
  eval "$1=\\\"$value\\\""
 }
 config_foreach() { "$1" wan; "$1" wanb; "$1" wan_6; "$1" wanb_6; }
 ''')
  stub='''#!/usr/bin/env python3
-import json,sys,os
+import json,sys,os,re
 from pathlib import Path
 p=Path(os.environ['FIXTURE']);args=sys.argv[1:];cmd=Path(sys.argv[0]).name
 if cmd=='ip':
@@ -40,7 +44,7 @@ if cmd=='ip':
    print('Dump terminated',file=sys.stderr);sys.exit(2)
  elif a[:2]==['rule','show']:print('\\n'.join(rules[f]))
  elif a[0]=='rule':
-  pref=a[a.index('pref')+1];spec=' '.join(a[a.index('pref')+2:]);line=pref+': from all '+spec
+  pref=a[a.index('pref')+1];spec=' '.join(a[a.index('pref')+2:]);spec=re.sub(r'fwmark ([^/ ]+)/([^ ]+)',lambda m:'fwmark '+hex(int(m[1],0))+'/'+hex(int(m[2],0)),spec);line=pref+': from all '+spec
   if a[1]=='add':rules[f].append(line)
   elif a[1]=='del':
    if line not in rules[f]:sys.exit(2)
@@ -106,4 +110,22 @@ elif cmd=='jsonfilter':
  assert 'pref 2024 fwmark 0x1800/0x3f00 lookup 204' in custom,custom
  assert 'pref 3024 fwmark 0x1800/0x3f00 unreachable' in custom,custom
  assert 'pref 1204' not in custom and 'fwmark 0x400/0x3f00 lookup 204' not in custom,custom
+ # iproute2 canonicalizes its output: equivalent valid spellings must never
+ # add another rule, even after an operator changes only the spelling in UCI.
+ for mask in ['0x3f00','16128','0x00003F00']:
+  (p/'custom-mask').write_text(mask)
+  for mark in ['6144','0x1800','0X1800','0x00001800','0x0000000000001800','00006144','']:
+   (p/'custom-mark').write_text(mark)
+   call('--routes-only');before=(p/'rules.json').read_bytes()
+   call('--routes-only');assert (p/'rules.json').read_bytes()==before,(mask,mark)
+   current=json.loads(before)
+   assert sum(x.startswith('2024:') for x in current['6'])==1,current['6']
+   assert sum(x.startswith('3024:') for x in current['6'])==1,current['6']
+   assert '2024: from all fwmark 0x1800/0x3f00 lookup 204' in current['6']
+ for invalid in ['0','-1','0x','0x18zz','0x100000000','4294967296','6144 extra','0x4000']:
+  (p/'custom-mark').write_text(invalid)
+  before=[x for x in json.loads((p/'rules.json').read_text())['6'] if x.startswith(('2024:','3024:'))]
+  call('--routes-only')
+  after=[x for x in json.loads((p/'rules.json').read_text())['6'] if x.startswith(('2024:','3024:'))]
+  assert after==before,invalid
 print('PASS: family table 1/2 vs 3/4, DNS pinning, idempotence, down-event reconciliation, stop cleanup, preserved source-prefix/user rules')

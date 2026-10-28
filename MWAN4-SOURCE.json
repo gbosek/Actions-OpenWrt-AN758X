@@ -2,9 +2,9 @@
   "variant": "XG2010G-BRAULIOBO-PAIRED",
   "backend": {
     "fork": "gbosek/mwan4",
-    "branch": "review/brauliobo-paired-20261028",
-    "fork_commit": "0ab840114f5244d61646d22bf07d555033e8886e",
-    "version": "0.1.1-r28",
+    "branch": "fix/xg2010g-mwan4-three-issues-20261028",
+    "fork_commit": "e2602ec236984ee9b8ce7fc7ae63d9c230afb7c8",
+    "version": "0.1.1-r29",
     "upstream_package_version": "0.1.1-r26",
     "local_adjustments": [
       "Family-aware DNS guard called at native startup, and owned DNS cleanup on native stop",
@@ -14,7 +14,8 @@
       "Recover missing PPP IPv4 table defaults on startup/interface events only",
       "Do not cache blackhole/unreachable sticky marks; synchronize snapshot routes with replace",
       "Fresh config contains globals only; compatibility preset hook never writes UCI or routing state",
-      "Paired r26 runtime modules and rules; explicit hotplug PATH; stable table_id; one-time legacy local-rule semantics migration"
+      "Paired r26 runtime modules and rules; explicit hotplug PATH; stable table_id; one-time legacy local-rule semantics migration",
+      "Unified backup-first legacy/mixed strategy migration; preserve and deduplicate existing use_route members; repeat-safe"
     ],
     "upstream": "brauliobo/mwan4",
     "upstream_commit": "b2a4ffd715ce9768cba92c3a20f8cb9c3c647865",
@@ -22,9 +23,9 @@
       "etc/config/mwan4": "a8db45860d860a0b9a02de73a02d8fcac4777833704d78add5a19d20cb56b5ff",
       "etc/hotplug.d/iface/15-mwan4": "deee37e58fb7cac5dff1aa05e544ea438b480b71720052f58540e71842770c4b",
       "etc/hotplug.d/iface/16-mwan4-user": "a724e3967659cef15edfed1a3c1a91f41eaf839eb95f49acc69dae5cc71b4de8",
-      "etc/init.d/mwan4": "b04f9e0d7a3178fff94a4bd505945c1669927d66438e7140870b62a2c1bd61e8",
+      "etc/init.d/mwan4": "62c8a148cd30e256d663c6aea53c41057f6f8635e94bf640d396a502384c9260",
       "etc/mwan4.user": "2a7dbdc6a57a7fe76949a7a65b91797629e220bc7ad53c2311d196f8135621a7",
-      "etc/uci-defaults/90-mwan4": "c2fc3c95c3f577f9061e96ce152b1eaddb9c941e85f42c8fc0a36de4ec18d12f",
+      "etc/uci-defaults/90-mwan4": "5b780f9f478bbfc87aeb911e848ce9a62356061fc55f53c1b8cd64ecf42e782c",
       "lib/mwan4/cli.uc": "0c633ffa67dba6612b1eb763230031fb2576af27863659c507bda6e34c7d66f4",
       "lib/mwan4/connections.uc": "603e00bfc46cdbd546d4c6492400c0e76c9335956efc3f0ef8de20d588575c72",
       "lib/mwan4/dnsmasq.uc": "99426f66945a929bfc56707cdcf008a22a6626c4cb207645127dee9bd927ab74",
@@ -44,13 +45,14 @@
   },
   "frontend": {
     "fork": "gbosek/luci-app-mwan4",
-    "branch": "review/brauliobo-paired-20261028",
-    "fork_commit": "48b3b1df46faec5a86268778bf7ee8825501d01b",
-    "version": "1.0.0-r15",
+    "branch": "fix/xg2010g-mwan4-three-issues-20261028",
+    "fork_commit": "95a258c48ad4341a744f22e8b12ec2429acf0ae5",
+    "version": "1.0.0-r16",
     "local_adjustments": [
       "Refresh only reads status; applying settings preserves stopped state",
       "Full paired domain/MAC/DSCP rule and connection UI; safe scalar/object active connection parsing; all 1337 template strings translated",
-      "Runtime refresh reads status only; never restarts or enables a stopped service"
+      "Runtime refresh reads status only; never restarts or enables a stopped service",
+      "Only genuine generated defaults are read-only; custom 0/0 MAC/domain/protocol/DSCP rules remain editable; backend exclusively owns migration"
     ],
     "upstream": "brauliobo/luci-app-mwan4",
     "upstream_commit": "d076ec4a4d794d0d1e570526f7a31462c2dafa11",
@@ -66,14 +68,14 @@
       "www/luci-static/resources/view/mwan4/network/advanced.js": "5b3a169e563e75ffcc06aec24a08b32fc8a9924cba3444b4b60a1caf2d0b4d4b",
       "www/luci-static/resources/view/mwan4/network/globals.js": "3a9401c1d95f1e01f78bfac66a8967d9f431077b8dfa05958129d912b14d87b1",
       "www/luci-static/resources/view/mwan4/network/interfaces.js": "6447503887090e51f123c0bf668c95abcd80ba47d0c99e8a5fa48146be170984",
-      "www/luci-static/resources/view/mwan4/network/overview.js": "8154e1bc1560bcd78643242d4806f12e16562cfecf9b1ae68ca435baf958ae87",
+      "www/luci-static/resources/view/mwan4/network/overview.js": "ee9055bdcba7496a46fc830af6fea7fe5af177d9c708be454686988730864021",
       "www/luci-static/resources/view/mwan4/network/routes.js": "c0f45c05bf6a2afd23d2f16277bea09fef7e4849abda58c39ec0b888b7a731b8",
       "www/luci-static/resources/view/mwan4/network/rules.js": "4dfcf5dca057656dd7bc52ddc0f60906ad7d016b442c55cb09c05fdcac94d9d2",
       "www/luci-static/resources/view/mwan4/network/strategies.js": "a0ed387f910f58283bd06990810a6ec1143e1c305c6693f184778965034bf2ed",
       "www/luci-static/resources/view/mwan4/status/diagnostics.js": "a8e4e25ff8bc2885ab035ebd43a9d9b086702aa79e770f4f56622609274be8b3",
       "www/luci-static/resources/view/mwan4/status/mptcp.js": "b28d4d573cfe54e8def3881aba50c21e7b0a212c225fb3f2dc93ab8b93539d3a",
       "www/luci-static/resources/view/mwan4/status/overview.js": "bae6cefa007e25045d2d141b31e3a219f7baa4338e4e1275d676706af4b5acbe",
-      "etc/uci-defaults/60_luci-mwan4": "732b1ccd0ce5cd84328bda5a982d62897a435d40827049ecabb6801f44d65761",
+      "etc/uci-defaults/60_luci-mwan4": "0b853bd0e58516bd834b0e99e37d733640a2f368df8a9fb53cdd2cdcd9de2ace",
       "usr/share/luci/menu.d/luci-app-mwan4.json": "da665508b08143b6cc557a4e980956306f1b19c5b3a1f99dbf89f706a3b5215b",
       "usr/share/rpcd/acl.d/luci-app-mwan4.json": "5ac79d20695525b1c75e9d92e5000bdfbc4c665ad674428a5f83a74cb0c88b5d",
       "usr/share/ucitrack/luci-app-mwan4.json": "38f127445c3beccb9eab998760e38d93aaec13f0745e22876fcd6b84c62f9b33"
@@ -90,5 +92,16 @@
     "template_entries": 1337,
     "untranslated": 0,
     "lmo_sha256": "28c4a2153aba6958526e13f59e855c929275a6f3f8a0dcc16e4a519974b52a61"
+  },
+  "functional_fixes": {
+    "reviewed_bad_firmware_commit": "560c510f2ed6992cef510a6bab7708c1c12bd890",
+    "issues": [
+      "numeric mark canonicalization and route-guard idempotence",
+      "custom catch-all rule classification",
+      "complete backend-owned legacy strategy migration"
+    ],
+    "runtime_files_sha256": {
+      "usr/bin/mwan4-rule-guard.sh": "de320a0c22388508cebebe002ca327f74d1a6506501b0291b6f6346dd3d9dd39"
+    }
   }
 }

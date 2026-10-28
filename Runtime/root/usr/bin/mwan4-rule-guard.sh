@@ -31,10 +31,29 @@ if [ "$1" = --cleanup ] || [ ! -d /var/run/mwan4 ] || [ -e /var/run/mwan4-rule-g
     cleanup_owned_dns
     exit 0
 fi
+# ip rule renders marks as hexadecimal. Compare canonical numeric values,
+# not the spelling entered through UCI (decimal, uppercase or zero padding).
+normalize_mark() {
+    local value="$1" digits number
+    case "$value" in
+        0x*|0X*)
+            digits=${value#??}
+            case "$digits" in ''|*[!0-9a-fA-F]*) return 1 ;; esac
+            while [ "${#digits}" -gt 1 ] && [ "${digits#0}" != "$digits" ]; do digits=${digits#0}; done
+            [ "${#digits}" -le 8 ] || return 1
+            number=$((0x$digits)) ;;
+        *)
+            case "$value" in ''|*[!0-9]*) return 1 ;; esac
+            while [ "${#value}" -gt 1 ] && [ "${value#0}" != "$value" ]; do value=${value#0}; done
+            [ "${#value}" -le 10 ] || return 1
+            number=$((value)) ;;
+    esac
+    [ "$number" -gt 0 ] && [ "$number" -le 4294967295 ] || return 1
+    printf '0x%x' "$number"
+}
 config_load mwan4
 config_get mask globals mmx_mask 0x3f00
-case "$mask" in 0x[0-9a-fA-F]*|[0-9]*) ;; *) exit 1 ;; esac
-mask=$(printf '0x%x' "$((mask))")
+mask=$(normalize_mark "$mask") || exit 1
 MAP=''
 ID=0
 map_iface() {
@@ -48,7 +67,10 @@ map_iface() {
     config_get mark "$name" mark ''
     case "$id:$tid" in *[!0-9:]*|:*|*:) return ;; esac
     [ "$id" -gt 0 ] && [ "$id" -le 254 ] && [ "$tid" -gt 0 ] && [ "$tid" -le 2147483647 ] || return
-    case "$mark" in ''|0x[0-9a-fA-F]*|[0-9]*) ;; *) return ;; esac
+    if [ -n "$mark" ]; then
+        mark=$(normalize_mark "$mark") || return
+        [ "$((mark & mask))" -eq "$((mark))" ] || return
+    fi
     config_get family "$name" family ipv4
     data=$(ubus call "network.interface.$name" status 2>/dev/null)
     dev=$(printf '%s' "$data" | jsonfilter -e '@.l3_device')

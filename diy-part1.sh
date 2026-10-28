@@ -124,8 +124,8 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   fi
   echo "✅ 已启用 AN7581 Airoha PPE flow stats，以使用补丁中的 NPU 拒绝回退逻辑"
 
-  clone_at https://github.com/gbosek/mwan4 0ab840114f5244d61646d22bf07d555033e8886e "$PKG_DIR/mwan4" || exit 1
-  clone_at https://github.com/gbosek/luci-app-mwan4 48b3b1df46faec5a86268778bf7ee8825501d01b "$PKG_DIR/luci-app-mwan4" || exit 1
+  clone_at https://github.com/gbosek/mwan4 e2602ec236984ee9b8ce7fc7ae63d9c230afb7c8 "$PKG_DIR/mwan4" || exit 1
+  clone_at https://github.com/gbosek/luci-app-mwan4 95a258c48ad4341a744f22e8b12ec2429acf0ae5 "$PKG_DIR/luci-app-mwan4" || exit 1
   mkdir -p files/etc
   cp "$GITHUB_WORKSPACE/MWAN4-SOURCE.json" files/etc/xg2010g-mwan4-source.json
   for p in mwan4 luci-app-mwan4; do

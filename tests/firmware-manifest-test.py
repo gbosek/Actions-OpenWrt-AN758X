@@ -56,8 +56,8 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
         check(packages, pattern, True)
         check({name: version.replace('-r', '-') for name, version in packages.items()}, pattern, True)
         for name, version in [
-            ('mwan4', '0.1.1-r9'), ('mwan4', '0.1.1-r10'), ('mwan4', '0.1.1-r11'),
-            ('luci-app-mwan4', '1.0.0-r11'), ('luci-app-mwan4', '1.0.0-r12'), ('luci-app-mwan4', '1.0.0-r14'), ('kernel', '6.18.54-r1'),
+            ('mwan4', '0.1.1-r9'), ('mwan4', '0.1.1-r10'), ('mwan4', '0.1.1-r11'), ('mwan4', '0.1.1-r28'),
+            ('luci-app-mwan4', '1.0.0-r11'), ('luci-app-mwan4', '1.0.0-r12'), ('luci-app-mwan4', '1.0.0-r14'), ('luci-app-mwan4', '1.0.0-r15'), ('kernel', '6.18.54-r1'),
             ('luci-app-airoha-npu', '2.0.0-r907'), ('mwan3', '1.0-r1'),
             ('kmod-mac80211', '1.0-r1'),
             ('luci-theme-argon', '2.4.7-r20260824'), ('luci-app-argon-config', '26.288'),
