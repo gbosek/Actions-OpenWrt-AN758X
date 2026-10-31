@@ -4,7 +4,7 @@ import hashlib,json,re,subprocess,tempfile,shutil,sys
 from pathlib import Path
 repo=Path(__file__).resolve().parents[1]; kernel=Path(sys.argv[1])
 meta=json.loads((repo/'Offload/SOURCE.json').read_text())
-patches=sorted((repo/'Upstream/patches').glob('*.patch'))
+patches=sorted((repo/'Upstream/patches').glob('*.patch'))+sorted((repo/'Kernel60/patches').glob('*.patch'))
 names=set()
 for p in patches:names.update(re.findall(r'^\+\+\+ b/(.+)$',p.read_text(),re.M))
 with tempfile.TemporaryDirectory(prefix='xg-upstream-') as d:

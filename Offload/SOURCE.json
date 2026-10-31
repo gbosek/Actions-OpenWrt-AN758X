@@ -1,6 +1,6 @@
 {
   "version": "policy-topology-safe-rcu-stp-20261025",
-  "kernel": "6.18.55",
+  "kernel": "6.18.60",
   "upstream": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
   "upstream_commit": "c15760c70b7ceeb85fd852d081b06c4bcac1cf5c",
   "upstream_paths": [
@@ -43,7 +43,7 @@
     "drivers/net/ethernet/airoha/airoha_eth.c": "9a13fe77c2817622efd837539f5842ed9076a4e11d31472ae65f8306dad2ee5d",
     "drivers/net/ethernet/airoha/airoha_eth.h": "e329673fcb4e8135733896c02f8a95d027a75de10d91427c24fdd015c90eb9e7",
     "include/linux/netdevice.h": "f04296065aa178096015d234ae9cea84ef56ecec04afdf5f0a0c056537cc61c3",
-    "net/core/dev.c": "cf7ddad79d10729f04e8e5865b8c4553d99ef8e268635326e622f70432fda3e0",
+    "net/core/dev.c": "6ab0582c12ac21e0f6aeb3d727e26358603ac96bcda9ad958405b405b79e3266",
     "include/linux/if_bridge.h": "d8a9b9a988a5a96138f88b15ffe99ae6f65ac9da4892275a11378a8fc18a2cc3",
     "net/bridge/br_vlan.c": "90e45b6a9496e5282c1e548d82fd32de266290f5417f838b5ffc275dbf155fb1",
     "net/bridge/br_if.c": "efa3c5bd94f671fafe20941edb93d95258ad34156a9011ba5225c86b636a5b6d",
@@ -51,16 +51,16 @@
     "net/netfilter/core.c": "6c0c2fd3431c7a1af7bfe83011d9fbc3f5bd1c7cc08d8400a15f08085c5dafcd",
     "drivers/net/ethernet/airoha/airoha_ppe_debugfs.c": "34dce5473ea87404b87b5d2bc7eb5eed5d25ba1552a1a03e0759d931b0a8e025",
     "net/bridge/br_stp.c": "65d26949eaa112f1d43273a9c7b371ac5d763db90dcf72f4732867a30f54aaa9",
-    "include/net/netfilter/nf_flow_table.h": "fecb61265ba8b021e72eace44a4124dffb78a7b5849a4b345ef61494ee016228",
+    "include/net/netfilter/nf_flow_table.h": "abc9e9135274b1ea7dd233fd7975396fd91803c36b4155aab38a1bcb22b97897",
     "net/bridge/Makefile": "0d31f8814cbb2f262ea93383d820bb8802a57c30fc3ea4a7b62ee3fb8b5cc0cb",
     "net/bridge/br.c": "07e3c04e545f3ca1ee8ec546262e4faec25276cd26acce4e1608431cdb9db0ea",
     "net/bridge/br_nf_utils.c": "eb21116816056c3e772251a08b1e9f3288dfd26d30c133ceb3fe0aa291e04719",
     "net/bridge/br_private.h": "a4d806e8e26ac687870726e59610ba33b56663447bd1b39d75f34ad6115cdc19",
-    "net/netfilter/nf_flow_table_core.c": "eb500deea614ee75aaeda2dcd4e1434c6738497c817ff3bce76f514df963427d",
-    "net/netfilter/nf_flow_table_path.c": "21f10cb6a6a71f9459db652e37169f0b2e7f2019185ba724906878e42e30610f",
-    "net/netfilter/nf_flow_table_offload.c": "c472d3e9ab583fc266941b5ff078133938ffee792632e58eee9f74d92991767f",
-    "net/netfilter/nft_flow_offload.c": "1c5fd407d68dd87e022f72e6be2ca6dd8b6abab6fab544b542f700af3545e952",
-    "net/netfilter/nf_flow_table_ip.c": "6c9deb5e225290338bcf5f17238f9a9b99ee582d3e84303ce62a90f5c3b46949",
+    "net/netfilter/nf_flow_table_core.c": "bd067cb4e398279258e0d5a71cb8186080e357b46fbaf79ae93652664dc57191",
+    "net/netfilter/nf_flow_table_path.c": "9fbb251f4186dee8067cf1ab752f864b7e2637da1319a9ae5bc53f4bb81662f0",
+    "net/netfilter/nf_flow_table_offload.c": "f4a24675d8199ee0a60f044e28a1d1e2bc95d4f48965d881181f7995377b165f",
+    "net/netfilter/nft_flow_offload.c": "1d954fa8827d2afeda676157baf4834a4117be29b38d28699a156ef80480eee3",
+    "net/netfilter/nf_flow_table_ip.c": "17ef15a747a03049aba0e9c87935d14e9f9f938f1514e9db28b7c793b56b8697",
     "Documentation/networking/nf_flowtable.rst": "21a0603cf5433ef0a416d4c6ee191de6a1063f6c15e5b3394ebde041a6e0c81e",
     "drivers/net/ethernet/mediatek/mtk_ppe_offload.c": "7ca03243ecf97e5db9359e13f026261c8c0c8ef1374d6a9a50118c3403d2e7f7"
   },
@@ -103,5 +103,6 @@
       "metadata": "Upstream/SOURCE.json:pon_pppoe_mtu",
       "binding_code_changed": false
     }
-  }
+  },
+  "kernel_upgrade": "Kernel60/SOURCE.json"
 }

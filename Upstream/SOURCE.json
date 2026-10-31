@@ -1,5 +1,5 @@
 {
-  "kernel": "6.18.55",
+  "kernel": "6.18.60",
   "retained_base_commit": "80e27f7d4d00507ac82d008569f92c8288af52ee",
   "upstream": "openwrt/openwrt",
   "commits": [
@@ -125,5 +125,6 @@
     "whole_gdm_qos_lro_replacement_added": false,
     "mt7988_or_uboot_changes_added": false,
     "firmware_hardware_validated": false
-  }
+  },
+  "kernel_upgrade": "Kernel60/SOURCE.json"
 }

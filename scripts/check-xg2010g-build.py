@@ -27,7 +27,15 @@ manifests=list(manifest_dir.glob('*.manifest'))
 assert manifests, 'No firmware manifest'
 for manifest in manifests:
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
-    assert re.match(r'^6\.18\.55(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.55'
+    assert re.match(r'^6\.18\.60(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.60'
+    for name, pattern in {
+        'dnsmasq-full': r'^2\.93-(?:r)?10$',
+        'odhcp6c': r'^2026\.06\.27~10a52220-(?:r)?5$',
+        'ppp': r'^2\.5\.3-(?:r)?3$',
+        'libc': r'^1\.2\.6-(?:r)?6$',
+        'kmod-nft-fullcone': r'^6\.18\.60.*-(?:r)?4$',
+    }.items():
+        assert re.match(pattern, pkgs.get(name,'')), 'Reviewed kernel60 package fix absent: '+name
     assert 'ttyd' in pkgs and 'luci-app-ttyd' in pkgs, 'Requested web terminal missing'
     assert re.match(r'^3\.16\.0-(?:r)?1$', pkgs.get('rtp2httpd','')), 'Retained RTP backend version missing'
     assert 'luci-app-rtp2httpd' in pkgs, 'Retained RTP UI missing'
@@ -82,9 +90,10 @@ if variant == 'naoki':
     assert not re.search(r'^START=', path.read_text(), re.M), 'Duplicate CPU boot owner'
 repo = Path(__file__).resolve().parents[1]
 stable = json.loads((installed / 'etc/kernel-stable-backport.json').read_text())
-assert stable['kernel'] == '6.18.55' and stable['project'] == 'pon', 'Installed stable-kernel provenance mismatch'
-assert stable['tarball_sha256'] == 'f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9'
-assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18.54-to-6.18.55.patch').read_bytes()).hexdigest()
+assert stable['kernel'] == '6.18.60' and stable['project'] == 'pon', 'Installed stable-kernel provenance mismatch'
+assert stable['tarball_sha256'] == '3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e'
+assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18.55-to-6.18.60.patch').read_bytes()).hexdigest()
+assert json.loads((installed/'etc/xg2010g-kernel60-source.json').read_text()) == json.loads((repo/'Kernel60/SOURCE.json').read_text()), 'Installed kernel60 source inventory differs'
 driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
 driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
 assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'

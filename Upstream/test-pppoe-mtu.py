@@ -139,8 +139,8 @@ if __name__=='__main__':
     parser.add_argument('--compiled',action='store_true');parser.add_argument('--report',type=Path)
     args=parser.parse_args();kernel=args.kernel
     if kernel is None:
-        kernels=[p for p in args.build_dir.glob('target-*/linux-*/linux-6.18.55') if (p/'drivers/net/ethernet/airoha/airoha_eth.c').is_file()]
-        assert len(kernels)==1,'Expected one prepared 6.18.55 kernel';kernel=kernels[0]
+        kernels=[p for p in args.build_dir.glob('target-*/linux-*/linux-6.18.60') if (p/'drivers/net/ethernet/airoha/airoha_eth.c').is_file()]
+        assert len(kernels)==1,'Expected one prepared 6.18.60 kernel';kernel=kernels[0]
     result=verify(kernel,args.compiled)
     if args.report:
         args.report.parent.mkdir(parents=True,exist_ok=True);args.report.write_text(json.dumps(result,indent=2)+'\n')

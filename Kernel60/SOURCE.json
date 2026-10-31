@@ -1,0 +1,2998 @@
+{
+  "kernel": "6.18.60",
+  "parent_kernel": "6.18.55",
+  "baseline_commit": "723fd37aa041d90f139d890a181e8d224d014bcf",
+  "tarball_sha256": "3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e",
+  "upgrade_patch_sha256": "b8774e1429acde66054ef73d402838f597700004d183dc8912ced9344daef411",
+  "files": [
+    {
+      "path": "package/libs/toolchain/Makefile",
+      "before_sha256": "8a46ab540421eed0427b1ed29fe9be5700ba4601e3d7ceffdbe2c39b745ba050",
+      "after_sha256": "4de50b33584aef11338e6452534bbd0f28c48adf82c0fd624b005e822cb9dd38",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/ipv6/odhcp6c/Makefile",
+      "before_sha256": "e372adf9032b386bbd8c6b40ed5480cdb6b54308680d966568d4703c1dfcb0cd",
+      "after_sha256": "a9e168fc6fe4e25d2e244279b65f8e250be32435acc7e575329bd0f34b717af2",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/ipv6/odhcp6c/patches/100-ubus-keep-reconnecting-after-a-ubusd-restart.patch",
+      "before_sha256": null,
+      "after_sha256": "95f6444c3009e9c354d32b9e2d5634c4abbf883fc7d93e9890e4f19550fcbc28",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/Makefile",
+      "before_sha256": "7841d4faf166a1b8f8e4bd2ccb931e90d222e19b14f8d3e459074a6f1af36d27",
+      "after_sha256": "cbf2525a8b399f75bca8f47d4507027fcd6dd32e654453d748cbbc13275aca5f",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/003-Fix-heap-OOB-read-in-zone_status.patch",
+      "before_sha256": null,
+      "after_sha256": "112441559eb3c59dc6aae28b2ee937749797c928540878d0afb89b6801fa053b",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/004-Fix-subdomain-test-in-find_soa.patch",
+      "before_sha256": null,
+      "after_sha256": "2b168ba13265acfe69f268dae30875ca7a31dbd0a587c985bc70a1a72c391130",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/005-Improve-resistance-to-many-simultaneous-TCP-connecti.patch",
+      "before_sha256": null,
+      "after_sha256": "cc4d0d4a3ef21333420e0a76337a072f434469d6b4a2a2f7e8e5fc745cea545a",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/006-Fix-logic-error-in-TFTP-caching.patch",
+      "before_sha256": null,
+      "after_sha256": "a4db57707a310fe48de3ad92aa96a3d63dfbec8bd941c9735a23b89c4156e177",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/007-Fix-off-by-one-bounds-check-in-DHCPv6-FQDN-option.patch",
+      "before_sha256": null,
+      "after_sha256": "ebca9bd8bcb3631c597ebf22c602f4595fe5ad469f447422a3fc192bde63c8f7",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/008-Fix-DNS-name-buffer-overflow.patch",
+      "before_sha256": null,
+      "after_sha256": "4567520b38484d9a1c68ae91926df5ba17c92d2110cdf7d27a39aff4da7850f0",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/009-Fix-OOB-heap-write-in-blockdata_read.patch",
+      "before_sha256": null,
+      "after_sha256": "038882b9b57dd6310a888829e352b01b40b1eaed95e0da1623912a3f8cd1b059",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/200-ubus_dns.patch",
+      "before_sha256": "c1aaa1b2bec2d2519f40f3754a2c53be6fc1c213a17cd6a566116a3f109d7ed2",
+      "after_sha256": "fb6a6525a80ba673c72dfc8ec4014ee92c58a09a31fd0cbc9c852fbd2959d8e8",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/210-ubus-free-a-lost-connection-only-from-check_ubus_lis.patch",
+      "before_sha256": null,
+      "after_sha256": "f64f1a4ad96b77706182df47c04aec9b13be4abb4433dd9ea39d002cc58ba6a4",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/dnsmasq/patches/220-ubus-wake-the-main-loop-while-waiting-to-connect-aga.patch",
+      "before_sha256": null,
+      "after_sha256": "7c8785f9184bef69dee1f0c629efe32e81b794cdb0d5fe2ce19eb49fe2aaf5bd",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "package/network/services/ppp/Makefile",
+      "before_sha256": "802cc2b59bafe9575365ceeb8fd448153a243e7fb774e678eb26e2f50618c38f",
+      "after_sha256": "b18d7ed38793065d60da9763b37f56bed682f97bea528ddc674de84eec283784",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/services/ppp/files/ppp.sh",
+      "before_sha256": "1083e2b37a279249c71137f7348c136cf1ed6cb79130f836e73b8fb33bc892fa",
+      "after_sha256": "431d480c4dd8e88d48764f36f2ce303c13a67e150570c53c201d0f501468fe5d",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/utils/fullconenat-nft/Makefile",
+      "before_sha256": "a6a53ab39130be53b3492e85d87c6519dbe1467c4ce982d4abe893728ae13b37",
+      "after_sha256": "bb33cb78e694a7ae3f8b3340817d74434cc6c9b7e35ff4fec4ee0e332e8094fe",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/utils/fullconenat-nft/patches/013-honour-port-range-and-flags.patch",
+      "before_sha256": null,
+      "after_sha256": "720fbb320e6bc60acf4cbcae89b4044576735ab5caf083f6de087c0b96fc412c",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/130-mtd-spinand-esmt-add-F50L2G41XA-compatible-override.patch",
+      "before_sha256": "86cf19dd515c76affcad0217e35b8da85d2081d474c3ad75f9361c7010de627d",
+      "after_sha256": "cdf68d7d7d3149528679d8f8dba8f739cc7dd3490261fa5a3f8b6e46a1f042e5",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-09-net-pcs-airoha-add-PCS-driver-for-Airoha-AN7581-SoC.patch",
+      "before_sha256": "3bdf00583acdceaecfaab4746ed739d9848c1195f094d2653b0626447b2eece2",
+      "after_sha256": "42f5e11cc871e61b67aff0032698143c1231680ec87ad2d4443e7d6871309dd7",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-10-net-airoha-add-phylink-support.patch",
+      "before_sha256": "2727bc6ec09a5b495b5a60a59c91f7878fa3eef626d076187350fc166604a39a",
+      "after_sha256": "ede531f3ae74c5715df986dfc556ef192ec4b58fab5107c5df06db7c7128ed6d",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-12-net-airoha-use-port-lock-for-MIB-stats.patch",
+      "before_sha256": "49abd2fc0ec239d730973ab6a7d4d1eb574d1e90df3d4ac99f57b887dda408b6",
+      "after_sha256": "4bf1bc4115dd561d1ca27db9aa86fc07759b2d570de5118669718bd096da0b0c",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/604-01-net-pcs-airoha-add-support-for-AN7583.patch",
+      "before_sha256": "c95fe95cadfc6eea505374aaa767a5720db4bc8f9a93cddb39f6987cc8a97fcc",
+      "after_sha256": "54fba6b555295d4170bd1763e080e6c64e581e70a764000fd6f89501052a7f5e",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/606-net-pcs-airoha-fix-an7583-port-count.patch",
+      "before_sha256": "ed23601dfa1b82a9a6af24e1dc606738b3b2db7dabbfe0f115d8cf4090176511",
+      "after_sha256": "2fb95b32444ea486ca861322115f1479d9abe3df8c0f60d0374aa86476620f68",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/608-net-pcs-airoha-add-AN7581-PON-line-modes.patch",
+      "before_sha256": "e368e535985fa0140a6880186d58bcc00149d34bd705a18d16926f4b79ae28f0",
+      "after_sha256": "de6eb85fca50cff8e89fbeda95732d1f965e6ad9f5fce9ef9fa22b14ded0cf9d",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/748-phy-airoha-an7581-select-usb-hsgmii-for-ethernet.patch",
+      "before_sha256": "9ed701cc0b70bb462c3fec8d7be1a042aae2afc9873c6e8cd2459fd3781eeba2",
+      "after_sha256": "72503d3b816332b56847fda89df1c186568e0622b2ede00f7234937557a2ee3c",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/916-02-net-airoha-Implement-HW-GRO-TCP-support.patch",
+      "before_sha256": "e853aa556d2eba411b4ff7c93cc2bc86dd64b4be8e5305d8fa308103bcd860b4",
+      "after_sha256": "dea10d8e2b32463dd44484ebff75252388c43871ffa4fb7d5cc49c218d163cc5",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-12-net-airoha-defer-GDM3-GDM4-WAN-mode-and-GDM2-loopbac.patch",
+      "before_sha256": "b85b8f4c3207a6f2f02cad9863db6035e55d08b6b473fdb57fd74cd8a79d88c3",
+      "after_sha256": "14b8dfb767c02b25d6b814918bdd42a186df9a380180e508b0c69f4c98be5405",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-13-net-airoha-Rework-MTU-configuration.patch",
+      "before_sha256": "4fe02fbac578380eac05c7398e57947d0e9075ab5671fca89f32c344ff5c9a17",
+      "after_sha256": "48aae79fd384be96bf9eaa5b7eb1ae7924156f0b2c444f4226b7f6834414483b",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/922-net-airoha-add-AN7581-PON-data-and-control-paths.patch",
+      "before_sha256": "3b379936d7f382f1678d6553c9adeabe948e57f3bf9d746b3667814d024023ff",
+      "after_sha256": "f256c208db87a4020d46a868749a805f318c1146951a1f1d8f16cb5d024a3551",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/923-01-net-airoha-fix-BQL-underflow-in-shared-QDMA-TX-ring.patch",
+      "before_sha256": "43a6137f5fa26320b129455bfa85508019bec6d033794b12664461ff921dd50d",
+      "after_sha256": "e7278f1a6c0511a646bc0e2b3d699d9e0029ab69012de7f1ddabda4eb596445c",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/961-netfilter-validate-forward-path-and-vlan-keys.patch",
+      "before_sha256": null,
+      "after_sha256": "70660148586258faf4b25fe9e72c231864c205b716c40c982a2d0101445c4367",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/660-fq_codel_defaults.patch",
+      "before_sha256": "7164a43d7e51ea5d5c261eed657fcccaf704a143b04c55ecd2f4d6b43401e00c",
+      "after_sha256": "d4dfaaeece78c3dee8bb3f37a7911322fa0a3c5fed25eed08f91d0ac0ae9e609",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/kernel-6.18",
+      "before_sha256": "9c5a716f64517054bbd3f017c07abe1d7abba162587883ac122db79d6948fbe7",
+      "after_sha256": "d81b55c60f2ffd9cf3b6ed2b5f3d78e4ed307d8a79f31835e1db8f73e5fa898d",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/151-net-bridge-do-not-send-arp-replies-if-src-and-target.patch",
+      "before_sha256": "e3ab730ac03b5b52db45d18c731e858c76327ba997168c9eb8570ddc62f5b626",
+      "after_sha256": "4054d264869c26f608b439c5cdcec4e0984d3935327dac9e86068ad1a3843b1a",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/304-LoongArch-vdso-keep-the-prefix-map-flags.patch",
+      "before_sha256": "aaa837465e21a8c529daeeb4909c70a70d8213c0ba62665fed918e6381769f23",
+      "after_sha256": "85c2896a8bf278c58568b59e13e877da5b0d915a7845a1c455116388306beeb5",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-02-netfilter-bridge-Add-conntrack-double-vlan-and-pppoe.patch",
+      "before_sha256": "fd951e29af0679f2f676bf24bbe29b8b2f8dafb627bacd5a2856b805889daedf",
+      "after_sha256": "ed5a51bb54c8983dd259a2c4f9cbbf4aa9bba7d4732838f85d8b33e43b921d1e",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-05-net-phylink-support-PCS-provider-release.patch",
+      "before_sha256": "e83e8790a37ce724c339b5ed56d9c346e881ed1d8282afc41cdc3f36062bd0e6",
+      "after_sha256": "da29c0bb94a56014824b95faa6c69da50e24d7c716b79f6235e2913a23eb1a74",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-01-leds-trigger-netdev-put-netdev-on-activate-error-path.patch",
+      "before_sha256": null,
+      "after_sha256": "b519dd9be079e4973c73e7900fb4a84acaef1ed060b23d5f9b8a8407f6a981e2",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-02-leds-trigger-netdev-access-net-dev-under-trigger-data-lock-in-the-worker.patch",
+      "before_sha256": null,
+      "after_sha256": "2c409072eee8862a1350ecc44cd38e7625f581841da85130f291dfcaa83b66fd",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-03-leds-trigger-netdev-fix-sysfs-update-group-races.patch",
+      "before_sha256": null,
+      "after_sha256": "d86a3bc369ee9ef64578febe1808e94c1bf72ac846ee9e2fbf218e30df3411d1",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-04-leds-trigger-netdev-report-invalid-interval-to-user-space.patch",
+      "before_sha256": null,
+      "after_sha256": "4cdc6ec9d59feb5be50687f73af9ef83351d3be973c48baabdbc1b6feadb2ad5",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-05-leds-trigger-netdev-serialize-mode-interval-stores-with-trigger-lock.patch",
+      "before_sha256": null,
+      "after_sha256": "e58223878cca16335d301a6deeb639c9444505418ccf048850d5b2ede297309a",
+      "change": "add-reviewed"
+    },
+    {
+      "path": "toolchain/musl/common.mk",
+      "before_sha256": "8aaea9833f5676cf3ef81cdab4fdc47f641f850740c4484f101adb023461decd",
+      "after_sha256": "7641c9f63ccef6e7b3ff2990e7bbcabbc174e61c88f0194a2e92a19cc42d3296",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "toolchain/musl/patches/008-regex-avoid-int-overflow-in-regcomp.patch",
+      "before_sha256": null,
+      "after_sha256": "45320d9a2b0f9019e919a72277a053e22f3f00b0188fdc66a424548b51d604f8",
+      "change": "add-reviewed"
+    }
+  ],
+  "package_upstreams": [
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/003-Fix-heap-OOB-read-in-zone_status.patch",
+      "payload": "Kernel60/packages/dnsmasq/003-Fix-heap-OOB-read-in-zone_status.patch",
+      "sha256": "112441559eb3c59dc6aae28b2ee937749797c928540878d0afb89b6801fa053b",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/004-Fix-subdomain-test-in-find_soa.patch",
+      "payload": "Kernel60/packages/dnsmasq/004-Fix-subdomain-test-in-find_soa.patch",
+      "sha256": "2b168ba13265acfe69f268dae30875ca7a31dbd0a587c985bc70a1a72c391130",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/005-Improve-resistance-to-many-simultaneous-TCP-connecti.patch",
+      "payload": "Kernel60/packages/dnsmasq/005-Improve-resistance-to-many-simultaneous-TCP-connecti.patch",
+      "sha256": "cc4d0d4a3ef21333420e0a76337a072f434469d6b4a2a2f7e8e5fc745cea545a",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/006-Fix-logic-error-in-TFTP-caching.patch",
+      "payload": "Kernel60/packages/dnsmasq/006-Fix-logic-error-in-TFTP-caching.patch",
+      "sha256": "a4db57707a310fe48de3ad92aa96a3d63dfbec8bd941c9735a23b89c4156e177",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/007-Fix-off-by-one-bounds-check-in-DHCPv6-FQDN-option.patch",
+      "payload": "Kernel60/packages/dnsmasq/007-Fix-off-by-one-bounds-check-in-DHCPv6-FQDN-option.patch",
+      "sha256": "ebca9bd8bcb3631c597ebf22c602f4595fe5ad469f447422a3fc192bde63c8f7",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/008-Fix-DNS-name-buffer-overflow.patch",
+      "payload": "Kernel60/packages/dnsmasq/008-Fix-DNS-name-buffer-overflow.patch",
+      "sha256": "4567520b38484d9a1c68ae91926df5ba17c92d2110cdf7d27a39aff4da7850f0",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/009-Fix-OOB-heap-write-in-blockdata_read.patch",
+      "payload": "Kernel60/packages/dnsmasq/009-Fix-OOB-heap-write-in-blockdata_read.patch",
+      "sha256": "038882b9b57dd6310a888829e352b01b40b1eaed95e0da1623912a3f8cd1b059",
+      "upstream_commit": "6db25ee835eb55af521125c84b12ffd0495f671b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/220-ubus-wake-the-main-loop-while-waiting-to-connect-aga.patch",
+      "payload": "Kernel60/packages/dnsmasq/220-ubus-wake-the-main-loop-while-waiting-to-connect-aga.patch",
+      "sha256": "7c8785f9184bef69dee1f0c629efe32e81b794cdb0d5fe2ce19eb49fe2aaf5bd",
+      "upstream_commit": "7e4c82ba69e256d4e1cfe83bffbd4d6c41a0fa0b"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/210-ubus-free-a-lost-connection-only-from-check_ubus_lis.patch",
+      "payload": "Kernel60/packages/dnsmasq/210-ubus-free-a-lost-connection-only-from-check_ubus_lis.patch",
+      "sha256": "f64f1a4ad96b77706182df47c04aec9b13be4abb4433dd9ea39d002cc58ba6a4",
+      "upstream_commit": "ceb8710238aca1850d0eef877696ed03ab86d19e"
+    },
+    {
+      "package": "odhcp6c",
+      "path": "package/network/ipv6/odhcp6c/patches/100-ubus-keep-reconnecting-after-a-ubusd-restart.patch",
+      "payload": "Kernel60/packages/odhcp6c/100-ubus-keep-reconnecting-after-a-ubusd-restart.patch",
+      "sha256": "95f6444c3009e9c354d32b9e2d5634c4abbf883fc7d93e9890e4f19550fcbc28",
+      "upstream_commit": "64badc4891538bc7902db560beb84d8d892727ab"
+    },
+    {
+      "package": "musl",
+      "path": "toolchain/musl/patches/008-regex-avoid-int-overflow-in-regcomp.patch",
+      "payload": "Kernel60/packages/musl/008-regex-avoid-int-overflow-in-regcomp.patch",
+      "sha256": "45320d9a2b0f9019e919a72277a053e22f3f00b0188fdc66a424548b51d604f8",
+      "upstream_commit": "f1d43d52970a67835df8151f9cacaa086d4905f8"
+    },
+    {
+      "package": "leds",
+      "path": "target/linux/generic/pending-6.18/835-01-leds-trigger-netdev-put-netdev-on-activate-error-path.patch",
+      "payload": "Kernel60/packages/leds/835-01-leds-trigger-netdev-put-netdev-on-activate-error-path.patch",
+      "sha256": "b519dd9be079e4973c73e7900fb4a84acaef1ed060b23d5f9b8a8407f6a981e2",
+      "upstream_commit": "e9c8d91f6dd1db454af504412fc6050cedbc454b"
+    },
+    {
+      "package": "leds",
+      "path": "target/linux/generic/pending-6.18/835-02-leds-trigger-netdev-access-net-dev-under-trigger-data-lock-in-the-worker.patch",
+      "payload": "Kernel60/packages/leds/835-02-leds-trigger-netdev-access-net-dev-under-trigger-data-lock-in-the-worker.patch",
+      "sha256": "2c409072eee8862a1350ecc44cd38e7625f581841da85130f291dfcaa83b66fd",
+      "upstream_commit": "e9c8d91f6dd1db454af504412fc6050cedbc454b"
+    },
+    {
+      "package": "leds",
+      "path": "target/linux/generic/pending-6.18/835-03-leds-trigger-netdev-fix-sysfs-update-group-races.patch",
+      "payload": "Kernel60/packages/leds/835-03-leds-trigger-netdev-fix-sysfs-update-group-races.patch",
+      "sha256": "d86a3bc369ee9ef64578febe1808e94c1bf72ac846ee9e2fbf218e30df3411d1",
+      "upstream_commit": "e9c8d91f6dd1db454af504412fc6050cedbc454b"
+    },
+    {
+      "package": "leds",
+      "path": "target/linux/generic/pending-6.18/835-04-leds-trigger-netdev-report-invalid-interval-to-user-space.patch",
+      "payload": "Kernel60/packages/leds/835-04-leds-trigger-netdev-report-invalid-interval-to-user-space.patch",
+      "sha256": "4cdc6ec9d59feb5be50687f73af9ef83351d3be973c48baabdbc1b6feadb2ad5",
+      "upstream_commit": "e9c8d91f6dd1db454af504412fc6050cedbc454b"
+    },
+    {
+      "package": "leds",
+      "path": "target/linux/generic/pending-6.18/835-05-leds-trigger-netdev-serialize-mode-interval-stores-with-trigger-lock.patch",
+      "payload": "Kernel60/packages/leds/835-05-leds-trigger-netdev-serialize-mode-interval-stores-with-trigger-lock.patch",
+      "sha256": "e58223878cca16335d301a6deeb639c9444505418ccf048850d5b2ede297309a",
+      "upstream_commit": "e9c8d91f6dd1db454af504412fc6050cedbc454b"
+    },
+    {
+      "package": "fullcone",
+      "path": "package/network/utils/fullconenat-nft/patches/013-honour-port-range-and-flags.patch",
+      "payload": "Kernel60/packages/fullcone/013-honour-port-range-and-flags.patch",
+      "sha256": "720fbb320e6bc60acf4cbcae89b4044576735ab5caf083f6de087c0b96fc412c",
+      "upstream_commit": "b325018cd0884cabba02ee2050bce1ddad88f425",
+      "upstream_path": "package/network/services/fullconenat-nft/patches/013-honour-port-range-and-flags.patch"
+    },
+    {
+      "package": "dnsmasq",
+      "path": "package/network/services/dnsmasq/patches/200-ubus_dns.patch",
+      "payload": "Kernel60/packages/dnsmasq/200-ubus_dns.patch",
+      "sha256": "fb6a6525a80ba673c72dfc8ec4014ee92c58a09a31fd0cbc9c852fbd2959d8e8",
+      "upstream_commit": "b76d1aa387dd2ce7f8881d498bb471b884b73fcd",
+      "snapshot": "openwrt feb8ac5e"
+    }
+  ],
+  "flowtable_commits": [
+    "2d7e2a4ae6574279e3c2c60b28785fcf692ff2ba",
+    "be75fbfa9b26eba3b60c291cff766c5fca8e929d",
+    "09fe0f814008b287734a0582d985a9f99c6b3cdc"
+  ],
+  "native_stable_do_not_duplicate": [
+    "flowtable pending/GC synchronization 6.18.56",
+    "nft_flow_offload init failure reference release 6.18.56",
+    "bridge VLAN num_encaps underflow 6.18.57",
+    "page_pool lifetime and alignment fixes",
+    "GSO IP-in-IP recursion limit 6.18.60",
+    "fq_codel min/max MTU quantum clamping"
+  ],
+  "preserved": [
+    "PON R68",
+    "NPU1456-62",
+    "949-954 guarded/RCU path",
+    "955-960 maintenance",
+    "board PHY/reset/DHCP mapping",
+    "500-1400MHz",
+    "MWAN4 r29/LuCI r16 default-off Chinese without site presets",
+    "Argon3.1",
+    "CPU/PON cards",
+    "clients r5 memory/history fixes"
+  ],
+  "excluded": [
+    "LEDE pure-Ethernet PON-disabled board tree",
+    "new GDM/LRO driver replacement",
+    "whole fw4/netifd/ucode update with changed API",
+    "PPP ujail/non-root/2.5.4 migration",
+    "unverified newer NPU binary"
+  ],
+  "hardware_tested": false,
+  "prepared_sources": {
+    "drivers/leds/trigger/ledtrig-netdev.c": "d4c322394c94e68903d4dd6119efcffce8c727f1f74645d85f7581a8ca50e165",
+    "net/netfilter/nf_flow_table_path.c": "9fbb251f4186dee8067cf1ab752f864b7e2637da1319a9ae5bc53f4bb81662f0",
+    "net/netfilter/nf_flow_table_ip.c": "17ef15a747a03049aba0e9c87935d14e9f9f938f1514e9db28b7c793b56b8697",
+    "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+  },
+  "patch_queue": [
+    {
+      "path": "target/linux/generic/backport-6.18/010-v6.19-nvmem-layouts-u-boot-env-add-optional-env-size-property.patch",
+      "sha256": "1626f7ce8216cb7601a315b8ad190e53f048dacfff7fc08e2c4d63488d5c51ec"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/211-01-v6.19-bitfield-Add-less-checking-__FIELD_-GET-PREP.patch",
+      "sha256": "264bbae4bae6def5bd51dbe10f9df732d8ec82ebca5c0e76baab31bba6b52665"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/211-02-v6.19-bitfield-Add-non-constant-field_-prep-get-helpers.patch",
+      "sha256": "0cf5d29b0551a6375aeda9dfa04ae2d3a8d8f9de875c5c94b6035a3101380899"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/434-v6.19-mtd-spinand-esmt-add-support-for-F50L1G41LC.patch",
+      "sha256": "5cb6e9caf8068891051471f41d5a99a3708f0068b7d275b2eaad722f4941cea9"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/435-v6.19-mtd-spinand-add-support-for-FudanMicro-FM25S01BI3.patch",
+      "sha256": "41da863e6b78c944d44436a2f8eaff96b4ca40de114c0948d47bb8568e9df3a5"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/436-v7.3-mtd-spinand-add-support-for-HeYangTek-HYF1GQ4UDACAE.patch",
+      "sha256": "cd33b48b5fa3510f31d5718b5c8b9ca82c05a7ac9e556aba4b017cf529950dd8"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/436-v7.3-mtd-spinand-fmsh-add-support-for-FM25G01B-FM25G02B.patch",
+      "sha256": "981c6679ce2eb99e22ae6729af4dd2194ec2a6ffff5dac17a33948a4bc7213bf"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/437-v7.3-mtd-spinand-fmsh-fix-FM25G01B-FM25G02B-Quad-IO-read-dummy-cycles.patch",
+      "sha256": "2e823a3b4a3bbc5d6c309b769cbb9436de91fc0129b452f7427e308d4b173b1a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/440-v7.0-mtd-physmap-core-Prioritize-ofparts-for-OF-probe.patch",
+      "sha256": "ad4f90e67786781428e89b2e0d17bfbb4469e76d7abf59f7d82901383d40505f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/500-v6.19-ksmbd-server-avoid-busy-polling-in-accept-loop.patch",
+      "sha256": "b7dde355ec750e57f11c829fdddb8db601654430e10da638a8b9997b7104ff58"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/502-v7.3-smb-server-fix-signing-multi-iov-response.patch",
+      "sha256": "1a489a1d3402c4d6b369957d354c145416ea8c710065d4986d9db51ed52f63d5"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/503-01-v7.3-ksmbd-enable-tcp-keepalive-for-accepted-connections.patch",
+      "sha256": "58271114f20ed07b0b768dd1530537121723ed08ca6e9ff0b0cbcd59b4294cc6"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/503-02-v7.3-ksmbd-keep-tcp-timers-alive-for-kernel-sockets.patch",
+      "sha256": "7bd99a508eb30707e83b1b6f6d2a8c896ce8bd825810fcbd903e9b2f4f3e7cca"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/504-v7.3-ksmbd-fix-listener-task-lifetime-on-netdev-events.patch",
+      "sha256": "62a76c726198b1d83972f70e56954cd52b23397d8d4e5ed942439811c0333a10"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/601-v7.1-net-add-netdev_from_priv-helper.patch",
+      "sha256": "d86865761d8a2901d47b14fb93fccef73c9287314c9f3ca731af2a29577974a3"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/613-07-v6.19-net-dsa-b53-allow-VID-0-for-BCM5325-65.patch",
+      "sha256": "e92bd3a1b5a14dea26784c43f60ef26190e4d9d82ebcfda59c8e8be5bb4effbc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/626-25-v6.19-net-pse-pd-pd692x0-Replace-__free-macro.patch",
+      "sha256": "5732145187b4c6aa79009688442e4f012a2a59a6524f899a06b376dd449b15df"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/626-26-v6.19-net-pse-pd-pd692x0-Separate-configuration-parsing.patch",
+      "sha256": "dc959481856c4bc96c17f78be80f5cb795cc1ca5edb3c55050ad671bd470fc4d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/626-27-v6.19-net-pse-pd-pd692x0-Preserve-PSE-configuration.patch",
+      "sha256": "24dbeaa3a0e49372943225965163f73f22d4dc77647f626734c08da5c5dcabe2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/626-28-v6.19-net-pse-pd-tps23881-Add-support-for-TPS23881B.patch",
+      "sha256": "f470891b6b450fd2502a660389c45f534318fc1dafacf49334701ebf7a730ed8"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/650-v7.2-net-pppoe-implement-GRO-GSO-support.patch",
+      "sha256": "94c25b481c1fe857a4482beaad84ae6544f2909d04b5000608850c97e35f1dff"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-01-v7.0-net-sched-Export-mq-functions-for-reuse.patch",
+      "sha256": "23c4f3e40db9bb5f75c547ac155996a863800d2f9f817c910bdcc0245b3cbb1a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-02-v7.0-net-sched-sch_cake-Factor-out-config-variables-into-.patch",
+      "sha256": "39f5f319dee124a5f33f4d14c9c39075597bd11e03f5f7c498eca1a98fb77200"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-03-v7.0-net-sched-sch_cake-Add-cake_mq-qdisc-for-using-cake-.patch",
+      "sha256": "6970bbc178b61013168489fee8e31220937433bb1a37fed8d6a3260ffe9f7297"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-04-v7.0-net-sched-sch_cake-Share-config-across-cake_mq-sub-q.patch",
+      "sha256": "5039bf7851f2dcc4337f5134349f11df0c4fcf13b5cf2874129380696997d9b8"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-05-v7.0-net-sched-sch_cake-share-shaper-state-across-sub-ins.patch",
+      "sha256": "5972cd275b943b827a68eb7383c1d26bd36edafad30825499b081b8681e51a9f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-06-v7.0-selftests-tc-testing-add-selftests-for-cake_mq-qdisc.patch",
+      "sha256": "871e254a9a770b1c738ee32a55ee754ca378f336b2d9af3eef026ba071ab333f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/700-07-v7.0-net-sched-cake-avoid-separate-allocation-of-struct-c.patch",
+      "sha256": "875608bf4ebfb8975bd67706b8b51d4aa1d856f4b9d2fa28a1335e097772a27c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/701-01-v7.0-net-sched-sch_cake-avoid-sync-overhead-when-unlimite.patch",
+      "sha256": "3fbbd1e48598c22d0747d80411478974525597774b31ca9daab580087bb326ec"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/701-02-v7.0-net-sched-sch_cake-fixup-cake_mq-rate-adjustment-for.patch",
+      "sha256": "e87e175f4618587097de6a3c02832b1b58591999fc99ec1b5d2880cd99d3c8cb"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/701-03-v7.2-net-sched-sch_cake-skip-clearing-unused-tins-during-.patch",
+      "sha256": "0cdc4b63d869377fd0f19a8d07aac351791011e59cfc16674ac584822e6bd844"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/702-v7.0-net-phylink-fix-NULL-pointer-deref-in-phylink_major_.patch",
+      "sha256": "60793d30e44b83a11b2a1ba40e375fa6bd0ced6f5593ecffbfe76e626a745cdc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/703-01-v7.0-net-phylink-simplify-phylink_resolve-phylink_major_c.patch",
+      "sha256": "a03bcb17daadf3aca16a8b66ed858a0a8c709b25d3bb938268e2f99a760ffc51"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/703-02-v7.0-net-phylink-introduce-helpers-for-replaying-link-cal.patch",
+      "sha256": "8f41fb12f0f02e9812b52e4d91c400280d95751e6b0d0958c28f6b30ff8574bd"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/704-v7.3-net-phylink-treat-PSGMII-as-an-inband-capable-interface.patch",
+      "sha256": "2f6df52a0311553c48a57de291fa73b56a98fd1a8922cdfd4637664976779fdc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/705-02-v6.19-net-phy-motorcomm-Add-support-for-PHY-LEDs-on-YT8531.patch",
+      "sha256": "410918c9e29db0e44d86ca62c6ed43a86e48ae2c8e6cbab8dbfb00a5209f0949"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/705-03-v7.0-net-phy-motorcomm-Support-YT8531S-PHY-in-YT6801-Ethernet.patch",
+      "sha256": "66a82bb94f77211ee252a25c73131573c0e356b49973fb5e8271e2c2210bbc7b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/705-04-v7.0-net-stmmac-Add-glue-driver-for-Motorcomm-YT6801-ethernet.patch",
+      "sha256": "d4f95be317ab24ca02bbb0c3731b47d0568b149787f610eb668ce3a873b90dac"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/710-01-v7.1-net-sfp-add-quirk-for-ZOERAX-SFP-2.5G-T.patch",
+      "sha256": "33b5b59e00d33c092a6a45a364fa222d1013b18f5c64b6911b7e1b173b441a69"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/711-v7.2-net-phy-sfp-detect-presence-via-I2C-when-no-MOD_DEF0-GPIO.patch",
+      "sha256": "18b9692b9858017b73bdb2b1544934474b5a4e835161e3db421bd859bdf8bcc0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/720-v7.2-net-phy-intel-xway-add-PHY-level-statistics-via-etht.patch",
+      "sha256": "8d05f01fd437a1e20f6a66b08d24cafca1d0c975b7af8e1334f7ca0532ba3ee2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/730-10-v6.19-net-phy-mxl-gpy-add-support-for-MxL86211C.patch",
+      "sha256": "3c60f92f5e94cfe72bcbc5e7c2876c31554cf357b85a4bf4ef21bc4fc5fc3bf3"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/730-11-v7.0-net-phy-mxl-gpy-implement-SGMII-in-band-configuratio.patch",
+      "sha256": "dd0fdf2285a2d5d7d943b5e9a8abaf909b0a587bbf3b93b36bafcab985999672"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/731-01-v7.3-net-phy-c45-add-genphy_c45_pma_soft_reset.patch",
+      "sha256": "532bc4a6fa6d83caebb8a73f848b805e7338acb71b217bc84dd3b841768dae0d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/731-02-v7.3-net-phy-c45-add-setup-and-read-master-slave-helpers.patch",
+      "sha256": "486e57ee32ca266a6169775fa669e7aba924cef07a8f7923f67ca7034fb8090d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/731-03-v7.3-net-phy-realtek-add-support-for-RTL8261C_CG.patch",
+      "sha256": "4b136e4f5dc5d09839c2eaeb9dbed3040ead2ca5601b4999d5a2e4de45aa2359"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/731-04-v7.3-net-phy-realtek-load-firmware-for-RTL8261C_CG.patch",
+      "sha256": "440b6abc77f4cbc4fe5907b0033ad070787c2831d70cf1d8a835b93a01faa27e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/731-05-v7.3-net-phy-realtek-add-support-for-RTL8261D.patch",
+      "sha256": "24ae105fb6429589185b4dd160bdc262ffd5056c96f261e7ac9d40e7cf55509b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/737-01-v7.3-net-phylink-allow-PHYs-to-be-attached-in-802.3z-inba.patch",
+      "sha256": "6d1f4b88a93dd990beabbf010e101a7be34f8f827e67f5f9dfec8e36017d88a4"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/740-v6.19-r8152-Advertise-software-timestamp-information.patch",
+      "sha256": "d800df2b0f56acb0dd67e494c386ac74e9f9022804b9b59ec21f691ac3f0a0cc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/741-v7.1-r8152-Add-2500baseT-EEE-status-configuration-support.patch",
+      "sha256": "88d5c6450cc9383eed7f347f7fbcc9bff06e95e8db59426d8e53bab40dd59237"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/743-v7.1-r8152-add-helper-functions-for-PLA-USB-OCP-registers.patch",
+      "sha256": "5f4cc8a498178e28af5ce8fac87bced5a8e528b05dece4c515ed5dc40ef6c481"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/744-v7.1-r8152-add-helper-functions-for-PHY-OCP-registers.patch",
+      "sha256": "b9fb0888b03b95c8e7c170c46820e0329f8c2bbd419884a3029cf2789434edb5"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/745-v7.1-r8152-Add-helper-functions-for-SRAM2.patch",
+      "sha256": "be85306ebfa49de833e71d98928135d16499030067309230e7c666614d3855ce"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/746-v7.1-r8152-Add-support-for-5Gbit-Link-Speeds-and-EEE.patch",
+      "sha256": "0787fea011ee68cc710f9edddb3538966f538f0f6860b176562303329a7b0bd2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/747-v7.1-r8152-Add-support-for-the-RTL8157-hardware.patch",
+      "sha256": "e33896ecde7a7b928a2fb24447bf94f77ac8555854fa8d3f4e1b86a36442da5c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/750-v7.0-net-phy-move-mmd_phy_read-and-mmd_phy_write-to-phyli.patch",
+      "sha256": "69568cbfbcbff165f786eb972789af7f2796ae4515d3e610f4215e87c0809acb"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/755-v7.3-net-sfp-add-quirk-for-HORACO-copper-SFP-module.patch",
+      "sha256": "411bf0ad3ca82b74a1e71f7736b6ace06902a581312a472d06843326a9afffab"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/761-v6.19-net-phy-mxl-gpy-add-support-for-mxl86252-and-mxl86282.patch",
+      "sha256": "2174871d4cdd3083f064bb2e58b39f9c89ea7625de8d4a71d731ab6bd14375bd"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/762-v7.0-net-dsa-add-tag-format-for-MxL862xx-switches.patch",
+      "sha256": "95cef00bc5cb8b5d216b1ccfc8e40e21ecce157c5ec93e55a2d35903b2ea756e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/763-v7.0-net-mdio-add-unlocked-mdiodev-C45-bus-accessors.patch",
+      "sha256": "3e1f6281273c860313a855a37c1eefd193dde06a250844daa0437c20ab97e6de"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/764-v7.0-net-dsa-add-basic-initial-driver-for-MxL862xx-switch.patch",
+      "sha256": "ba7c5de24589251997e467654158a8b5b6e7b56c615e016c3da1e56b7edc00ea"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/765-v7.0-net-dsa-mxl862xx-rename-MDIO-op-arguments.patch",
+      "sha256": "bf2c5fc7b762fbcf353e521e46133d438af23311f517ec5e9dd2760ec40707cb"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/766-v7.0-net-dsa-mxl862xx-don-t-set-user_mii_bus.patch",
+      "sha256": "e179db3d7837f50f0cf3ad938dd1984f7f10c2f4ceb03e23228a66e8437fd1f7"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/767-v7.0-net-dsa-mxl862xx-don-t-read-out-of-bounds.patch",
+      "sha256": "4114d351ce5cbea975236d0605e995ee65e8a421c051a910feb7bd5814a2bb92"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/768-v7.1-net-dsa-MxL862xx-don-t-force-enable-MAXLINEAR_GPHY.patch",
+      "sha256": "6b0df90215e3b9be171aebb4079368f6d1ae0f0065454ab1c921dd7ed9d11f9d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/769-v7.1-net-dsa-mxl862xx-add-CRC-for-MDIO-communication.patch",
+      "sha256": "ce449d809dd1314d84948fcab4744c80c79c7c516eadbc0d3a7ddb70e199d7dc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/770-v7.1-net-dsa-mxl862xx-use-RST_DATA-to-skip-writing-zero-w.patch",
+      "sha256": "23923238a99545dadffa7758e0d042a0c5bf010c81cca4e609a62193126f65a2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/771-v7.1-net-dsa-mxl862xx-cancel-pending-work-on-probe-error.patch",
+      "sha256": "2e5fff23b72a04de785d821a5f9d426fd667e002d885f7c300148f6538a0a079"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/772-v7.1-net-dsa-move-dsa_bridge_ports-helper-to-dsa.h.patch",
+      "sha256": "7ae19db4b4a1b429a8f2c5c527b04f463da76b65c0a57caf528f2b89af2a8e7c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/773-v7.1-net-dsa-add-bridge-member-iteration-macro.patch",
+      "sha256": "cc2a368ff74417f72e29daa5b56e257874c3fe5c4fd96407ce101cf3bc951c1c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/774-v7.1-dsa-tag_mxl862xx-set-dsa_default_offload_fwd_mark.patch",
+      "sha256": "7a068b4ec6084b9d8eb52fa73fb7ca4e3d3eb6a71edc981d9d1401655680c909"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/775-v7.1-net-dsa-mxl862xx-implement-bridge-offloading.patch",
+      "sha256": "6f36b157e69daab7d8409927fe461d56d23ebcccd96ddba0f021eeb798fc271e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/776-v7.1-net-dsa-mxl862xx-reject-DSA_PORT_TYPE_DSA.patch",
+      "sha256": "2b82c2f3c5e444019880b1a892de55bd93546e76e83084d3e16525cfe42883d9"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/777-v7.1-net-dsa-mxl862xx-don-t-skip-early-bridge-port-config.patch",
+      "sha256": "83e5ee9ad09d793d353b3eac75cb71ce55a562b3ddee420e15231346b2d87364"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/778-v7.1-net-dsa-mxl862xx-implement-VLAN-functionality.patch",
+      "sha256": "f299b318c591413417887e578f5233eececdf8725304c94cff8d8e5a19551aea"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/779-v7.1-net-dsa-mxl862xx-add-ethtool-statistics-support.patch",
+      "sha256": "efbca2083e0249633888e069e156c85491fb4fa20430b5c48d8a2862d386a558"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/780-v7.1-net-dsa-mxl862xx-implement-.get_stats64.patch",
+      "sha256": "0d97e305eca31b8c81ed7ea170cc82a8929a7a318bac2571b68f52dfa4dd496e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-01-v7.2-net-dsa-mxl862xx-store-firmware-version-for-feature-.patch",
+      "sha256": "cac0aaf460f84ef7d8f914af00bfb0f5d3ec52d3f58e00b59f7cf639b20e9a3b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-02-v7.2-net-dsa-mxl862xx-move-phylink-stubs-to-mxl862xx-phyl.patch",
+      "sha256": "aba39b8ec00b5fa9493eaf11489d1b2a372ebad284074dcbed901def9fab1bc0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-03-v7.2-net-dsa-mxl862xx-move-API-macros-to-mxl862xx-host.h.patch",
+      "sha256": "17192178b716333e6d6b556be5e9490517a370c0156259995ad041bb5acdb6f0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-04-v7.2-net-dsa-mxl862xx-add-support-for-SerDes-ports.patch",
+      "sha256": "93961fc2ba9b548ec7b855767178d28010500b0970c3d0e7d3a4c8eff54c94aa"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-05-v7.2-net-dsa-mxl862xx-avoid-unaligned-16-bit-access-in-ap.patch",
+      "sha256": "7c1fd5180c6feae68b6910d957658662cd1d3b3cd08deefc5585f9affaab26f6"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-06-v7.2-net-dsa-mxl862xx-fix-use-after-free-of-DSA-ports-in-.patch",
+      "sha256": "6b0e0123aea9a6b4018c4edd0fe6ab96e3cad5a2c5fe08be41ad34e6f9abb54f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/781-v7.1-net-mvneta-support-EPROBE_DEFER-when-reading-MAC-add.patch",
+      "sha256": "bfb8f0d2026ef3c3555464e72a9101cd402da0afc84ed68fbc3f6a44a8ea4b68"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
+      "sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/784-06-v6.19-net-phy-realtek-Add-RTL8224-cable-testing-support.patch",
+      "sha256": "9cd32487cbe3ce1c355ab33db5d803949d6d290c82b4aa773e6aa49ebc75662d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/784-07-v6.19-net-phy-realtek-add-interrupt-support-for-RTL8221B.patch",
+      "sha256": "b5cf7219c0645e58aa6c7d451059bc77ea2b0b49b7139c9c1da1a3239de1d179"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-01-dt-bindings-phy-rename-transmit-amplitude.yaml-to-ph.patch",
+      "sha256": "47d9fc91dbb3537edac34ceb8f4981857f2bb2d86021b9ba0d58beb64cf45abd"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-02-dt-bindings-phy-common-props-create-a-reusable-proto.patch",
+      "sha256": "a26abe86aa83bbc3e9265edb6b07d784a43c06101b36dc5d95dcbccd46ef2890"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-03-dt-bindings-phy-common-props-ensure-protocol-names-a.patch",
+      "sha256": "a385d52a1c4345abd92af6fc5c98c8e8fa79a77694f54bdd1a1b248c775adb0d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-04-dt-bindings-phy-common-props-RX-and-TX-lane-polarity.patch",
+      "sha256": "af19f325daac783eaa3ade9c1a505219eeb2fcf996d18c765ab5e4270e8722de"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-05-phy-add-phy_get_rx_polarity-and-phy_get_tx_polarity.patch",
+      "sha256": "f25a75091ab31332547d17a9ec36caae33e29d4993893e9cc433ca1fdca06783"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-06-dt-bindings-net-airoha-en8811h-deprecate-airoha-pnsw.patch",
+      "sha256": "a16ec41b4c4fedfcad59cc9d16bb1ce462d870d3da3d1f4a21e13a186d16bf1b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-07-net-phy-air_en8811h-deprecate-airoha-pnswap-rx-and-a.patch",
+      "sha256": "c22b56fe01d8a4db73e42d683d60793eed12a5917cdd6593a5e1f97ce3e736f2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-08-dt-bindings-net-pcs-mediatek-sgmiisys-deprecate-medi.patch",
+      "sha256": "9c1fabf7a3d55b1d46356289559c6211e6f9d42fad586b1ecc71ed4ab7461df7"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-09-net-pcs-pcs-mtk-lynxi-pass-SGMIISYS-OF-node-to-PCS.patch",
+      "sha256": "6cc0dcef646cc1e9da57c8e8746426864651fd8c39e9bf5945902633ea65e7e1"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-10-net-pcs-pcs-mtk-lynxi-deprecate-mediatek-pnswap.patch",
+      "sha256": "7c9d31126fd1582a17b4a5c034ada3275129bf22b0c019f6266319b42948175c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/785-v7.0-11-phy-enter-drivers-phy-Makefile-even-without-CONFIG_G.patch",
+      "sha256": "cfcd10ed144ed4504070ec59f30f20c52d6658cfd9a48b65e5fc74f5c7a90121"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/786-01-v7.4-net-phy-add-phy_detach_internal-helper.patch",
+      "sha256": "f32243f98138ecbaeb52b3d98823b75f2d6fa2349d6e6e6007c3a26c4f0fa49d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/786-02-v7.4-net-phy-add-notify_phy_attach_detach-hooks-to-struct-mii_bus.patch",
+      "sha256": "898a8d31779c472e863b7fd94af8fc9dbf02d9ef8a5a3d35fe125969b59a571e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/786-v7.3-net-phy-air_en8811h-move-LED-GPIO-configuration-to-config_init.patch",
+      "sha256": "b2efc198a6d3b1213c7038b120591d72c5668a674e58de18c22111dbb93c602e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/788-v7.0-net-phy-realtek-fix-whitespace-in-struct-phy_driver-.patch",
+      "sha256": "a8ee912ddf2eb7903952fd3510f7b18972a4050263864d733432eae9fc920f3e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/789-v7.0-net-phy-realtek-implement-configuring-in-band-an.patch",
+      "sha256": "e5659bbb75a65e19282dbfc011bf28e1df964a2ae60a48f07516f7f2d92c0f35"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/790-v7.0-net-phy-realtek-use-paged-access-for-MDIO_MMD_VEND2-.patch",
+      "sha256": "ee25cf1f45d877020b92db93a2fa90af9cfb0b5e5bd367789438ef3cd1be3917"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/791-v7.0-net-phy-realtek-get-rid-of-magic-number-in-rtlgen_re.patch",
+      "sha256": "7cab8682bbefb971729e53d4babff2863a34c0e2a488c4896a65369cd7d9a866"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/792-v7.0-net-phy-realtek-add-dummy-PHY-driver-for-RTL8127ATF.patch",
+      "sha256": "6f31b826abe13d091f3502c07bf1ba2e5115d5de0fc77937167f810dd3fa7508"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/793-v7.0-net-phy-realtek-fix-in-band-capabilities-for-2.5G-PH.patch",
+      "sha256": "8fba8e3c29ea92440b90a015039d15984335dcca286ee7c9d5b55c6a812d7e5d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/794-v7.0-net-phy-realtek-support-interrupt-also-for-C22-varia.patch",
+      "sha256": "d9a628240ded458eca932821db88830d4db9ead2fe889cece84c4fcf02ae268d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/795-v7.0-net-phy-realtek-simplify-C22-reg-access-via-MDIO_MMD.patch",
+      "sha256": "a4ef5fae36702e64bec801bb0300a3ff1d05729afd750773663ed0e42faa1d45"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/796-v7.0-net-phy-realtek-reunify-C22-and-C45-drivers.patch",
+      "sha256": "3070a2592df1a7250b922a44151b0889e2ad8b9d508f4804917f15dc5ebdff24"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/797-v7.0-net-phy-realtek-demystify-PHYSR-register-location.patch",
+      "sha256": "aadb12d682414c7b62a3f20638f324f5c64bb573376f67fec9ebd80a2505e05a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/798-v7.0-net-phy-realtek-simplify-bogus-paged-operations.patch",
+      "sha256": "ed2e639f0c3bebfa5917bb2954d4db38fc07855e7d30facfc65a926057579642"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/798-v7.1-net-phy-mxl-gpy-add-PHY-level-statistics-via-ethtool.patch",
+      "sha256": "8712ab3aa417e0776cfb4a83e249d87206737d796cac2c28120d54deb5d6cd0a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/799-v7.2-net-phy-realtek-Add-support-for-PHY-LEDs-on-RTL8221B.patch",
+      "sha256": "cc144bade18028039b0ad4a9b54155cefa53c7980d2a3f1d09de7b72538d6af6"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/821-01-v7.0-dt-bindings-gpio-add-gpio-line-mux-controller.patch",
+      "sha256": "50fc80b54ebaad870e54204d80b52c44a680a69c8983a5cc647efc666a2ff461"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/821-02-v7.0-gpio-add-gpio-line-mux-driver.patch",
+      "sha256": "a16fe57f42d01b328c9cc90362fe8241f52fb17621f307890399e3f525455cde"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/821-03-v7.0-gpio-line-mux-remove-bits-already-handled-by-GPIO-co.patch",
+      "sha256": "3ff4006615723d29de91419ba2c081c747d99afa5df4e3a7431e109794554965"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/822-v6.19-ALSA-usb-audio-Convert-to-common-field_-get-prep-hel.patch",
+      "sha256": "f577cafdfe7e318b5252df360526ececcbaa7440514372c9c82c83c6f3748add"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/823-v6.19-clk-at91-Convert-to-common-field_-get-prep-helpers.patch",
+      "sha256": "60d812cb9d0b15cef6622f49d03dd37253c25e818b77a79424ee2486303d29db"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/824-v6.19-iio-mlx90614-Convert-to-common-field_-get-prep-helpe.patch",
+      "sha256": "cbc61d8d5a847a6187eb8a5dc8634a857bae4058e12d1af379cfd30f70db2407"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/825-v6.19-pinctrl-ma35-Convert-to-common-field_-get-prep-helpe.patch",
+      "sha256": "c7797d3b511c4575c8c8fc9e404c5439731915da92fbe9c87ec1d4a2e9fb0681"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/830-v7.0-hwmon-emc2305-Simplify-with-scoped-for-each-OF-child.patch",
+      "sha256": "9bfd5e7e9b5a5a41b1c9bf142b7ff2f837bd9867cdb00e234edbf8596aa74c8f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/842-v7.2-hwmon-lm63-make-pwm1_freq-and-lut-hyst-writable.patch",
+      "sha256": "f6180bc5d239133027a4df35e634d5bf0b0104cbb9c263b9cdf29749cde042db"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/851-01-v7.3-dt-bindings-hwmon-add-adi-adt7470.patch",
+      "sha256": "9a768927f930b5286a068e6a22ae8e0497fd1debb3068c44e1fe8029ebfd597e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/851-02-v7.3-hwmon-adt7470-Add-ADT7470_PWM_MAX-macro.patch",
+      "sha256": "86edd4251917e42effcdcebec70fe77f75f96912ee0ed8b6ef6caaf83ef3dd8a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/851-03-v7.3-hwmon-adt7470-Expose-fan-control-via-PWM-framework.patch",
+      "sha256": "8575bfc354c0e9ddf2b9f0125fa8d50fa3a4da56bccb3c2298ebfa982e101c5a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/851-04-v7.3-hwmon-adt7470-Add-thermal-zone-sensor-support.patch",
+      "sha256": "e0743fbdf31bb49a2ab6ef2f526c55225952ba2e159947d048c4785e9c9fe4df"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/907-v6.19-genirq-Change-hwirq-parameter-to-irq_hw_number_t.patch",
+      "sha256": "39460275559a5100e60aa234318eee860c5ece6f698469454fcb9ee0878141bc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/908-1-v7.0-genirq-Add-interrupt-redirection-infrastructure.patch",
+      "sha256": "24320167530e1a65a347c4511d6abaf45524f948725752d1ee0e8f7d6948b9ea"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/908-2-v7.0-PCI-dwc-Code-cleanup.patch",
+      "sha256": "90308b714889d37ab6e781c8ca6b8df81a3d1f5448751a9f14a56a36a35e5fe1"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/908-3-v7.0-PCI-dwc-Enable-MSI-affinity-support.patch",
+      "sha256": "9716f9bcdaf76e1e4487a153642a7f86a0c966acaf652ffba3b2cd60f3ba2f9b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/909-v7.0-genirq-Update-effective-affinity-for-redirected-inte.patch",
+      "sha256": "2bef134338624897b218c39c81c9e5154c7974a87cdccc29265ce6d29b678d5d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/910-v6.19-crypto-testmgr-Add-missing-DES-weak-and-semi-weak-ke.patch",
+      "sha256": "53afad3258f1ef894a465676eb84aafc3e102c54c57ec8486e534e74c3957dd9"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/911-v7.0-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "795211a45e1f3aa94af22276d4ce893db1e817985d5791d354b3f37b426b0be0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/912-v7.0-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "d333f6070dd628046217029ef993997e6df11651b24b687dc66f2c7358b1571b"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/913-v7.0-crypto-testmgr-Add-test-vectors-for-authenc-hmac-md5.patch",
+      "sha256": "db47836eb43a22c58f474341a790453bf10e95362916d5d2766be373b6c4a18d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/914-v7.0-crypto-testmgr-allow-authenc-sha224-rfc3686-variant-.patch",
+      "sha256": "2c493ad537ae90ace0e5f09e958a98901cfc4cf2d09b68021f388cc416176620"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/915-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-md5.patch",
+      "sha256": "a6488f9909f9ffcc0d71d2be18b6e2852eef514db9a2b18a322112b8044bd802"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/916-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "79fcc8cf8a962346252d98412295611248ab99fd897ec9a6c90b5f45b00036c0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/917-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "16da1cd650d73b0f7d18ba346ac33bd851eea9181516ab7ffbd4d3fb2d12a79c"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/918-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "b25f1988a4513ced487726605befbc3ae309d2bbe65485b90a2e23f10b9a9835"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/919-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "eacef8c9f01df4af8e592021401e6df297cddc3b749d87510a99ab1ec30eb418"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/920-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-sha.patch",
+      "sha256": "0c272ec00b414d06d61ef88a4312cc3cf05df4671d05558559fd3dda45f20422"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/921-v7.1-crypto-tesmgr-allow-authenc-hmac-sha224-sha384-cbc-a.patch",
+      "sha256": "41861faaf01bf498fc85129373723157012260e430569968dd657355879fcae7"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/922-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-md5.patch",
+      "sha256": "9bfdb5bc5d09d563e206ba3bf0f73d79cb895df81b4bb3443439ca3dc8595f7f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/923-v7.1-crypto-testmgr-Add-test-vectors-for-authenc-hmac-md5.patch",
+      "sha256": "0f2360d5dc554863ae37c0f30902e40e812a3d5bbb722fccc43953a611750418"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/930-v7.1-crypto-safexcel-Group-authenc-ciphersuites.patch",
+      "sha256": "71c1c49cff482e885f4fad21b9412d79a83bc135cc65276bc5a87ebe4a787dad"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/931-v7.1-crypto-safexcel-Add-support-for-authenc-hmac-md5-sui.patch",
+      "sha256": "06f7e92942c11ca796c814faab7e87332921db6be7c0b7afd9c4618696cd4ae0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/932-v7.1-crypto-tcrypt-clamp-num_mb-to-avoid-divide-by-zero.patch",
+      "sha256": "cc7c4e406e06445d53c33514abf6d04f2d0abe1f44b390d793393f97ba2eaa34"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/933-v7.1-crypto-tcrypt-stop-ahash-speed-tests-when-setkey-fai.patch",
+      "sha256": "c515f712b5fcd8f45bb9c4bc8af832f35ea1eca618bc113f9d9671dda7fb15a3"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/940-01-v7.1-net-dsa-tag_rtl8_4-update-format-description.patch",
+      "sha256": "39b58237f36e30111d7b913c428b7c3a36bab30a957ecbe75ddc6af024216bf0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/940-02-v7.1-net-dsa-tag_rtl8_4-set-KEEP-flag.patch",
+      "sha256": "fb904a043689eb86f6c4737f20b58abee33f0c38bed579526882d24957d1f9a2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-01-v7.2-net-dsa-realtek-rtl8365mb-use-ERR_PTR.patch",
+      "sha256": "133c63fb254c02248836628e2bf21994bfce3e7293168925a4a7ffb240f37630"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-02-v7.2-net-dsa-realtek-rtl8365mb-reject-unsupported-topolog.patch",
+      "sha256": "18995b437d671d12d874b3beb83e0bc0fc4c5007931f7953d94beeee0020481a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-03-v7.2-net-dsa-realtek-rtl8365mb-use-dsa-helpers-for-port-i.patch",
+      "sha256": "43ec152b59aa55113cf21a19a206f4335cf0887ca04182f1ded6c669c727fd17"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-04-v7.2-net-dsa-realtek-rtl8365mb-prepare-for-multiple-sourc.patch",
+      "sha256": "4b8e993f3646b7d2756e8803e0fd0ad9bf161550ebc21ea82d6473434ecb351d"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-05-v7.2-net-dsa-realtek-rtl8365mb-add-table-lookup-interface.patch",
+      "sha256": "92e49041d64869ca25bfb844da9e5334976fbb61574f5017dea2b72cfbde935a"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-06-v7.2-net-dsa-realtek-rtl8365mb-add-VLAN-support.patch",
+      "sha256": "e5695f906481351b50df5c27b21eb0864d94137a754be84decc897ba373c3153"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-07-v7.2-net-dsa-realtek-rtl8365mb-add-FDB-support.patch",
+      "sha256": "e6f253c350477d225882d044af1baf73443cf2b1e17127ab72c85b761a0b870f"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-08-v7.2-net-dsa-realtek-rtl8365mb-add-port_bridge_-join-leav.patch",
+      "sha256": "23e0ed2f8b48a8c17e2cca627a0c87f4ec29ed2ee9d879dfd65505c5cc8bc6cc"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/942-09-v7.2-net-dsa-realtek-rtl8365mb-add-bridge-port-flags.patch",
+      "sha256": "256b135862bc4773afe678378ae5f543db9f58cf600f29687bdabc088e0949a0"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/943-01-v7.3-net-dsa-realtek-rtl8365mb-add-SGMII-support.patch",
+      "sha256": "001985af7b4f2c404521f58dd4bd4cb545e6a91d1614f50f4e9f6b95390fe1e6"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/943-02-v7.3-net-dsa-realtek-rtl8365mb-add-HSGMII-support.patch",
+      "sha256": "c300fadf4ca8c5e960fd7999efb2295cb89df1be5338c5217c75436989e6cc1e"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/944-01-v7.2-net-dsa-realtek-rtl8365mb-use-devm_mutex_init-for-mib_lock.patch",
+      "sha256": "97ac0d23fe64d0a809cb131cf1c46cdc4f494cba9d109ee1b872feef391fb649"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/944-02-v7.2-net-dsa-realtek-use-devm_mutex_init-for-regmap-lock.patch",
+      "sha256": "2331f1bfa93bd7ddecc4db8cbb5aaf5828ca351271168ebe9adbb9fa2bab5ce2"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/944-03-v7.2-net-dsa-realtek-use-devm_mutex_init-for-vlan_lock.patch",
+      "sha256": "f6847aa801af57e01cbca62cb827403810e1d6380c3a43f4f90ef087652bbebf"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/944-04-v7.2-net-dsa-realtek-use-devm_mutex_init-for-l2_lock.patch",
+      "sha256": "9630908643f335f82c541bb299ddee421ed61247de6c86b4e11059efe234b541"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/945-v7.2-net-dsa-mxl862xx-enable-assisted-learning-on-cpu-port.patch",
+      "sha256": "5decf015a168d5215f2c29b228760d62d50e21791ab17b079729b75dd7be9180"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/100-compiler.h-only-include-asm-rwonce.h-for-kernel-code.patch",
+      "sha256": "ce5b5330e16b6ff718367bf9762f5d20622d080ffe9ba86b3d836aa81e64f88e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/102-MIPS-only-process-negative-stack-offsets-on-stack-tr.patch",
+      "sha256": "d9cf35395338a9484beaaf0fa7e4c48c6718db2d616009bcc1cfb241e4d59fe8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/103-kbuild-export-SUBARCH.patch",
+      "sha256": "9fb3b771770cdf58e6907811dcfa4875863ea4098631d463b6bd117180f9daca"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/111-watchdog-max63xx_wdt-Add-support-for-specifying-WDI-.patch",
+      "sha256": "8e402335c72c10e8f231a70e557b688ebfd9a5365f1dd0f71cf002bb953e2df3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/140-jffs2-use-.rename2-and-add-RENAME_WHITEOUT-support.patch",
+      "sha256": "60871ed68f7cd0920bc8ca817f110913d629dd5bb6810271d17f29c5f15a1703"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/141-jffs2-add-RENAME_EXCHANGE-support.patch",
+      "sha256": "e2ca0f5d66712d09819781b7f6843174e3915fae357aa7420a2f851f8369d4ff"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/142-jffs2-add-splice-ops.patch",
+      "sha256": "1e921e3fa50e74fcae4ebeb845e8c9613f07bd47c682c05b7dc1cb7fcd6acf91"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/150-bridge_allow_receiption_on_disabled_port.patch",
+      "sha256": "0c56ad26bb03b1a725da2a32d27d7bab0a5b0a078de17af62d79ef7e8619ae50"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/151-net-bridge-do-not-send-arp-replies-if-src-and-target.patch",
+      "sha256": "4054d264869c26f608b439c5cdcec4e0984d3935327dac9e86068ad1a3843b1a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/190-rtc-rs5c372-support_alarms_up_to_1_week.patch",
+      "sha256": "22740782018678e93b4c48c4b9b1b9d889220c92626b4c10d5210393d64547b2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/191-rtc-rs5c372-let_the_alarm_to_be_used_as_wakeup_source.patch",
+      "sha256": "fb8a33cdba7576c321b9b636fbb1baa9a7292d02fdb37ed299f230f016f00325"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/200-ARM-9404-1-arm32-fix-boot-hang-with-HAVE_LD_DEAD_COD.patch",
+      "sha256": "d2cc689473c6a3243366b866674704873cd94a4f64da4e678664a760482c831e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/203-kallsyms_uncompressed.patch",
+      "sha256": "340a9599cf611a9a3a8050b04ae4341234648d340043837eea0d93f850a07d43"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/205-backtrace_module_info.patch",
+      "sha256": "ede325856e369534712fca0218e456bcc19de4b66f1e6ff2461d8803bae3ec4e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/240-remove-unsane-filenames-from-deps_initramfs-list.patch",
+      "sha256": "d499b787b82fdfc8e151d56ecd69ae5f893a31cec3d6d96243db424187c44d3a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/250-kernel-fork-Increase-minimum-number-of-allowed-threa.patch",
+      "sha256": "910d82e92f8fad218bddfa481d7a811b99ac84b7df24a80d2b747937bd4b00fe"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/270-platform-mikrotik-build-bits.patch",
+      "sha256": "a1f9f07ff63a78f6bfb1d4a5bffc584bb4603413a25364165a401c05f3468e7e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/300-mips_expose_boot_raw.patch",
+      "sha256": "e0337202b160ed0e35646d8e315ae97d4a8d0b9280b9363f0ac3500340182f8b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/301-MIPS-Add-barriers-between-dcache-icache-flushes.patch",
+      "sha256": "b407a4c9c2903ce04c3796f69d0a2ac565941095768f02f4c9cec02a37f5b1b0"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/302-mips_no_branch_likely.patch",
+      "sha256": "02a73dfeeaa265568042017234fa636b55cc0ef14be63f179cb9725a1da4f08f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/303-MIPS-vdso-keep-the-prefix-map-flags.patch",
+      "sha256": "620976da733f41b50ded68cf14bc10704b450cb271d95c0335945108edff7206"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/304-LoongArch-vdso-keep-the-prefix-map-flags.patch",
+      "sha256": "85c2896a8bf278c58568b59e13e877da5b0d915a7845a1c455116388306beeb5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/308-mips32r2_tune.patch",
+      "sha256": "a4f53c0140eb538cdeaf9f938ca187ed9ccf65a6505abd092723895d3a56257a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/310-arm_module_unresolved_weak_sym.patch",
+      "sha256": "61ad401edbf509373bdc330031dc79ab2fffc64dd5743a0fd6d900199bcd1d0b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/330-MIPS-kexec-Accept-command-line-parameters-from-users.patch",
+      "sha256": "d6238688baadeb6779192594f7b3879899cf9e9fa6af9c5d26fa997013d4e365"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/342-powerpc-Enable-kernel-XZ-compression-option-on-PPC_8.patch",
+      "sha256": "7ec1da3935c5b2ae8252f2c7598727635404942db37d95c3c73ed52aa7af02c6"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/350-mips-kernel-fix-detect_memory_region-function.patch",
+      "sha256": "f25a399466ba646b0f525065d93d812448201b7fef4b09e219c37d2bc391a9c3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/400-mtd-mtdsplit-support.patch",
+      "sha256": "be40cf0516e328ccbd81b90821933baea0b262720c4a86422a1b4e10b22a400d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/402-mtd-spi-nor-write-support-for-minor-aligned-partitions.patch",
+      "sha256": "56be1f925c9dcca8ac277b8e8f2edcea7d43c3f87b3b06879f4b7b20e421c3d4"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/417-mtd-spi-nand-macronix-disable-continuous-read-for-MX.patch",
+      "sha256": "a8819f8714a4f76aa76d0a2201b7823834fe6eff0515da95a6ca1e578d53e040"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/420-mtd-redboot_space.patch",
+      "sha256": "77557d921028bd1af4d7f0a210274c6576edb91835a844a1b2dd0f0fc7d34ac5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/430-mtd-add-myloader-partition-parser.patch",
+      "sha256": "dcd6b7cdd9fce287ba251181e1ff19e8ddfb5764fcbda321b8c5fde1355d0cf3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/431-mtd-bcm47xxpart-check-for-bad-blocks-when-calculatin.patch",
+      "sha256": "c5d22fa5ee1c2eace59d9c14f655140977b3bee254c670798dfa419314bf4651"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/432-mtd-bcm47xxpart-detect-T_Meter-partition.patch",
+      "sha256": "f237e212bbab0713e0eb26397565577982a5aacaefc7156fdb0d9eb58f92f43d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/435-mtd-add-routerbootpart-parser-config.patch",
+      "sha256": "d00276c430c6e1a5899cd095d58d13c4af351bf84bee48707efad68f04997e81"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/450-block-allow-setting-partition-of_node.patch",
+      "sha256": "326f84fe156fc0bbb8f18d426ef424f6a7e8da804115e22440184c5f1d1d66e2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/451-block-partitions-of-assign-Device-Tree-node-to-parti.patch",
+      "sha256": "02bf929a23ed934db9d21028de958854289f7d41c872de94bf880daa401dc0ec"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/452-partitions-efi-apply-Linux-code-style.patch",
+      "sha256": "6af93e3654e9a3d1e280952f8f2629c7aa71ee884b1f98f9314c2ffc70fc2801"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/453-partitions-efi-allow-assigning-partition-Device-Tree.patch",
+      "sha256": "cc0630dce7fc6a76534233ae3dfaa3b12c7e815e8e633d0c82eafeb249b6c736"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/454-block-add-support-for-notifications.patch",
+      "sha256": "cdebfc1202aa6e4249bce5ef61dfcb4f1d8e48f186e55112e8555ef8c56fb40d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/455-block-add-new-genhd-flag-GENHD_FL_NVMEM.patch",
+      "sha256": "9ab3d646ede3b6161b0882e8d7218b2bbfc843d9add4242a2d6b3e05b9254676"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/456-nvmem-implement-block-NVMEM-provider.patch",
+      "sha256": "54e2e9ebfa62c73ed20c4d8c18cfd3b90cce4bf0ca80aab96c4a87e19cb06f87"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/457-mmc-block-set-GENHD_FL_NVMEM.patch",
+      "sha256": "1cec1ee2e3ddb82a494e8b14a2cb7e441b65e7d4c75e76d77dcf572f5ea241fd"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/460-mtd-cfi_cmdset_0002-no-erase_suspend.patch",
+      "sha256": "414269c3a35e8336540b7cdf9eb3a283e258c10dc806df7e9d43376b00ab732e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/461-mtd-cfi_cmdset_0002-add-buffer-write-cmd-timeout.patch",
+      "sha256": "d48c3dc923757fe7ec2e87b3c8a8eb240417efe15db67fedf01f6166b69da127"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/476-mtd-spi-nor-add-eon-en25q128.patch",
+      "sha256": "9688b01565f3118c3bce1d220a7ddd688577441ea9364fd4a3a02476a0b77d30"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/477-mtd-spi-nor-add-eon-en25qx128a.patch",
+      "sha256": "e0a5440d925bd11d5a929e212480f8adc177e1db2bbeca97fb828703c7fdf9fb"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/479-mtd-spi-nor-add-xtx-xt25f128b.patch",
+      "sha256": "9de900585bfab69f772a230dd5b37d68d1198d1bb307571d65b9e6eb9ca26b02"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/481-mtd-spi-nor-add-support-for-Gigadevice-GD25D05.patch",
+      "sha256": "68e98e79ea5514342ccb77bcf88f1935fa5cd92189d0a10a5218b17e4a6ff2f7"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/482-mtd-spi-nor-add-gd25q512.patch",
+      "sha256": "0f1dec3a3705f6afab97d976b55d73448f308a4de8b43c022a9fc9e0c336e948"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/484-mtd-spi-nor-add-esmt-f25l16pa.patch",
+      "sha256": "eaa83c9e860169212f12deaf29941ae4db03761f6869959bdaf909734e9404b0"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/485-mtd-spi-nor-add-xmc-xm25qh128c.patch",
+      "sha256": "07a79040a63341a305b8f7930dda9c5428002acf0c5d20d3189fb90f78124210"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/487-mtd-spinand-Add-support-for-Etron-EM73D044VCx.patch",
+      "sha256": "864d6cf3deeac367bd0bc0ecc87567df32108604ae1a36b840d4dd824779f19a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/488-mtd-spi-nor-add-xmc-xm25qh64c.patch",
+      "sha256": "57af7b46726034f021505df59be198620b1c8a3ab8b661bec6fce26eb39ba678"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/490-ubi-auto-attach-mtd-device-named-ubi-or-data-on-boot.patch",
+      "sha256": "e5488a616bb300eb2638d8288bd491b1d9baad40e27a481524118e6b73465a73"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/491-ubi-auto-create-ubiblock-device-for-rootfs.patch",
+      "sha256": "d1eb60bc10c41ee462879541a55261c820fd16061c93e91752c8f2e2ad539ba1"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/492-try-auto-mounting-ubi0-rootfs-in-init-do_mounts.c.patch",
+      "sha256": "0112002c05e0218b5a93ff3ac900d7fc9c5d888b3a66e2018462ba0893b7bf1c"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/493-ubi-set-ROOT_DEV-to-ubiblock-rootfs-if-unset.patch",
+      "sha256": "47276bc9baec293fc91a6e4d93eb92169213dc9598227b825d44e46ccb2da1f4"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/494-mtd-ubi-add-EOF-marker-support.patch",
+      "sha256": "572f50a64e8ac676797418316371361761699f5ffc1d53dbdb5b778647ef8d28"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/496-dt-bindings-add-bindings-for-mtd-concat-devices.patch",
+      "sha256": "2fc67b8f8d2af0de73c6bf61069ea8521a3756bb42c0b75421f33b9fec5bfcdf"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/497-mtd-mtdconcat-add-dt-driver-for-concat-devices.patch",
+      "sha256": "f6b01fb5dd1f179bc85c2a0362975658ffd316c621ccddf0c4b6593fae22bd4d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/500-fs_cdrom_dependencies.patch",
+      "sha256": "c50bd99f1b4869e9e1f7f0ecb225aa290d5a4e12a63cbbe00353fff6746900c9"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/510-block-add-uImage.FIT-subimage-block-driver.patch",
+      "sha256": "ff605cfeb323c65831d8ca8f6813ea9b5e9a8cbb5b2dde9376fec4a6c55cad8f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/511-init-bypass-device-lookup-for-dev-fit-rootfs.patch",
+      "sha256": "c07ee8152a395d923ceb9771407d8f5c2f92731a19df959cdfafc9e8c40d84b5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/530-jffs2_make_lzma_available.patch",
+      "sha256": "465d81510bd3d19885b1bdb47fb5ea1e867c114ddc594e12868d8a2723c83f3a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/532-jffs2_eofdetect.patch",
+      "sha256": "1178c8614805f0e571d89f6f7f48bcb3179762047afcc8efcf538c0818d2838b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/600-netfilter_conntrack_flush.patch",
+      "sha256": "2d5f0ac9a6df84757ecd4d0e87c36482339763f6e29bb611dbcc757e00a17b96"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/630-packet_socket_type.patch",
+      "sha256": "b26b459f145ddcb08009e3a161083958a05b4bf3ba5564e069e034a0a5a6af46"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/640-net-bridge-fix-switchdev-host-mdb-entry-updates.patch",
+      "sha256": "52a9602451b31802a0a1d37530de4053d0e43ac105c0062eec206cd8279272ef"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/641-net-bridge-switchdev-Don-t-drop-packets-between-port.patch",
+      "sha256": "c8ac9d980b88bd70df21421eb2005073b7079de420b2e2946a27ac1930ca9eb8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/655-increase_skb_pad.patch",
+      "sha256": "f4b0b00cad52657b95a725f9b6fe5b95ca72ba67f83b2e7b74c0602b219fb798"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/666-Add-support-for-MAP-E-FMRs-mesh-mode.patch",
+      "sha256": "3fd722ef5fed56c4fda27053a219dac783b2fa712b000ae5d9d3f52252957750"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/670-ipv6-allow-rejecting-with-source-address-failed-policy.patch",
+      "sha256": "1204ef55303c76976cc6c9ec721f80b74dc3b625f75b6941f791bda1bef3bf03"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/671-net-provide-defines-for-_POLICY_FAILED-until-all-cod.patch",
+      "sha256": "7a951aadf7687b1fb9167ba6a120685ff3398847ea682ad8a9c05bae8d5131b8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-01-netfilter-utils-nf_ip-6-_checksum-_partial-correct-d.patch",
+      "sha256": "16cb14acc2647997c6ac184fcbf157fd0169f7df6d9b1fdc764c0310c602ef86"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-02-netfilter-bridge-Add-conntrack-double-vlan-and-pppoe.patch",
+      "sha256": "ed5a51bb54c8983dd259a2c4f9cbbf4aa9bba7d4732838f85d8b33e43b921d1e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-03-netfilter-nft_flow_offload-Add-DEV_PATH_MTK_WDMA-to-.patch",
+      "sha256": "94f4b0ed30d01c430a52b29b6a67f6d8dc2bb8a9d2be130348db640278e399a9"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-04-bridge-Introduce-DEV_PATH_BR_VLAN_KEEP_HW.patch",
+      "sha256": "afe9f4e81ab1ac8a7c586d3f47cebc5e4534734d8caae4ba43516758bfd66473"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-05-bridge-Add-filling-forward-path-from-port-to-port.patch",
+      "sha256": "1d9bebbb969a1279b18343edfc62e88f0f0bbe65f7b2d1bf3249d8bfac1b2c84"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-06-net-core-dev-Add-dev_fill_bridge_path.patch",
+      "sha256": "9d4a528c985bcc0b718ed80c09667ceb3587c1d1dc1738eb2f42d44d756d831d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-07-netfilter-nf_flow_table_offload-Add-nf_flow_rule_bri.patch",
+      "sha256": "2a31033b580a5c74f32fb1e90e4e934e6272feb33f08c904335edf7a4c957bfc"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-08-netfilter-nf_flow_table_inet-Add-nf_flowtable_type-f.patch",
+      "sha256": "89943a5968fc4c990c69ddf3c48d6e77dec9a9888e2f608d03cdbf964fd16973"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-09-netfilter-nft_flow_offload-nft_flow_offload_eval-che.patch",
+      "sha256": "4aef92c3c9af512a052a255122cd1d391425b4fd59f3fd27509aa051e281c2fa"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-10-netfilter-nft_flow_offload-Add-NFPROTO_BRIDGE-to-val.patch",
+      "sha256": "7f6ede43c1fc7b7a5ea45d69d36828c19bc4d80535c22f7fba7b64a255785b83"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-11-netfilter-nft_flow_offload-Add-bridgeflow-to-nft_flo.patch",
+      "sha256": "bb0bb057a6bc2d40d892f1933c2cb50fc17b24dda35c90a8bba95b4906303c91"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-12-selftests-netfilter-Add-bridge_fastpath.sh.patch",
+      "sha256": "a31dcdd9d1d38f81e4a62ecc1ab05e6aa9ab8d058449a968346e9b82558cdd7a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-13-netfilter-nft_flow_offload-Set-hw_ifidx-in-nft_dev_f.patch",
+      "sha256": "e8f2d151aab6797982c71374b2282abb6c227790eec029a3537d4830123f229a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/675-14-net-core-dev-Remove-WARN_ON-from-dev_fill_bridge_pat.patch",
+      "sha256": "11e16794a27393503f12f74060212d8d4e815414b2ff94251965c2ee95ed04f4"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/681-net-remove-NETIF_F_GSO_FRAGLIST-from-NETIF_F_GSO_SOF.patch",
+      "sha256": "e7c043608eaebd78f12f1cd1caeff894451b966e7061aebd40769f7d9d127dd7"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/683-of_net-add-mac-address-to-of-tree.patch",
+      "sha256": "70089bfc903b02dd2c450643875f2c1a57dd7d472ec53188e1ff710953a53361"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/699-netfilter-flowtable-set-out-ifindex-when-the-forward.patch",
+      "sha256": "e516c5cc76376f9037559f4538b400f8f00e93d735e9e81aaba4bcacc7bde56f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/700-netfilter-nft_flow_offload-handle-netdevice-events-f.patch",
+      "sha256": "8c35da9c765afd4c29637c0d7c9dd0980e35c2af35b2d28cf296f13404d90982"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/701-netfilter-nf_tables-ignore-EOPNOTSUPP-on-flowtable-d.patch",
+      "sha256": "deacadf89015849f118b42bd7bf7f75d7f9bffa9c6c449f28eb7fba8b74e5c44"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/702-net-ethernet-mtk_eth_soc-enable-threaded-NAPI.patch",
+      "sha256": "b138644f713227011cf6f91e57524b26fab5448f443cf09c2e41cf0446a16d1d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/703-phy-add-detach-callback-to-struct-phy_driver.patch",
+      "sha256": "68ab76cee74d27724380a6644c11709e9d6581112d0c412451959ead3e06489d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/704-net-dsa-support-EPROBE_DEFER-when-reading-the-port-M.patch",
+      "sha256": "592e9cd5636a413ff69e3255055fbfbdc04009a73edb598926d3362c63821703"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/705-net-dsa-tag_mtk-add-padding-for-tx-packets.patch",
+      "sha256": "d36c48486d057908eb8bd03f7cc2c2f3530ce794c09854596fcd98d54040b85f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/706-net-phy-populate-host_interfaces-when-attaching-PHY.patch",
+      "sha256": "994ecb619a77b231fccfa592c5350d03358af21b9120ac125607e416efbec375"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/707-net-pcs-pcs-mtk-lynxi-fix-bpi-r3-serdes-configuratio.patch",
+      "sha256": "2844537ead3a09366c713e62900907201fcac7a39beb59052640ff0fef2b455e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/710-bridge-add-knob-for-filtering-rx-tx-BPDU-pack.patch",
+      "sha256": "825cc506d33579b5d76a8448d5257487b949e6d17dbe2222f7bb4c5b7d6defd8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-01-net-dsa-qca8k-implement-lag_fdb_add-del-ops.patch",
+      "sha256": "35e94e804938be7e1c1d134a046f47ade31dfc7ef1e4fb81cccc11733712927f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-02-net-dsa-qca8k-enable-flooding-to-both-CPU-port.patch",
+      "sha256": "2f7b196fd7d047c73d2a5447f0292438cb769a24ad778dbfbf361c7e3935a2b9"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-03-net-dsa-qca8k-add-support-for-port_change_master.patch",
+      "sha256": "3bd2a700a0f31d752b6755de23abeca190d25461cc866efa7659af7ddfb785f3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-04-net-dsa-qca8k-no-program-unicast-host-FDB-entries.patch",
+      "sha256": "b326bf8ac2cd7ca837cfb3f83557e1570dab61bcc4850259b6dcc22e6ca13d92"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-05-net-dsa-qca8k-fall-back-to-ethernet-ports-node-name-.patch",
+      "sha256": "bb74146946d457dced4b6721ccc0bc37834141b6d2c6c038a335443a36e44e44"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-06-net-dsa-qca8k-support-PHY-to-PHY-CPU-link.patch",
+      "sha256": "a8347bebeb9db38600b0df5f835d6648d6f4bfeb8d2b3f2367bf422f7bf97e96"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-07-net-dsa-qca8k-use-correct-CPU-port-when-having-multi.patch",
+      "sha256": "32e0a8e0f3bc0058e387c4c326d87bc80363106ea95e46b97a4fe038d87e0cca"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/711-08-net-dsa-qca8k-implement-ds-ops-preferred_default_loc.patch",
+      "sha256": "0a5f3d07dc54acec3c0c5c0af119481b541171382ba4c00283335cf71a3d8f1a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/712-net-dsa-qca8k-enable-assisted-learning-on-CPU-port.patch",
+      "sha256": "f75eded70f2b4d53ca3c10bd2db1a6f34446a5507f6202240050cb72fe4feca3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/713-net-phy-c45-check-validity-of-10GbE-link-partner.patch",
+      "sha256": "a670d8a6b5e96fb5ba2b00031d879bb70bbe0206157ff244e12b643963a75183"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/715-net-phy-aquantia-add-support-for-CUX3410.patch",
+      "sha256": "96b44dc0e884be0187201d83e18bd920dd7441e9b9ad4fdcb18b447509241220"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-01-net-phy-realtek-use-genphy_soft_reset-for-2.5G-PHYs.patch",
+      "sha256": "d40d91b0441652afe81643a71dbd891c8f5cde9805ccefc4ce99ec241b57af83"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-03-net-phy-realtek-make-sure-paged-read-is-protected-by.patch",
+      "sha256": "dbd73e8eab07eaf217362a2d6416280044c55a67f2c2cd575a472aa432fa3adc"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-04-net-phy-realtek-setup-aldps.patch",
+      "sha256": "b2f00b428953069972481189357a7062a38b0c62d619bd5ee6dad64249eb3f5e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-05-net-phy-realtek-detect-early-version-of-RTL8221B.patch",
+      "sha256": "e3999974f8ebab8563523d1f930a294990fd65a64379161c0b6bae4cf32576d8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-06-net-phy-realtek-mark-existing-MMDs-as-present.patch",
+      "sha256": "53564d2527b041e56bc7ba373922bb188eba65e9fbc366684d4ce73b934fe44f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-07-net-phy-realtek-disable-MDIO-broadcast.patch",
+      "sha256": "813b15ea5562531ab8d785b068ed807c5f2e3f2dd54388c9f196234f77fe5c19"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/720-08-net-phy-realtek-rate-adapter-in-C22-mode.patch",
+      "sha256": "6a564af518ff8d0607c99cf9521fdf5b72a12f55e08f937851625efcbbd04661"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/731-net-permit-ieee80211_ptr-even-with-no-CFG82111-suppo.patch",
+      "sha256": "01beaa9ba543bb6e1014d4e5708ea1b6d9d53915b2e380f3638c5dc8086223c6"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/732-00-net-ethernet-mtk_eth_soc-compile-out-netsys-v2-code-.patch",
+      "sha256": "ba3919ebe4c9d4199323c03db3f9df05a600179441d0bbff93eddbc22c1dd222"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/732-01-net-ethernet-mtk_eth_soc-work-around-issue-with-send.patch",
+      "sha256": "53784122820ccc902d49c2029f30e392411b1377e7e090ce5fed4a0b3a386a64"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/732-03-net-ethernet-mtk_eth_soc-optimize-dma-ring-address-i.patch",
+      "sha256": "7cb06b039668e31d8863c44f64c08d30b4dcaa61de990f79084a0e3f99ad0ed8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/732-04-net-ethernet-mtk_eth_soc-shrink-struct-mtk_tx_buf.patch",
+      "sha256": "1baa61c41c9ff685b000c0bde857333075a055c2b90162aa0a317dee9c8a6479"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/732-05-net-ethernet-mtk_eth_soc-add-support-for-sending-fra.patch",
+      "sha256": "4c0b9b31d89cc35d08d080987221e0e494bc346d1227627f1d3a53a1af479712"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/733-01-net-ethernet-mtk_eth_soc-use-napi_build_skb.patch",
+      "sha256": "8e81ce725db726933cb7149fa3383a2953b9c614694434da88aff37d9856ee16"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/734-net-ethernet-mediatek-enlarge-DMA-reserve-buffer.patch",
+      "sha256": "a91b2d1a0054715036e086928c9bf290f62f1a26b06c27f2a4bee3b1a3d87f4d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/736-03-net-ethernet-mtk_eth_soc-improve-keeping-track-of-of.patch",
+      "sha256": "a59f0fb96ab3ad38594444ab796df438cf698524bc0f137765a7516aec474808"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/736-04-net-ethernet-mediatek-fix-ppe-flow-accounting-for-L2.patch",
+      "sha256": "b95c79b8b6c0e30a1d6a495a4b8bc330a4cb4c34b2bb97e1734bb95d56800307"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/736-05-net-ethernet-mtk_eth_soc-zero-initialize-PPE-flow-ta.patch",
+      "sha256": "5782957cb404115ab163b60ce4c0e2268e29a6de82cacb7c06d76f83c68243ba"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-01-net-phylink-keep-and-use-MAC-supported_interfaces-in.patch",
+      "sha256": "f0d5195f475e420b0bc29045cb852b5e32d44f3fe6f71b07d138036fe4bc87fd"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-02-net-phylink-introduce-internal-phylink-PCS-handling.patch",
+      "sha256": "878b2b3416562745f3c6a64da99be9c6069b9048b3f62202b497cceedcb04887"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-03-net-pcs-implement-Firmware-node-support-for-PCS-driv.patch",
+      "sha256": "2abcc91618fea3693e7e29deb1c832bd74566c1b15c63b24a229ef0de9a83f92"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-04-net-phylink-save-phylink-instance-fwnode-on-phylink_.patch",
+      "sha256": "f973782fc1dbbdad4bb85807d7fed04a2d458c2ac9abfcbd64162c86e5085451"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-05-net-phylink-support-PCS-provider-release.patch",
+      "sha256": "da29c0bb94a56014824b95faa6c69da50e24d7c716b79f6235e2913a23eb1a74"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-06-net-phylink-support-late-PCS-provider-attach.patch",
+      "sha256": "ab4d3f7c12e9a4c861b4dd688dd75da96547ab97336892423437aca2be82ec0d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-07-net-phylink-add-.pcs_link_down-PCS-OP.patch",
+      "sha256": "4eab141f300c0b166d97f3e31f3a9425c86b8b809da94ae65f3637a846c5c18c"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-08-dt-bindings-net-ethernet-controller-permit-to-define.patch",
+      "sha256": "7c0311291db0d23628fc13eec3cc570bc8b852cb7793e929825a25d3ccc139fd"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-09-net-ethernet-mtk_eth_soc-improve-probe-deferal.patch",
+      "sha256": "8046f133d061305b6c43da154b8f2fa588953251e6b48014fa543196136af300"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/737-10-net-ethernet-mtk_eth_soc-add-paths-and-SerDes-modes-.patch",
+      "sha256": "554ac2355ae9a0910147d102a125d59c77b46bf47a84b0cb9ab7bd13d7640598"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/738-01-net-ethernet-mtk_eth_soc-reduce-rx-ring-size-for-older.patch",
+      "sha256": "4ad4e719812763b347375916c2aaa13658ca05fefabeda953f8047f640048922"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/738-02-net-ethernet-mtk_eth_soc-do-not-enable-page-pool-sta.patch",
+      "sha256": "1d2f162bf298623f46c1aecb4c6ff181f6ae95c9bc6d02a9cc426ec25f190b5b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/739-03-net-pcs-pcs-mtk-lynxi-add-platform-driver-for-MT7988.patch",
+      "sha256": "7898d34e14e4d2a0735ce5c5b68a274da597fe83632ce13ed529b7d9e402f5c3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/739-04-dt-bindings-net-pcs-add-bindings-for-MediaTek-USXGMI.patch",
+      "sha256": "91f028f72902983065c04249a8edf970d4389f9c267cc119c2e9219040e73fcf"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/739-05-net-pcs-add-driver-for-MediaTek-USXGMII-PCS.patch",
+      "sha256": "4eab1915b2f1c17fe3390e225c724f5c82087ad7a1ba0a2d2009bd71ff9137e6"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/740-net-phy-motorcomm-Add-missing-include.patch",
+      "sha256": "aeb8ac659869f9c4f822332095517d8a25513e38593d3d82fdbf6a830694e0c0"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/741-net-phy-broadcom-update-dependency-condition.patch",
+      "sha256": "c47a2b0266a0fbe3033e51873047721a17b28bc3ab55f84d4bc69aade49c6874"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/742-net-phy-realtek-add-5G-and-10G-PHY-support.patch",
+      "sha256": "d238d63ff0f8eaf2af6b90b8d827a5f719211f915574d1448c4dfd8cf6111105"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/743-net-phy-realtek-reset-RTL8261N-USXGMII-SerDes-on-lin.patch",
+      "sha256": "b5206d66d8a4598d480544d6d024940ee680251b435926118cb1936a74557c2b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/750-net-sfp-add-quirk-for-QINIYEK-BJ-SFP-10G-T-copper-SF.patch",
+      "sha256": "690d8babf3733c45e7086985c2126bd50a50261617532285145a1d6d21502812"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/751-net-sfp-add-quirk-for-TP-LINK-SM410U.patch",
+      "sha256": "79de28e9c6386f57f04ea91be96eaadc78605d5e570179a0274db9d6bb67e57f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-00-net-dsa-mxl862xx-wait-for-firmware-boot-time-configu.patch",
+      "sha256": "d7a035c0bb2f81f2debad0536845541f99a884e16d7d7c3bdb8e8fddb3aed73b"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-01-net-dsa-mxl862xx-add-SerDes-ethtool-statistics.patch",
+      "sha256": "0b9f22b84522a42dc46ed21f5d359027532f7e3fb8522941a61866ba7192ba09"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-02-dsa-add-devlink-flash_update-callback-to-dsa.patch",
+      "sha256": "60bf0e28573b3b1d0e2e3afc29d7d6b34648315665e09ff3e66787f228d2ffb9"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-03-dsa-mxl862xx-add-SMDIO-clause-22-register-ac.patch",
+      "sha256": "2ee74f6251550fb218d2e04558b2cc0e96e31884d43eed93ccba68b9dc7edaa3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-04-dsa-mxl862xx-add-devlink-flash_update-and-in.patch",
+      "sha256": "b5ddb85b9f8005da9ca94a0ab1160f28679a5d2ba3b070ed7ef6361ff3338dc4"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-05-dsa-mxl862xx-recover-switch-stuck-in-MCUboot.patch",
+      "sha256": "ddd86cf480b691dd7bb9aee4fd71757c5c086e3fe21f34524a3574f01107ddb5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-06-net-dsa-tag_mxl862xx-leave-offload_fwd_mark-unset-on.patch",
+      "sha256": "75ca8be8d01eedad439ebcf716b2f0557b7564a3390b063b605129167b182269"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-07-net-dsa-mxl862xx-trap-link-local-and-multicast-snoop.patch",
+      "sha256": "82721b57a50cafebbcc16d6b681959ca075e1a26b6f1cfc800a0b73b533bcc7d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-08-net-dsa-mxl862xx-warn-about-old-firmware-default-PCE.patch",
+      "sha256": "4a9ce92708786228cef5d9c17c762f924d86218199f4553b3eb454a090071b75"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-09-net-dsa-add-802.1Q-VLAN-based-tag-driver-for-MxL862x.patch",
+      "sha256": "df67f9db43a9fd335e8b0571fc4a5461da2a05d812f65af1f7266b2eda63cf04"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-10-net-dsa-mxl862xx-add-link-aggregation-support.patch",
+      "sha256": "8a770ee598002df8c630c9fcf00cce9a2ae6707758bc989a66b1165681722a8a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-11-net-dsa-mxl862xx-add-support-for-mirror-port.patch",
+      "sha256": "a378bba3dd76ebe747d5c03cc9cedc16ead160a1fc345410b484782293614faf"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-12-net-dsa-mxl862xx-implement-port-MTU-configuration.patch",
+      "sha256": "5a6618c751beaa55a6a442f79d5a79669b4ff06fb2b576c8118d7cbcf37338db"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-13-net-dsa-mxl862xx-support-BR_HAIRPIN_MODE-bridge-flag.patch",
+      "sha256": "37052ecf0c678d99b92bcfacade93a26d3e3f9bef1fa9d820603194c14704d7d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-14-net-dsa-mxl862xx-support-BR_ISOLATED-bridge-flag.patch",
+      "sha256": "6bdeb215befc59b4e7d5c5032674c7adcdef4f64d821b83f2eda4c87ba78455d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-15-DO-NOT-SUBMIT-net-dsa-mxl862xx-re-introduce-PCE-work.patch",
+      "sha256": "9a746072e301cc5e4f6b91903c94d3223e510e9d1ae9e08b5fd24b24fe84526f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-16-DO-NOT-SUBMIT-net-dsa-mxl862xx-legacy-SFP-API-fallba.patch",
+      "sha256": "e00c473ea1435a2937dc689b4a30f95cec4d3bb25fa107b60d075ca675516ddf"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/760-17-DO-NOT-SUBMIT-net-dsa-mxl862xx-increase-CMD-timeout.patch",
+      "sha256": "6013cf15219cc8c7095d02f80999767f76bec8e94cd1009e1986817cc15fd7f3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/780-ARM-kirkwood-add-missing-linux-if_ether.h-for-ETH_AL.patch",
+      "sha256": "32387678993c6e8e82dc982641a95b68129eeb809c69dcc7d53a3df7fa5af249"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/790-bus-mhi-core-add-SBL-state-callback.patch",
+      "sha256": "db6d4b45f81ac26477b882a5264a949654ebc63f3cd5445b01103510f1476511"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/791-tg3-Fix-DMA-allocations-on-57766-devices.patch",
+      "sha256": "7dc1295c69d3509fff783228b5b771a32ec33e2cc5fd730a9b76ad7e6c28414e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-01-net-ethernet-mtk_ppe_offload-use-rhashtable_lookup_f.patch",
+      "sha256": "7b13ea6b2029c1c055ce1212412873c4805ef6b3e87ecc8b7f64a4ad869a8dcf"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-02-net-ethernet-mtk_ppe-set-tport_idx-on-netsys_v3-for-.patch",
+      "sha256": "b90d0128b7e44b41507a408b7dfeac0f8981f9c889835d9d8c5a1e36fcd9df69"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-03-net-ethernet-mtk_ppe_offload-set-output-device-befor.patch",
+      "sha256": "3318ceaceb57718fcb7b69944f6ba7a6ded8e66e972bc424b6ed44250c9d148e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-04-net-ethernet-mtk_eth_soc-per-SoC-QDMA-TX-queue-count.patch",
+      "sha256": "f49ab5acef0069b3e0f22629ff8e0a024ca9aa6d5904612d26cbdad9231c3d6e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-05-net-ethernet-mtk_eth_soc-add-per-conduit-DSA-user-po.patch",
+      "sha256": "8c0a9d9026ac6a9a3e078ccd26e118c74e22e45e56423008f1437a204f1ba3a2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-06-net-ethernet-mtk_eth_soc-use-DSA-queue-map-in-TX-pat.patch",
+      "sha256": "756f9f0f6b8cd157fdcd6a86849f05f6ff74519e3e80a8089ce84c657a4339a2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-07-net-ethernet-mtk_ppe_offload-use-DSA-queue-map-in-fl.patch",
+      "sha256": "c17a21072894c063595872a2cb6bdefe1feaefef846c17a4ab2305b3b134be09"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-08-net-dsa-tag_mxl862xx_8021q-set-skb-queue_mapping-to-.patch",
+      "sha256": "6b2bdcc2a978fe2ca1c68d150695b324b03bd70f52e0f356f5aca4361982766e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/795-09-net-ethernet-mtk_ppe-offload-flows-to-MxL862xx-switc.patch",
+      "sha256": "8ee7b1521e570a43020f4ed38ce2f139cfe62eee130899945649dd55dc861915"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/796-dt-bindings-wireless-ath12k-drop-qcom-ath12k-cali.patch",
+      "sha256": "88a192b28b464ae608ae6676335176496ef0dda1c3cca464be9e8705834fae12"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/800-bcma-get-SoC-device-struct-copy-its-DMA-params-to-th.patch",
+      "sha256": "105282b15200ea8b72f3b5510eb0cc30200d928b0c13b7f0691b526bcc370a8c"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/801-01-net-phy-add-PHY_DETACH_NO_HW_RESET-PHY-flag.patch",
+      "sha256": "8670747cad058a8e0fb0868e2526035d3b7425811b66b7eea51d43fc91a3525e"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/801-02-net-phy-as21xxx-add-flag-PHY_DETACH_NO_HW_RESET.patch",
+      "sha256": "5beca693e58bcfc23ba780816db8373de063a952a0a0930bd90a1bee0800e4b1"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/802-01-net-phy-as21xxx-handle-corner-case-with-link-and-aut.patch",
+      "sha256": "003a7c5303994ea767c08e49c185e98b26318d31be68e41619afeae162630684"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/802-02-net-phy-as21xxx-fix-read_status-speed-handling.patch",
+      "sha256": "fcf00420f9464aff28ec86d18981c71db27dba53110c65e7844f60ccbeed1a51"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/802-03-net-phy-as21xxx-force-C45-OPs-for-AUTONEG.patch",
+      "sha256": "6f208edc97f63f75ef22f6dfb4b6a722a442eb13159d902369e24fb98d267bd0"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/802-OPP-Provide-old-opp-to-config_clks-on-_set_opp.patch",
+      "sha256": "f75f552ef7dfff07ef464c97acc0b03e81f3db3f6d4096c4ff283369eb709d6a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/804-net-phy-as21xxx-implement-read-workaround-for-C45-re.patch",
+      "sha256": "1ef37343e5681b27a09a3adac48871e1bc1045acec026bfefcca008410a35b8f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/804-nvmem-core-support-mac-base-fixed-layout-cells.patch",
+      "sha256": "baf982cdedc3c149f9e052d3e006aafe70c711639447f50701bf781ea784b7b4"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/809-01-nvmem-core-generalize-mac-base-cells-handling.patch",
+      "sha256": "1d6dfef7808e1e2fc94679b74eb3331d4447e57437ce2502c869e8559762159f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/809-02-nvmem-layouts-add-support-for-ascii-env-driver.patch",
+      "sha256": "2a2798b2bc7cb51d04a2c4fb8129abda7962f2eec273befbf3164e93158701f2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/809-03-nvmem-layouts-ascii-env-handle-CRLF-while-parsing.patch",
+      "sha256": "ce93361f3de582f889ae2f082383928e357deca4c056bdd8fe9b3730ec9d9785"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/810-pci_disable_common_quirks.patch",
+      "sha256": "82012cc5660ee8bd576c164368f763a1ef4c4b36b77370b4c6715c3c6f2686fb"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/811-pci_disable_usb_common_quirks.patch",
+      "sha256": "ee511b724dc682d94f1e103cf8089af459c9587a6aac0d2f4ea4b7dd11b74493"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/812-PCI-sysfs-enforce-single-creation-of-sysfs-entry-for.patch",
+      "sha256": "fc822e0aca956299494cf6b22462a890029564f660fd14570d92828dd2e24de5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/834-ledtrig-libata.patch",
+      "sha256": "dcd99914499027b2cb7054c64308508568a7a84beba4348a3fe4b971b06d8046"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-01-leds-trigger-netdev-put-netdev-on-activate-error-path.patch",
+      "sha256": "b519dd9be079e4973c73e7900fb4a84acaef1ed060b23d5f9b8a8407f6a981e2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-02-leds-trigger-netdev-access-net-dev-under-trigger-data-lock-in-the-worker.patch",
+      "sha256": "2c409072eee8862a1350ecc44cd38e7625f581841da85130f291dfcaa83b66fd"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-03-leds-trigger-netdev-fix-sysfs-update-group-races.patch",
+      "sha256": "d86a3bc369ee9ef64578febe1808e94c1bf72ac846ee9e2fbf218e30df3411d1"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-04-leds-trigger-netdev-report-invalid-interval-to-user-space.patch",
+      "sha256": "4cdc6ec9d59feb5be50687f73af9ef83351d3be973c48baabdbc1b6feadb2ad5"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/835-05-leds-trigger-netdev-serialize-mode-interval-stores-with-trigger-lock.patch",
+      "sha256": "e58223878cca16335d301a6deeb639c9444505418ccf048850d5b2ede297309a"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/840-hwrng-bcm2835-set-quality-to-1000.patch",
+      "sha256": "c7175e2a234a7d7f144a7f584c176fa54ffdcc03a1357f1a6a40a8f5a3d09949"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/850-0023-PCI-aardvark-Make-main-irq_chip-structure-a-static-d.patch",
+      "sha256": "4056f8a99420724e36fcd4075954e545d14a7fca0591d424b1e194b6926eea55"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/890-usb-serial-add-support-for-CH348.patch",
+      "sha256": "b54f734281ab99ed77ae29a87aabc55f211b0ef1cbb7e79aec55dbaab1be7ea9"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/895-00-net-pse-pd-fix-out-of-bounds-bitmap-access-in-pse_isr-on-32-bit.patch",
+      "sha256": "cb8cd493fbe82b6f7de6743434bf695a6009f015015cc55fe2fdbf56f3893d36"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/895-00a-net-pse-pd-disable-IRQ-before-freeing-PI-data-in-unregister.patch",
+      "sha256": "7a0eb90a383314a37e6ade597ba5756f6f34c24548ccc8e00602554b32b90351"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/895-00b-net-pse-pd-guard-against-freed-PI-data-on-regulator-disable.patch",
+      "sha256": "42e0a2b3031fd8b3a253e126c81370518f7638ddac487ad56fb0ddb7da93a555"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/896-01-net-pse-pd-add-notifier-chain-for-controller-lifecyc.patch",
+      "sha256": "c446ecd595b10bd4b70c1615f2cf9f69901df459e22f51a48bc8f300b0752dc3"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/896-02-net-pse-pd-fire-lifecycle-events-on-controller-regis.patch",
+      "sha256": "01c17647736c31778be747064c1688a51f3bce5145748e1315e34e65cdb53a3d"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/896-03-net-phy-own-phydev-psec-via-PSE-notifier-and-remove-.patch",
+      "sha256": "37fc1f2e1770ca84e16b8e035a11089e852e2908cee9c97df9b820dd93df53d0"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/897-00-dt-bindings-net-pse-pd-add-poll-interval-ms.patch",
+      "sha256": "83a5aee0de0944049aa257663b19d35619043894e37f36028b29e9a137d4db04"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/897-01-net-pse-pd-add-devm_pse_poll_helper.patch",
+      "sha256": "ef76b57865177539e703533aee10e69eef8d4daf555786237019ec09525b37a8"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/897-02-net-pse-pd-add-LED-trigger-support.patch",
+      "sha256": "8d0ee9c79672fce2c200013c4669ea39b0f36167294d4bc8cac6b8be9c84a9e2"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/900-net-ag71xx-fix-qca9530-and-qca9550-mdio-probe.patch",
+      "sha256": "a628120880bb5b1d56081263593d24047b24b515b1bac817161c4c7383e26e4f"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/920-mangle_bootargs.patch",
+      "sha256": "65cc557f2e38c5263e163a5f1514d0d1f9f793527acdb38583d20cf6d25d7911"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/200-tools_portability.patch",
+      "sha256": "fcf825b89cd686119883a1722d64c82a4537371608b4bb9fed6c80238f0b9d29"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/201-gen_init_cpio_portability.patch",
+      "sha256": "af1364f2ea7a67bf7cec60dfefe21e5ae37bb79f6f6b141c386b1d53c944fb59"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/202-objtool_portability.patch",
+      "sha256": "c1d354e8dbc326360a71437c953e3a5e765d89f97d2ec9180c58175453fb49cb"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/204-module_strip.patch",
+      "sha256": "439c8f133ccf5372b280d283febd7322a88a3216a8efb911dff4485b18e9667d"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/205-kconfig-abort-configuration-on-unset-symbol.patch",
+      "sha256": "f9f91b1051747128a803b70c814d52be7387ed3b41890d9e765a72023bd9ee0a"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/210-darwin_scripts_include.patch",
+      "sha256": "1dd15d0d079c85f7322d4dac4fbc77c30847fbd4c80c1601100c74725af6aa25"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/211-darwin-uuid-typedef-clash.patch",
+      "sha256": "ad1b51445225dc1fdbd92947d5f1d4e5ecb4e7f61325f8db8d8bc5d24b689443"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/214-spidev_h_portability.patch",
+      "sha256": "3b834056b016ad654dedb9ed0305ca2b5b1c746c0dbc06132b23fc537e30fc05"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/230-openwrt_lzma_options.patch",
+      "sha256": "963f45dc0ccd7b6ef4a2886ee899a3590364326cab0173ee6277989df3e065ad"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/249-udp-tunnel-selection.patch",
+      "sha256": "4340d373f408ec9a46f598f177e5a7b52c418fe06e659ab77cda85f5c5c6473e"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/250-netfilter_depends.patch",
+      "sha256": "84a3a76a4a306b8029b8af2bbdbff62d47c21e5f61e1d9c14cd603f031b019c8"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/251-kconfig.patch",
+      "sha256": "c5b31a0cebba6548614782d7a9197fa6dd73f34c8dd42aab62601e3d8eae14e7"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/253-ksmbd-config.patch",
+      "sha256": "051d92277e190f2d7b719f0b06c5d48bdbf8e18bf70e52bd9c8143c1494ca1c7"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/259-regmap_dynamic.patch",
+      "sha256": "02e896ac2f51da7548bdb16017070c8919868b35d483e3e7cbf2d6972117d634"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/260-crypto_test_dependencies.patch",
+      "sha256": "c308527cc693a184d63a3691e38d5e834b8529ffe5b57cb0c06be64220aa617d"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/261-lib-arc4-unhide.patch",
+      "sha256": "f36056613f85c5dd39bef7add4fad38461ede3e78b480f8f127217babc5f6eb7"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/280-rfkill-stubs.patch",
+      "sha256": "91804a57e9e38bd1cbe8e15654703133068d84b8a41e8c9cc72ebeb9de47c1be"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/300-MIPS-r4k_cache-use-more-efficient-cache-blast.patch",
+      "sha256": "b6c78cef2a80ff69075b3d2bf09f90af80d1ce2bdc0b5bfb400dc1bd830ecdc7"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/301-01-mm-permit-to-declare-custom-execmem-alloc-free-funct.patch",
+      "sha256": "83a7836e0fdb39a15e6d179150388418f06ddcb608942d060b7c075c8f6261c5"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/301-02-mips-replace-mlong-calls-with-mno-long-calls-if-poss.patch",
+      "sha256": "0b4cced805cb005b308ce45a43e4a854a817ac2b941e09970dce4e686d224ed1"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/312-arm64-cpuinfo-Add-model-name-in-proc-cpuinfo-for-64bit-ta.patch",
+      "sha256": "1ea15745086950187c6e7ba3d9e8e7a2c1e6821085b8a0f678ee7e3f4f0cb594"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/400-mtd-spinand-Support-fmsh.patch",
+      "sha256": "a0b230ad79c3e08f18c05a03aea7004be964395cb7ca20f393bb5b4bf3e638a4"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/402-mtd-blktrans-call-add-disks-after-mtd-device.patch",
+      "sha256": "7b7749b3d64d4365397e845abc6d90eb6865795484c2bbdd8f370a8ea9041369"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/420-mtd-support-OpenWrt-s-MTD_ROOTFS_ROOT_DEV.patch",
+      "sha256": "55dc1297d6282076e2489a6948925d7531cde6b456c1c2fdc9d49a5fc406e953"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/421-drivers-mtd-parsers-add-nvmem-support-to-cmdlinepart.patch",
+      "sha256": "999ce0d8d707673078fe281ac2a3379007dde0e0783f6b794e145fa2abd5fcb3"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/430-mtk-bmt-support.patch",
+      "sha256": "95dc55c7df18ff64c921b02f5245fc4917014dada86e3b8cbbb8cdbb8b0e9853"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/489-mtd-spinand-xtx-add-XT26G01C-XT26G02C-support.patch",
+      "sha256": "4c236803a728493b8cf84836e39c9ca93c8668c94e24231e2874cf08d87e206b"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/499-LEGACY-block-partitions-populate-fwnode.patch",
+      "sha256": "870a82810852943d1a29786c2061afd77847b1de00467a70cb5c51731e77bacb"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/600-net-enable-fraglist-GRO-by-default.patch",
+      "sha256": "d90b6fa0eb174ad9890f5f154ee48ad0cdb38ea3bfb083befad20aee3392005f"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/610-net-page_pool-try-to-free-deferred-skbs-while-waitin.patch",
+      "sha256": "ff67de5d555b92e7f3fc547e4419f4ab74028a4432de8842593600068b9f7ddb"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/645-netfilter-connmark-introduce-set-dscpmark.patch",
+      "sha256": "aecd2d0870a20b14f690fe349dbf6c32846cf2349984218ecd353610bcf15b97"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/650-netfilter-add-xt_FLOWOFFLOAD-target.patch",
+      "sha256": "556c1da1d79cea4cbcd18ffbb005ffaf7b66681ae9f45b5cbb6d2ff76f0894b6"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/651-wireless_mesh_header.patch",
+      "sha256": "b01b2a315382de9366fbdd482a61f43741b4e674c2045a9feb6bc2642e0e1c31"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/660-fq_codel_defaults.patch",
+      "sha256": "d4dfaaeece78c3dee8bb3f37a7911322fa0a3c5fed25eed08f91d0ac0ae9e609"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/661-kernel-ct-size-the-hashtable-more-adequately.patch",
+      "sha256": "0f266dae4242aca2e76a70f142392cebb46c070b2158bb53de0b408c3de2b2e3"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/700-swconfig_switch_drivers.patch",
+      "sha256": "db8a80a75ed903718287684f1990892a513c710a5c0b70a51b6c57e12bcbddc9"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/705-net-phy-reset-PHY-before-reading-its-ID-when-requested.patch",
+      "sha256": "14261ac1ebeda140e87dbb036c7f2ffccc7c36fdc846b6b16bb6f564d19cef6f"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/710-net-sched-sch_cake-configure-sync_time-via-debugfs.patch",
+      "sha256": "effa50dd363690c9fd3afd251ed01527b0ddf97a0c63283488096519d34acc9c"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/711-net-dsa-mv88e6xxx-disable-ATU-violation.patch",
+      "sha256": "84c3531254f5506af82d8647f1d11743ac659cca3be928e5bd8703ee091e1c3f"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/721-net-add-packet-mangeling.patch",
+      "sha256": "2343ddcd786423d41574fa5437c6cc87e1888465bd925f11b7214e147c99a877"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/722-net-phy-aquantia-enable-AQR112-and-AQR412.patch",
+      "sha256": "2accd6b8f5d79c577a5e7cebff832ec5e434575044e1a2a98b470eee06fffa4b"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/723-net-phy-aquantia-fix-system-side-protocol-mi.patch",
+      "sha256": "aeef8fec31b633aaf0069bae531f685d80e1c1644d337500f1dd9d8a5cca27d1"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/725-net-phy-aquantia-add-PHY_IDs-for-AQR112-variants.patch",
+      "sha256": "61b48d038577fd1b209e4ccd4f9fb2240f5287dc9f766663915298aef7db2fa2"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/730-net-ethernet-mtk_eth_soc-add-hw-dump-for-forced-rese.patch",
+      "sha256": "7d95caea69f7ccdd8b7d6fd770624fda58ff449fddb2c4ccb944c794d36e631f"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/739-net-ethernet-mtk_eth_soc-fix-offload-with-incompatible-.patch",
+      "sha256": "7f6ae66938d01c6998a1fd528ed3d5912d2c021554917e6ca4bdb4296c5673b0"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/750-net-phy-realtek-add-rtl8261c-led-support.patch",
+      "sha256": "170fa2533751130b00f7e056960053759ccde5868995c36f093d98497bd16e8c"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/755-net-phy-motorcomm-yt8821-bus-collision-workaround.patch",
+      "sha256": "775bd72c2e23749fd104de0462ff7c9b6732e129458fba5339c40274035682a9"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/760-net-usb-r8152-add-LED-configuration-from-OF.patch",
+      "sha256": "d48bd0d012bc3b32f5c29837d03b283631ab8cc395bab0503bb03ad04bf2b10e"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/761-dt-bindings-net-add-RTL8152-binding-documentation.patch",
+      "sha256": "61a6b9621c41728404f3d55f8e4b4bc7edfabbc7fa5fc727bfe06aadb258365b"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/766-net-phy-mediatek-ge-add-LED-configuration-interface.patch",
+      "sha256": "2b9267fe9245e50fc54f44eba4a4a0463e3e79a0a23f0df06c4c22c29569a645"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/770-r8169-LED-uses-original-network-port-name.patch",
+      "sha256": "5de71303f05b7c6740d74e1774887eccf0e8da5e4722dfad821a4243d30a5128"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/773-bgmac-add-srab-switch.patch",
+      "sha256": "ff22db648e256f71094fff15be5f495905c0172c43fd27e9c2b9b42197408177"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/780-usb-net-MeigLink_modem_support.patch",
+      "sha256": "3eae34e9a8f3aa49f88a010ba1520deb3e3d0cf06dd91c09aaaf39fdfeae398f"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/781-usb-net-rndis-support-asr.patch",
+      "sha256": "a7b2f8aaa476cbf9982c1814e80d1aaad9503d9c7c0e6ce028d08d807b5e55a0"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/790-net-phy-skip-MMD-30-for-RTL8221B-when-reading-C45-PH.patch",
+      "sha256": "7a099feb7b606aeba8796b110d919a3898535adaa4573d3f12f97a7fb3620a8c"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/800-GPIO-add-named-gpio-exports.patch",
+      "sha256": "bd74c754cace6ea7c1b3abdea743140b3d37b0d8eaacba63fce6e66a1c8c0a62"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/810-bcma-ssb-fallback-sprom.patch",
+      "sha256": "e2be196d6f6c8d3d0eff27c682ce75c8887ff2a669f3668616ff8b42a314a042"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/820-ledtrig-network-module.patch",
+      "sha256": "a6bc7b06b3632574fa7664be4581b4c57ae4c78dd3b0cd91df9f6f0ac0fe94d3"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/901-debloat_sock_diag.patch",
+      "sha256": "4d9e5bb9ca9d96501e056c903551d75faa2b11d83ea9dc7fae93b154c9aafc3e"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/902-debloat_proc.patch",
+      "sha256": "08b00a4c94812739516ec98be961774c4caf9ef58ae78935781ba76fa7531636"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/904-debloat_dma_buf.patch",
+      "sha256": "1fd34a2739dea69487c23965db729c1d7feddf870dab7e7243f688bdd5003290"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/905-io_uring-zcrx-Use-IS_REACHABLE-instead-of-IS_ENABLED.patch",
+      "sha256": "7b6bdc55d72c7682eb3df9d71eb5df074719f601b2a31a785f4ed1308356f870"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/910-kobject_uevent.patch",
+      "sha256": "d67145c105bc43ca66c723b04ca46014c5f9862e992317a021b4faa0b1659043"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/911-kobject_add_broadcast_uevent.patch",
+      "sha256": "0e4d840d4ba5255abdde3df7516e84421f6bfdc626897d69f88597a93e20ded4"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/920-device_tree_cmdline.patch",
+      "sha256": "783af4836653f5932b56dc38d32daa3fa676bcb8a8a352f2cf5096ee5659c227"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/926-crypto-eip93-use-AES-fallback-for-small-requests.patch",
+      "sha256": "1db3652583d4c2c22a439965cdae8db4dc9572e95e47f98fa47a9bc4af9a4e95"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/930-Revert-Revert-Revert-driver-core-Set-fw_devlink-on-b.patch",
+      "sha256": "30ed89efcb397d3adebf424036ee955f1ed15e6bcb563670bc80392a996139bf"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/940-kbuild-extract-modules-builtin-modinfo-from-vmlinux_o.patch",
+      "sha256": "ef52e4b18f7ca0958041e539ba9394bee8564accb797674f90dff9377e979b70"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/950-silence-unused-variable-warnings.patch",
+      "sha256": "8b01ea54f5a4f0ad7ad860a93eee36a9603aa241bedfcd3a81560e2cc24499be"
+    },
+    {
+      "path": "target/linux/generic/hack-6.18/951-net-tcp-bbr3-support.patch",
+      "sha256": "a840b0dbd8913e61cc320640387a28cd822971a9a823a5eec1786da1c9cb1735"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-05-v6.19-spi-airoha-remove-unnecessary-restriction-length.patch",
+      "sha256": "f23e29796744db98b1e8b94f2e882293950df788f05a461d9d023850d76f615c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-06-v6.19-spi-airoha-remove-unnecessary-switch-to-non-dma-mode.patch",
+      "sha256": "15909d94ebda35026e50413f0a9415a883fc725e4f82155c451704387208f8fe"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-07-v6.19-spi-airoha-unify-dirmap-read-write-code.patch",
+      "sha256": "c4baef94c8327b974034f63f0e7cf630a52fb64eb12d511c52256cf612cbd5e3"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-08-v6.19-spi-airoha-support-of-dualio-quadio-flash-reading-co.patch",
+      "sha256": "311c8e74722a273ba8593e78811717a6f4fec336099282994b5ee0d09c6e5a23"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-09-v6.19-spi-airoha-avoid-setting-of-page-oob-sizes-in-REG_SP.patch",
+      "sha256": "690ccdb1d9d56ffc047f31a005101c229c23c63d0925d946f5b5591126fddd7d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-10-v6.19-spi-airoha-reduce-the-number-of-modification-of-REG_.patch",
+      "sha256": "c5022500c32a40dc5b9884ae12a55ad4656d1be7e7fc75d2c2d28b2e3a11798c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-11-v6.19-spi-airoha-set-custom-sector-size-equal-to-flash-pag.patch",
+      "sha256": "25e98f5aa99da253fb98e01446aab796440761619fd2978c5ac87815bc68ad17"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-12-v6.19-spi-airoha-avoid-reading-flash-page-settings-from-SN.patch",
+      "sha256": "dc57df1fe7ffe3f0448df2d2510c4b3af785cbee69cc7e9349157858c0c620c0"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-13-v6.19-spi-airoha-buffer-must-be-0xff-ed-before-writing.patch",
+      "sha256": "9f3eca5243041bb9e7e41508bfd56ceda33eb9242830be4abe4c2ecdfe5446c8"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/029-15-arm-dts-airoha-en7523-add-SNAND-node.patch",
+      "sha256": "f465b96e2fd81e683e2a40e6182bc4484a16e2950d82b1eda8344faec9cedc55"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/096-v6.19-net-airoha-Add-missing-stats-to-ethtool_eth_mac_stat.patch",
+      "sha256": "d20f6e41f23092f2e88dc72e61eb1d8aee3f595249aec370291e4b7e6585ca91"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/097-v6.19-net-airoha-Add-get_link-ethtool-callback.patch",
+      "sha256": "f4a9da6e8777094010a16207a2510c6d8f11366af7f34d17ee0afa36bd085455"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/099-06-v6.19-net-airoha-ppe-Remove-airoha_ppe_is_enabled-where-no.patch",
+      "sha256": "9de78df724d2abfc9100d0805421704926b3d8bf5495f39774ed106773457057"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/099-07-v6.19-net-airoha-ppe-Configure-SRAM-PPE-entries-via-the-cp.patch",
+      "sha256": "43852a4d1777c88758835873959a40fe473f28125d4f77053cdb92dc66b9d7bc"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/099-08-v6.19-net-airoha-ppe-Flush-PPE-SRAM-table-during-PPE-setup.patch",
+      "sha256": "2c7eaac7f2ad1bf43c1c9df7e092e57fbedaadaadc1400a166425301105926dd"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/099-09-v6.19-net-airoha-Select-default-ppe-cpu-port-in-airoha_dev.patch",
+      "sha256": "47c5ee6db70c8e7d6750e07fa1377de8fc4c173fb164b646a125d8347d4d9dbd"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/099-11-v6.19-net-airoha-ppe-Do-not-use-magic-numbers-in-airoha_pp.patch",
+      "sha256": "90ee831a38119a826cbb3f6d4c473bfe36a0c8c6f9e5d4360dee1ac6c56ee0e1"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/102-02-v6.19-net-airoha-npu-Add-airoha_npu_soc_data-struct.patch",
+      "sha256": "1a0420de51ac3605d6e9ed11f1d24b8c71dd7a19baf9bf14bcd7d4fe1622913c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/102-03-v6.19-net-airoha-npu-Add-7583-SoC-support.patch",
+      "sha256": "df2ddbea54f00b60009376d152bec1abcd87793cc068453ead6e264187fa5de4"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/107-v6.19-pwm-airoha-Add-support-for-EN7581-SoC.patch",
+      "sha256": "4f3bd6cfdcfaee312a9e04d84d5628ee3e61dade6599cc019a73b0aeb06dee98"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/114-v6.19-pinctrl-airoha-convert-comma-to-semicolon.patch",
+      "sha256": "9a6d6382d981dab8bc89e1dc98229c8c55a619b5da63357ee9736984e013fbf8"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/118-v7.0-net-airoha-npu-Dump-fw-version-during-probe.patch",
+      "sha256": "e7abe440ca563d40ab218cd68270d709e5afdec50aa7f0289db3f8c34472193e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/120-v7.0-net-airoha-implement-get_link_ksettings.patch",
+      "sha256": "fd565d8978f432fa4e7ff43f6f10461b940b7f993738b90302468e6ca1d288e7"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/121-v7.0-net-airoha-npu-Init-BA-memory-region-if-provided-via.patch",
+      "sha256": "df7830f9ab51736c77049b26ba8cdec8de6911f9b8f8561cd7089c664c505ab4"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/122-v7.0-net-airoha_eth-increase-max-MTU-to-9220-for-DSA-jumb.patch",
+      "sha256": "78506c72124562f79fb8dfba9395a02090b00f0a76635e8b7bc5aae24c98d492"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/123-v7.0-net-airoha-npu-Add-the-capability-to-read-firmware-n.patch",
+      "sha256": "a45f3b7f629ac427e6096aa6c2aec8d48ef527a13496c16bb265c7837024214a"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/125-v7.1-net-airoha-Rely-__field_prep-for-non-constant-masks.patch",
+      "sha256": "5de8abca004c6dc0ab168ea320ee6c1e9dd255e99da23d507e19dcc77a07764e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/126-v7.1-net-airoha-Make-flow-control-source-port-mapping-dep.patch",
+      "sha256": "85b34282c620fe087080106dc960a8c2a22e1387262edfae6f5727192d922c02"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/127-v7.1-net-airoha-Move-GDM-forward-port-configuration-in-nd.patch",
+      "sha256": "a0578e088eaab0d89212ee86a23c1fd48c0f36e8910aff4570720b23915b5f6a"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/129-v7.1-net-airoha-select-QDMA-block-according-LAN-WAN-confi.patch",
+      "sha256": "c368e7fe553dec5e38c8ed0999b5f5006325111f178bf025aee450902bc478ac"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/130-mtd-spinand-esmt-add-F50L2G41XA-compatible-override.patch",
+      "sha256": "cdf68d7d7d3149528679d8f8dba8f739cc7dd3490261fa5a3f8b6e46a1f042e5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/131-v7.0-net-phy-mediatek-enable-interrupts-on-AN7581.patch",
+      "sha256": "9612d9c4b6aaa8a6e58e317ff1fdb34eee692df1ff353924ef65a5cbba729755"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/132-v7.1-net-airoha-Reset-PPE-default-cput-port-in-airoha_ppe.patch",
+      "sha256": "92c9f6af0af1d7a8dd25058cf80d3a6e9bc3eb8148e866ab3001d8a77810e6fa"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/134-v7.1-net-airoha-Delay-offloading-until-all-net_devices-ar.patch",
+      "sha256": "358af97671c6366782703ed1c6958ba2e72f1d850b968bf455e4fef620d1d6fe"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/140-mtd-nand-ecc-mtk-add-Airoha-EN7581-support.patch",
+      "sha256": "5f37a5d69d9a08c780aa63d2224bbeef131e64dc8fd6e68f1b53101ac676db47"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/141-mtd-rawnand-mtk-add-Airoha-EN7581-support.patch",
+      "sha256": "5e4a640e046208bfe62f607fcb382313345991076edc9c9bc46d65bc28f73b40"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/142-01-v7.1-net-airoha-Rely-on-net_device-pointer-in-airoha_dev_.patch",
+      "sha256": "ee0b8ce75a87a842c278591bca75f12c66a82623961df672246bc0ace27fe267"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/142-02-v7.1-net-airoha-Rely-on-net_device-pointer-in-HTB-callbac.patch",
+      "sha256": "7710c50d13cb4dc57e4f6ede94cac0747b4eecc7697395072829fcfc460a6224"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/142-03-v7.1-net-airoha-Rely-on-net_device-pointer-in-ETS-callbac.patch",
+      "sha256": "257faa52a1c54529505ff98a6a4b9cde76879161e2bbae226493e887e6edab89"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/142-04-v7.1-net-airoha-Remove-PCE_MC_EN_MASK-bit-in-REG_FE_PCE_C.patch",
+      "sha256": "f73b3343474c53c2ed5684c4dc21c27002adf31d28f18790d07a0dfb8b653a34"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/142-arm64-dts-airoha-add-EN7581-parallel-NAND-nodes.patch",
+      "sha256": "4d4255a97e6d1e4669870dada56ba9dea5695513f691f0462588c9911e8fbd37"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/143-v7.1-net-airoha-Fix-typo-in-airoha_set_gdm2_loopback-rout.patch",
+      "sha256": "40e499dc656540fae83a47143dec9f8f1e1f2598943c39f0935cd5b674278e66"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/144-v7.1-net-airoha-Set-REG_RX_CPU_IDX-once-in-airoha_qdma_fi.patch",
+      "sha256": "fcd3f8a1cf8622d8b854feb0585dc5d39159a7a2f3fc2dc0c9559b86917b82f5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/147-v7.1-net-airoha-Fix-PPE-cpu-port-configuration-for-GDM2-l.patch",
+      "sha256": "1761749001f7eae5afba9e419bfaba0704dde58e6afa1dfc30026498246ed3d3"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/155-v7.2-net-airoha-Rename-get_src_port_id-callback-in-get_sp.patch",
+      "sha256": "a469cd9037e7e9c5aa3cb4094c98de3d46c9388fbb61ca65157ad03b1727366d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/158-v7.2-net-airoha-configure-QoS-channel-for-HW-accelerated-.patch",
+      "sha256": "905f7dda29b9cecfe52119848eaed89669838c413b54ad29fc066169122efd05"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/159-v7.2-net-airoha-Introduce-airoha_fe_get-airoha_qdma_get-r.patch",
+      "sha256": "bb7bef90132f5016041d6544a9155c43edd53985c1641793e4b34d22e82225cf"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-01-v7.2-net-airoha-Introduce-airoha_gdm_dev-struct.patch",
+      "sha256": "701fe8c64fc9b139add1a58644a1c2b311e010d2fbeea07a7350465e0750d521"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-02-v7.2-net-airoha-Move-airoha_qdma-pointer-in-airoha_gdm_de.patch",
+      "sha256": "eefbee485f831d9ab96b64cf7df227f208c1ac5e2e7b7decb89f1938f11319a5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-03-v7.2-net-airoha-Rely-on-airoha_gdm_dev-pointer-in-airoha_.patch",
+      "sha256": "88c55ee62a7aac821a8dbbdc3454bf78d362a486bcf622f3049e0c37dcc3ed5b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-04-v7.2-net-airoha-Move-qos_sq_bmap-in-airoha_gdm_dev-struct.patch",
+      "sha256": "ecd043d2b84dae218526a5bff069726c85aeb2f399ae677902352a4f9b546394"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-05-v7.2-net-airoha-Move-cpu-fwd-_tx_packets-in-airoha_gdm_de.patch",
+      "sha256": "a17f0e4af0fc4f768c9da68b952b5777d98ed5b69594de59f91eadb3df3d62f0"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/161-06-v7.2-net-airoha-Rename-airoha_set_gdm2_loopback-in-airoha.patch",
+      "sha256": "6d3821317fe952dc72d9c6c194f8f1cbb1410e4873ce6708ad2a50e37ddb7515"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/163-v7.2-net-airoha-Report-extack-error-to-the-user-if-airoha.patch",
+      "sha256": "76d625ca174c721820032b03701f0a0e954e63f3dc0b06607ba924a3a82eaebf"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/165-01-v7.2-net-airoha-Remove-private-net_device-pointer-in-airo.patch",
+      "sha256": "4f3ef60f4fa8b9fc2c832a5a0e651759305c95465c79db1bfeb7726394b0fd46"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/165-02-v7.2-net-airoha-Support-multiple-net_devices-for-a-single.patch",
+      "sha256": "ea3ab308aa3ae7f268f2c3396f57c8af768acbb4f69eca84f41a7f3d4918db52"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/165-03-v7.2-net-airoha-Do-not-stop-GDM-port-if-it-is-shared.patch",
+      "sha256": "1b224def997394e864cda50447dfd2ee38886a8a2e0b622a5b48240e164b8c2e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/165-04-v7.2-net-airoha-Introduce-WAN-device-flag.patch",
+      "sha256": "e721d566a6636db12b84b27ca291ca19334553afe9b5f00d7de477f5d53e07c2"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/165-05-v7.2-net-airoha-Support-multiple-LAN-WAN-interfaces-for-h.patch",
+      "sha256": "936d0b7382ed4a2ab71e9830d942b72b284ddb417b00f80edcc9575fb5f0dc2b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/166-v7.2-net-airoha-better-handle-MIBs-for-GDM-ports-with-mul.patch",
+      "sha256": "1b3d217bc1eadaf426d808c0e46d04594156655b06c66d2dc8681377102ec134"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/167-v7.2-net-airoha-use-int-instead-of-atomic_t-for-qdma-user.patch",
+      "sha256": "de65aa04bdb6c4bd5dee132b59e79da56ad847178b4ac13f3b11abcd83822453"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/168-v7.2-net-airoha-move-get_sport-callback-at-the-beginning-.patch",
+      "sha256": "f58295fc7788432af915f08fc902929934b9f4eccbcc02634e0479dace817fe9"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/169-v7.2-net-airoha-simplify-WAN-device-check-in-airoha_dev_i.patch",
+      "sha256": "1d3130787666645f33f82f7dc52a23bea657164907e539e1bfebc09e029ff32f"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/170-net-airoha-fix-MIB-stats-collection-to-be-lossless.patch",
+      "sha256": "5b722b1c28c60542ab9b680e5621596dfcf1e80a92234eafb9cf13a4ac4e5068"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/173-v7.2-net-airoha-Fix-non-standard-return-value-in-airoha_p.patch",
+      "sha256": "c7dd88850cfc673864ac1d199822b0afe6b681ab75a29f57a58129cefc094a1c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/175-v7.2-net-airoha-Fix-TX-scheduler-queue-mask-loop-upper-bo.patch",
+      "sha256": "06c48bd3b31afab59404202d5c52caafa90775f07e84182e18ab63ad022bd87b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/176-v7.2-net-airoha-Fix-typos-in-comments-and-Kconfig.patch",
+      "sha256": "b58658bb80b747da487be860a7e7edba0f1368889642645de73ff466d78cc01a"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/177-v7.2-net-airoha-Fix-off-by-one-in-airoha_tc_remove_htb_qu.patch",
+      "sha256": "c7c0c5c9de1b222399cf551526665aa9b0740f757e1a936a411cecee7b6d413c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/178-v7.2-net-airoha-fix-netif_set_real_num_tx_queues-for-spar.patch",
+      "sha256": "5e276af72ff96d1eec40f7af41a018850eeb55b96f23d556a6a3348ce812fbb4"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/179-v7.2-pinctrl-airoha-Fix-type-in-.pin_config_group_get-cal.patch",
+      "sha256": "ea7ea68828df2bb4f8a1e3a4d73af37e4b03d9f0f7ae6bc17f07e29c97740ae5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/180-01-v7.2-pinctrl-Move-Airoha-driver-to-dedicated-directory.patch",
+      "sha256": "b85316cdceecc289d0d1776b080dd40d371f7bc4daf0012b628943a9a493be8c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/181-v7.3-net-airoha-npu-load-the-firmware-without-the-sysfs-fall.patch",
+      "sha256": "ffe944d7f5b027ed124e86e76847dc53a9b1f8eece2c85d2905d1ab9e6a256b2"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/182-v7.4-net-airoha-grow-the-small-RX-rings.patch",
+      "sha256": "b614887d6efba5a5ebd89a5a2611430ad8bd82a4ce8721216c92eeddf9ea490d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/200-02-ASoC-airoha-Add-AFE-and-I2S-driver-for-Airoha-AN7581.patch",
+      "sha256": "7cb31ce8395c03897a1f8be86eba60d9e8f155a8130e46b4fd55660ff68746a8"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-06-v7.3-pinctrl-airoha-fix-I2C1-pin-mux-config-for-AN758.patch",
+      "sha256": "43d3b1dd8c4c9ca13f6bb0bcd112f2cd741f6023ee38a7ed2ad3d990dbc1fe31"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-07-v7.3-pinctrl-airoha-fix-I2C-pin-mux-config-for-AN7583.patch",
+      "sha256": "4779a1ad128536f48633b6c08d1a49f14947b17d39da2782b686044a1596a870"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-08-v7.3-pinctrl-airoha-fix-AN7583-MDIO-pin-mux-config.patch",
+      "sha256": "47273662edb97d3b0c5b4d1ad84ec1b2da433f84982aae25d8da82d2bf11cd9a"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-11-v7.3-pinctrl-airoha-add-set_direction-helper-for-gpio.patch",
+      "sha256": "7d70860978ee530a446780f1fcc32d521a34e0e14f625e95c4f1e47956c4cce9"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-12-v7.3-pinctrl-airoha-minor-improvements.patch",
+      "sha256": "694c214ac003431287d58a8b7c76267501a6bc6a1cfee4b74822d6cfd9e4381e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-17-v7.3-pinctrl-airoha-remove-not-needed-irq_type-array.patch",
+      "sha256": "17b5578f012217427efa37c25d28736c5c87f76624bb2515f890124439b41744"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-18-v7.3-pinctrl-airoha-statically-allocate-gpio-regs-str.patch",
+      "sha256": "bdc28806a250ae175c0cd6d975618c6816f98079b150f21c34910cac27fe4af7"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-19-v7.3-pinctrl-airoha-move-common-definitions-to-the-se.patch",
+      "sha256": "6156abddcfaac13469ac471d9438b97c7ca701503a954f79348e463e72ebe385"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-20-v7.3-pinctrl-airoha-split-driver-on-shared-code-and-S.patch",
+      "sha256": "3d80389ab4b3fff082951b042bbcd3de261fb95be7fb9a019fbd69fa272d0e28"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-21-v7.3-pinctrl-airoha-an7581-remove-en7581-prefix-from-.patch",
+      "sha256": "a3dbb5267a7b77aecbd4193ec86f2f47d41ed07518c36e19aff5895d01e3adc9"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-22-v7.3-pinctrl-airoha-an7583-remove-an7583-prefix-from-.patch",
+      "sha256": "7aff2da06c1d7263595fd99394792f5ae4df9702c4f584d10a3a80ac9712ed19"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-23-v7.3-pinctrl-airoha-an7583-rename-registers-to-match-.patch",
+      "sha256": "96789ddb66f181539442b9daafa864e85a566466323b761280b56f4201ee059b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-24-v7.3-pinctrl-airoha-an7583-add-support-for-npu_uart-p.patch",
+      "sha256": "939d9ef3a02bffe855158e6baa5764a1792a59c04a1256d61ee69c5e6fefcf56"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-25-v7.3-pinctrl-airoha-an7583-add-support-for-pon_alt-pi.patch",
+      "sha256": "e4fc9e9fc88c5bdcdf325bde76d6c93d8fd0f0c2cfaa383bfd27f6e832e851f0"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-26-v7.3-pinctrl-airoha-an7583-add-support-for-olt-pinmux.patch",
+      "sha256": "d19f286212e081928dabd4e78059d5a6cad4b046553bf0e149a1388113ed3098"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-27-v7.3-pinctrl-airoha-add-support-of-en7523-SoC.patch",
+      "sha256": "9e623e13bdcfc754311165da7250119145b7e85a8cb520004a809321d2a21d7d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-28-pinctrl-airoha-an7581-split-pon-tx-disable-gpio.patch",
+      "sha256": "cf7b328f138280ff592d4bc84454019ecbbe0914113612bbec686996c5fa34d2"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-28-v7.3-pinctrl-airoha-try-to-find-chip-scu-node-by-phan.patch",
+      "sha256": "f7ed59f1d8a72b28d84849b4ee2d9930a18fde7001c68d0d081a97278b6f20c5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/202-29-pinctrl-airoha-an7583-split-pon-tx-disable-gpio.patch",
+      "sha256": "fefadedb97de88c51383d15808c4dfeeec560af18b52fdac62a789c9aeffda1c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/203-01-pinctrl-airoha-fix-setting-of-GPIO-direction.patch",
+      "sha256": "364d9161af2a8b7f56a85cf783400d6eff45f67a4c0be4c74593fe30dd721423"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/203-02-pinctrl-airoha-reset-SCU-IOMUX-registers-at-probe.patch",
+      "sha256": "4dccfdff9f7ec84dcf82b718764029ea39c9181b8f61d25dcfc2bfbce15b5365"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/203-06-pinctrl-airoha-fix-AN7583-SPI-pin-mux-config.patch",
+      "sha256": "65479c1f9b414ad8e5f1b78048d8272c3823c93235708d807fc9b1c5b64947a7"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/203-08-pinctrl-airoha-fix-AN7583-eMMC-pin-mux-config.patch",
+      "sha256": "31549a653ccbac8372f6ca843ec7589103de04ee5961f33c2e0d9f0ca8a8105e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/203-09-pinctrl-airoha-permit-GPIO43-46-for-PHY-LED0.patch",
+      "sha256": "c59bd60e0e8a604df27364ddfee375b4dcb74cd3aea99d9056b4f0e29c3c7980"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/220-04-dt-bindings-soc-Add-bindings-for-Airoha-SCU-Serdes-l.patch",
+      "sha256": "530cd13359762c3f4eb6a767488b086ac8b0859b93e4f6a95fcd400953f75e0f"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/220-05-dt-bindings-phy-Add-documentation-for-Airoha-AN7581-.patch",
+      "sha256": "5adb85ab0979469a166908d8970b027620ef425bd40196e3a0753cccae10833c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/220-06-phy-move-Airoha-PCIe-PHY-driver-to-dedicated-directo.patch",
+      "sha256": "8d119a6a49bca900ac62a230467193524c10f10c236ca5084fd58fdcd1beb324"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/220-07-phy-airoha-Add-support-for-Airoha-AN7581-USB-PHY.patch",
+      "sha256": "21c170c9e06db53d7e8ffd7e57f0eb7cfe53b9deb26b5f4e142dd5d598c3941c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/220-10-PCI-mediatek-gen3-set-PHY-mode-for-Airoha-EN7581.patch",
+      "sha256": "301e8a37aaf5efff6ea4beeda97bcd6fc6268cf4a4b9b2fa28c91d250bccf278"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/221-02-pmdomain-airoha-Add-AN7583-cpufreq-compatible.patch",
+      "sha256": "d2d7432506ad84124771fb1ceda459ed330966e06c42959f0e5b0ee9d6cd36ac"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-02-net-airoha-deassert-XSI-line-on-hw-init.patch",
+      "sha256": "24dbb5f398d2f1221a69b4b3777ea44305d9e27f57d140d7e2ff649832a7289a"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-06-net-airoha-add-initial-fixup-for-GDM3-4-port-support.patch",
+      "sha256": "d8df5f66a666fe4e1e94032717b25746fc4c564380e9e48ca196c67521365020"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-07-airoha-ethernet-drop-xsi-mac-reset.patch",
+      "sha256": "fba5f979c8db3ebde1e7c9c1fd713e6f5c57512cd4e92cc9877edbc7b977498f"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-09-net-pcs-airoha-add-PCS-driver-for-Airoha-AN7581-SoC.patch",
+      "sha256": "42f5e11cc871e61b67aff0032698143c1231680ec87ad2d4443e7d6871309dd7"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-10-net-airoha-add-phylink-support.patch",
+      "sha256": "ede531f3ae74c5715df986dfc556ef192ec4b58fab5107c5df06db7c7128ed6d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-11-net-airoha-disconnect-PHY-after-QDMA-teardown.patch",
+      "sha256": "59d2c34376f2877578ef6dadd0273b80523f55e069de64b0939c824ffc4f3617"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/310-12-net-airoha-use-port-lock-for-MIB-stats.patch",
+      "sha256": "4bf1bc4115dd561d1ca27db9aa86fc07759b2d570de5118669718bd096da0b0c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/402-01-thermal-airoha-convert-to-regmap-API.patch",
+      "sha256": "b01b9c46b166ba30ec0c9d662500e885a82329809d9a32e6a743975a6f317c3c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/402-02-thermal-drivers-airoha-Generalize-probe-function.patch",
+      "sha256": "f5eb932572067e57505df85fa2aac9fea46644a79e7bf6c0667d2d4c1808ca49"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/402-03-thermal-drivers-airoha-generalize-get_thermal_ADC-an.patch",
+      "sha256": "7d47879d28fb9b2db11f001f10b3e1849bb8a0cf9f79f374fb25ca12791cb0d0"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/402-05-thermal-drivers-airoha-Add-support-for-AN7583.patch",
+      "sha256": "6f683479ffc182de2b46e408257c6e743b4360d6e95daf2a9cfdd2aba4f70851"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/403-nvmem-airoha-add-an7583-efuse.patch",
+      "sha256": "90b769736df608086c737f7beec5bfdae8c2b12e1227ae7cb7937f0ca0d55918"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-01-clk-en7523-convert-driver-to-regmap-API.patch",
+      "sha256": "4e64214b99a373fb61a61b1672525ad15039534ecfa8c877b5985c8edf827102"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-02-clk-en7523-generalize-register-clocks-function.patch",
+      "sha256": "83feae369728eeb5beb5f0ce5a5170c631c34bc89a565bc6d48437a2f661663d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-03-clk-en7523-convert-to-full-clk_hw-implementation.patch",
+      "sha256": "ef7c3cc71dc2de28e1cde2d22e663200f191ccebe944d68475ecdaad24eadaaa"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-04-clk-en7523-add-support-for-.set_rate.patch",
+      "sha256": "25671934f555c081db6784aecc4e103e3dc414ffd76a8739f206e6844a9e3463"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-05-clk-en7523-permit-to-reference-Chip-SCU-from-phandle.patch",
+      "sha256": "78f78c939a36f2faf1e7c065afe7400a5bdbbb8f5019a1dec24ad651e694a262"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-07-clk-en7523-reword-and-clean-clk_probe-variables.patch",
+      "sha256": "8ffcd1742858b8587a6ef945ca2076acfbe2eb13ce59a602b015c0febe8a5bde"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-08-clk-en7523-add-support-for-probing-SCU-child.patch",
+      "sha256": "7e2abd9492f7aaf11c422f6d11fff76a1d071aadce427aeff66af968b37e7420"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-09-dt-bindings-clock-airoha-Document-support-for-AN7583.patch",
+      "sha256": "5d7eded812f1f331ae31b14ba0e926d4cd8594db4fc7d1133b81bf87ea90a7a3"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-10-clk-en7523-add-support-for-Airoha-AN7583-clock.patch",
+      "sha256": "33654579906d36e677ce99dd3e1d45f9d4f351322ce9b329771ab742248cee71"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-11-dt-bindings-clock-airoha-Add-reset-support-to-EN7523.patch",
+      "sha256": "121e60620d67e2ed7f7ca2fd5a97105e8a158034df94d2d76b083866a8d1f420"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-12-v6.19-clk-en7523-Add-reset-controller-support-for-EN7523-S.patch",
+      "sha256": "047b4060b3db3eade09ff61020f2c829b154e18b666171763b7d11d52ef093a3"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/600-13-ARM-dts-airoha-update-EN7523-dtsi-to-support-resets.patch",
+      "sha256": "1e79b435592570230cd9c3812167fd678ecf778b261bc49a2339cd8e6c3b7643"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/602-04-phy-airoha-add-support-for-AN7583-PCIe-PHY-driver.patch",
+      "sha256": "a7a0e1f23df483cf1d5fa925d2823a2ecccaec9ad22c4f398dae32521dab3051"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/604-01-net-pcs-airoha-add-support-for-AN7583.patch",
+      "sha256": "54fba6b555295d4170bd1763e080e6c64e581e70a764000fd6f89501052a7f5e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/605-net-pcs-airoha-add-support-for-optional-xfi-reset-li.patch",
+      "sha256": "e2aa836d3116a6ca4b9e4912eed584fb9735275d365cfb891ebd7b037e72f2dd"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/606-net-pcs-airoha-fix-an7583-port-count.patch",
+      "sha256": "2fb95b32444ea486ca861322115f1479d9abe3df8c0f60d0374aa86476620f68"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/607-01-dt-bindings-phy-Add-documentation-for-Airoha-AN7583-USB-PHY.patch",
+      "sha256": "3d1a1d5019cf010ecb1491426d08484a922514c5276b93165cd28c06168f9ac9"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/607-02-phy-airoha-Add-support-for-Airoha-AN7583-USB-PHY.patch",
+      "sha256": "6961775032df32df1638739b1162b6af36dbaffed668d332b2691d3b1536ed42"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/607-cpufreq-airoha-fix-probe-failure-with-correct-error-check.patch",
+      "sha256": "3deda06d15126042e16fdad39b38c1cc098b5eff3005eb68fb121374060555c4"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/608-net-pcs-airoha-add-AN7581-PON-line-modes.patch",
+      "sha256": "de6eb85fca50cff8e89fbeda95732d1f965e6ad9f5fce9ef9fa22b14ded0cf9d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/609-01-dt-bindings-clock-airoha-Add-additional-reset-for-PC.patch",
+      "sha256": "bc78c0ab08e72d6dbb8da8b1647efe0c34905f8a8e48af46a58b44a1b73e0417"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/609-02-clk-en7523-add-support-for-dedicated-PCIe-PERSTOUT-r.patch",
+      "sha256": "780bf520eec8415146a48153b1c2b4e3238842338a2de3addd56ef3062ad7433"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/609-04-PCI-mediatek-gen3-Add-2-lanes-mode-support-for-Airoh.patch",
+      "sha256": "187a4cf188d7874f36db7befc89bfc1488f45e1c547e3e2905dc0f4e6d66d583"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/743-net-phy-realtek-add-RTL8261-USXGMII-inband-control.patch",
+      "sha256": "20afb049cb2f9225ad0d50feee36544dc922bcf20a04457424bf3aff84288744"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/748-phy-airoha-an7581-select-usb-hsgmii-for-ethernet.patch",
+      "sha256": "72503d3b816332b56847fda89df1c186568e0622b2ede00f7234937557a2ee3c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/885-i2c-mt7621-optional-reset.patch",
+      "sha256": "f700e8a90f17606ce1fb1a6173d49b5808e182c27ab2814624ebf939c0a5235d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/886-uart-add-en7523-support.patch",
+      "sha256": "2f460c43a27fd0d372a058b2ece9d962ae23c2997ad2270e74a3336751a17342"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/900-airoha-bmt-support.patch",
+      "sha256": "b935655d89ebd457e5d7f5c5be874e0ffa7f2d0be47aff7c659aad66dbb3bc74"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/901-snand-mtk-bmt-support.patch",
+      "sha256": "3a6d7aa51cc1464790132af32026260f401ef2bf053dd183154e8b73e22e72cd"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/913-clk-en7523-reset-PCIE-HB-on-init.patch",
+      "sha256": "99e3a676bc2b58ee7fd3e5576c9b3578183ffa30a4d616219d2987a83a027dec"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/915-01-net-netfilter-flowtable-Add-the-capability-to-offloa.patch",
+      "sha256": "e2f995c42b8e7077ced6996d3365d388cf95a6ab0dc37bfcd059aacc4438b0cb"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/915-02-net-airoha-Set-hw-QoS-parameter-according-to-the-pac.patch",
+      "sha256": "0fcacf42383c42c0b03b0eb1c270b9ba4514b3b7dfdc2ec274a23a91d5d3f52d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/916-02-net-airoha-Implement-HW-GRO-TCP-support.patch",
+      "sha256": "dea10d8e2b32463dd44484ebff75252388c43871ffa4fb7d5cc49c218d163cc5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-12-net-airoha-defer-GDM3-GDM4-WAN-mode-and-GDM2-loopbac.patch",
+      "sha256": "14b8dfb767c02b25d6b814918bdd42a186df9a380180e508b0c69f4c98be5405"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-13-net-airoha-Rework-MTU-configuration.patch",
+      "sha256": "48aae79fd384be96bf9eaa5b7eb1ae7924156f0b2c444f4226b7f6834414483b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-15-net-airoha-fix-wrong-airoha_get_fe_port.patch",
+      "sha256": "e67dcb6ece056308c2e62603e7dfd1d7b541c2a4d0aec17f673daf6acb4ef9a5"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/920-16-net-airoha-Account-for-L2-overhead-in-PPE-MTU-configuration.patch",
+      "sha256": "795baca3e6aa4ea52d47a735a4e28fee8fc4e0d1dc8062b483d8bd7700c289a2"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/922-net-airoha-add-AN7581-PON-data-and-control-paths.patch",
+      "sha256": "f256c208db87a4020d46a868749a805f318c1146951a1f1d8f16cb5d024a3551"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/923-01-net-airoha-fix-BQL-underflow-in-shared-QDMA-TX-ring.patch",
+      "sha256": "e7278f1a6c0511a646bc0e2b3d699d9e0029ab69012de7f1ddabda4eb596445c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/923-02-net-airoha-dma-map-xmit-frags-with-skb-frag-dma-map.patch",
+      "sha256": "187ed37fbce7d4710b3e6b14ca21bae95875516319eba13428750ccb8cf4d987"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/924-net-airoha-npu-use-coherent-mailbox-dma.patch",
+      "sha256": "8b0d5139616b22c03f43ab4c336cce7747859383dc0fab0ac8208b623385eb8b"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/925-net-airoha-add-PON-PPE-offload-metadata.patch",
+      "sha256": "b12b4b6e8daa62c218d7539756c6fdc221e87b7dfcd3c563e191363ed22df113"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/926-net-airoha-npu-bound-mailbox-wait.patch",
+      "sha256": "206537a84db0b11615907414d17b0a900be0d9b53fd2322696be2fb286d0dca6"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/927-net-airoha-select-NBQ-for-PPE-egress-on-external-SerDes.patch",
+      "sha256": "556c3fdd5c0da29b4b4066cb78b98c10008dd7ca793e5409c275d0b36a00fb65"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/930-net-airoha-fix-native-l2b-entry-layout.patch",
+      "sha256": "ae69132cd9e566d0171fb8a8f45b32ec5a0ce8fb1d5377abaace0d00c4e7c34e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/931-net-airoha-keep-PPE-offload-when-NPU-refuses-flow-stats.patch",
+      "sha256": "493822d2cec4a61c115c08066da1b60ca5af6fe68ef0b1f16cff46a3314df2dc"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/932-net-airoha-return-sram-flush-failures.patch",
+      "sha256": "bcd015c4e67fe0d8c2c9ee13eb96d4679f2034df8c91d266146910620bcdc39e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/933-net-airoha-preserve-tc-template-on-idle-refresh.patch",
+      "sha256": "707382c29f97979b16fa3955427289e95d0c87e8aeacb53f1ed4d6216c9fd29d"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/934-net-airoha-retry-trtcm-configuration.patch",
+      "sha256": "8e74a058df65aeb3e7ad264b597435a34fe71985c42532139ef08b2a8159fa68"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/937-net-airoha-expose-flow-stats-capability.patch",
+      "sha256": "0eb320f0670c814b005c0eee8063e92baa1cafb2ca699306bb1cdf463920c0da"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/938-net-phy-an7581-optional-led-pinctrl.patch",
+      "sha256": "1388155237469ff9692991b7eefe4da56f8c19cf0931b619ec337d988daff1df"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/939-net-phy-realtek-harden-rtl826x-reset.patch",
+      "sha256": "7dcf9b1f48416457a8224c92fb87aa183ccfbb91128fc19e84baf11759817c27"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/949-net-export-vlan-aware-forward-path.patch",
+      "sha256": "34c8403cde49a934022cdf4f31da3b0995e93b332b992f343e1e38f60327230e"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/950-net-airoha-bridge-cache-miss-fallback.patch",
+      "sha256": "7300e3da682d3d019bb47482853ac83993f0166b3434be2b5b663d112ef18965"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/951-net-airoha-track-bridge-fallback-lifetime.patch",
+      "sha256": "7904e4a72a785c9f5929ab1bafc695eccb36c6811400cf78aaf3381bfc7fad3c"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/952-net-airoha-constrain-bridge-fallback-policy.patch",
+      "sha256": "c7b6c2e4ed483cae058b15787270665f476e2f479a384369dcb52610085ec1b7"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/953-net-airoha-gate-fallback-on-bridge-policy-setup.patch",
+      "sha256": "38f7498d19c51d6902cd79fb2046157992126c844f59d3d67a4d30e62a021b79"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/954-net-bridge-use-rcu-stp-state-in-ppe-rx.patch",
+      "sha256": "1550a361196a8821849169ef1148fe110c3d88f6fc1c812e2154da53e89ff170"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/955-netfilter-flowtable-revoke-moved-bridge-destinations.patch",
+      "sha256": "6fe7a47540fcc2f42a404115b0201647a877eba0423d48c5b51cc4c3ac425933"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/956-netfilter-flowtable-advertise-vlan-match.patch",
+      "sha256": "f0e452233a0704d69c76a1b025224ffa4d92ddc1b0234e95ad6d980d44cd6843"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/957-netfilter-flowtable-preserve-priority.patch",
+      "sha256": "1f7a5222f62cd5362f90567945a93c86202015f66025b281919a0cbafb432dd9"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/958-net-airoha-account-for-PPPoE-session-header-in-PPE-MTU.patch",
+      "sha256": "e082271d961e34272717e86937e02d7d164354de289b63be2c814c3a1ac815c0"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/959-net-phy-realtek-release-reset-before-matching.patch",
+      "sha256": "2ee9ffd6c0acd7a7db13fceafc72c81d276717ae03d797e9d1e66154c4bb2e36"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/960-net-airoha-fix-ets-stats-wrap-and-channel-baselines.patch",
+      "sha256": "af884fd056cd05c904bdeea36e9b3814b42a652f4cd5074248e1240d2b08e907"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/961-netfilter-validate-forward-path-and-vlan-keys.patch",
+      "sha256": "70660148586258faf4b25fe9e72c231864c205b716c40c982a2d0101445c4367"
+    },
+    {
+      "path": "target/linux/airoha/patches-6.18/999-xg2010g-bl31-compatible-overclock.patch",
+      "sha256": "51b422c8a0dd55f2a8435e4e1a1085b010f0d195aa4d2e61c25c4f7711f1cee7"
+    }
+  ]
+}

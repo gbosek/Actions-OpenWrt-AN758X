@@ -24,7 +24,7 @@ def check(source, config_only=False):
     assert not re.search(r'^CONFIG_OPENSSL_ENGINE_BUILTIN=y$', config, re.M), 'Expected dynamic devcrypto engine'
     if config_only:
         return {'selected': meta['packages'], 'scope': 'Configuration only; no compiled or device evidence'}
-    kernels = list((source / 'build_dir').glob('target-*/linux-*/linux-6.18.55'))
+    kernels = list((source / 'build_dir').glob('target-*/linux-*/linux-6.18.60'))
     assert len(kernels) == 1
     kernel = kernels[0]
     kernel_config = (kernel / '.config').read_text()
@@ -43,12 +43,12 @@ def check(source, config_only=False):
         packages = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
         assert set(meta['packages']) <= packages.keys(), 'Crypto stack missing from image manifest'
     assert json.loads((root / 'etc/eip93-build-source.json').read_text()) == meta
-    files = ['lib/modules/6.18.55/crypto-hw-eip93.ko', 'lib/modules/6.18.55/cryptodev.ko',
+    files = ['lib/modules/6.18.60/crypto-hw-eip93.ko', 'lib/modules/6.18.60/cryptodev.ko',
              'usr/bin/openssl', 'usr/lib/engines-3/devcrypto.so', 'etc/ssl/modules.cnf.d/devcrypto.cnf']
     for name in files[:4]:
         raw = elf(root / name)
         if name.endswith('.ko'):
-            assert b'vermagic=6.18.55 ' in raw, 'Wrong kernel module version: ' + name
+            assert b'vermagic=6.18.60 ' in raw, 'Wrong kernel module version: ' + name
     for mod in ('crypto-hw-eip93', 'cryptodev'):
         assert any(mod in f.read_text() for f in (root / 'etc/modules.d').glob('*')), 'Crypto module autoload missing: ' + mod
     engine_config = (root / files[-1]).read_text()
@@ -60,7 +60,7 @@ def check(source, config_only=False):
         fields = dict(line.split(':', 1) for line in paragraph.splitlines() if ':' in line)
         if 'P' in fields: records[fields['P']] = fields
     kernel_version = records['kernel']['V']
-    assert kernel_version == '6.18.55~' + abi + '-r1', 'Kernel package ABI differs from configured kernel'
+    assert kernel_version == '6.18.60~' + abi + '-r1', 'Kernel package ABI differs from configured kernel'
     for name in ('kmod-crypto-hw-eip93', 'kmod-cryptodev'):
         assert 'kernel=' + kernel_version in records[name]['D'].split(), 'Staged crypto/kernel ABI mismatch: ' + name
     files.append('etc/eip93-build-source.json')

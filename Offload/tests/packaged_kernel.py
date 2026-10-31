@@ -32,7 +32,7 @@ def extract(image):
         comp=props.get('compression',b'none\0').rstrip(b'\0')
         assert comp in (b'gzip',b'lzma',b'none'),comp
         kernel=gzip.decompress(data) if comp==b'gzip' else lzma.decompress(data) if comp==b'lzma' else data
-        assert b'Linux version 6.18.55 ' in kernel,'Wrong packaged Linux version'
+        assert b'Linux version 6.18.60 ' in kernel,'Wrong packaged Linux version'
         kernels.append(kernel)
     assert len(kernels)==1,'Expected exactly one kernel in final FIT'
     return kernels[0]

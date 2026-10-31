@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.55 - retained PPE/PHY fixes + MWAN4 r29 LuCI r16 - three fixes + Airoha cf9c4c1 history JSON fix + Argon 3.1
+run-name: XG2010G 6.18.60 stable - retained PPE/NPU + reviewed flowtable DNS IPv6 LED fixes - NAOKI
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -201,6 +201,7 @@ jobs:
           python3 tests/feed-pin-test.py
           python3 tests/package-compat-test.py
           python3 Upstream/test-installers.py
+          python3 Kernel60/test-install.py
           python3 UI/tests/pon-install-test.py
           python3 CPU/tests/driver-fixes-test.py
           python3 tests/phy-preid-test.py
@@ -498,7 +499,7 @@ jobs:
           TARGET=$(grep '^CONFIG_TARGET_BOARD=' .config | cut -d'"' -f2)
           SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET=' .config | cut -d'"' -f2)
 
-          TOOLS_HASH=$(find tools toolchain -type f \( -name "Makefile" -o -name "*.mk" \) \
+          TOOLS_HASH=$(find tools toolchain -type f \( -name "Makefile" -o -name "*.mk" -o -name "*.patch" \) \
             -exec md5sum {} + 2>/dev/null | sort | md5sum | cut -d' ' -f1)
 
           CACHE_KEY="ponwrt-toolchain-${TARGET}-${SUBTARGET}-${TOOLS_HASH:0:16}"
@@ -899,10 +900,13 @@ jobs:
           python3 "$GITHUB_WORKSPACE/Upstream/test-pppoe-mtu.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Upstream/test-ets-stats.py" --build-dir build_dir
           python3 "$GITHUB_WORKSPACE/Offload/tests/check-prepared.py" --build-dir build_dir
-          python3 "$GITHUB_WORKSPACE/Upstream/test-maintenance.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.55' -print -quit)"
+          python3 "$GITHUB_WORKSPACE/Upstream/test-maintenance.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
           python3 "$GITHUB_WORKSPACE/Runtime/tests/dns-log-guard-test.py"
           python3 "$GITHUB_WORKSPACE/Runtime/tests/registration-guard-test.py"
           python3 "$GITHUB_WORKSPACE/Upstream/test-installers.py"
+          python3 "$GITHUB_WORKSPACE/Kernel60/test-install.py" .
+          python3 "$GITHUB_WORKSPACE/Kernel60/check-prepared.py" .
+          python3 "$GITHUB_WORKSPACE/Kernel60/test-flow-path.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
 
       # =========================================================
       # 18. 编译固件
@@ -935,6 +939,7 @@ jobs:
           if [ "$PROFILE" = 'gemtek_xg2010g' ]; then
             python3 "$GITHUB_WORKSPACE/scripts/check-ppe-build.py" --manifest-dir bin/targets/airoha/an7581 --build-dir build_dir
             python3 "$GITHUB_WORKSPACE/scripts/check-xg2010g-build.py" .
+            python3 "$GITHUB_WORKSPACE/Kernel60/check-prepared.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-requested-extras.py" .
             python3 "$GITHUB_WORKSPACE/scripts/check-airoha-update.py" --source .
             python3 "$GITHUB_WORKSPACE/scripts/check-argon31.py" .
@@ -1086,6 +1091,8 @@ jobs:
           cp "$GITHUB_WORKSPACE/UPSTREAM-059895-SOURCE.json" UPSTREAM-059895-SOURCE.json
           cp "$GITHUB_WORKSPACE/UPSTREAM-059895-VALIDATION.json" UPSTREAM-059895-VALIDATION.json
           cp "$GITHUB_WORKSPACE/Upstream/SOURCE.json" XG2010G-UPSTREAM-SOURCE.json
+          cp "$GITHUB_WORKSPACE/Kernel60/SOURCE.json" XG2010G-KERNEL60-SOURCE.json
+          cp "$BUILD_ROOT/openwrt/KERNEL60-PREPARED-VERIFICATION.json" KERNEL60-PREPARED-VERIFICATION.json
           cp "$BUILD_ROOT/openwrt/files/etc/pon-status-layout.json" PON-STATUS-LAYOUT.json
           cp "$BUILD_ROOT/openwrt/files/etc/an7581-driver-fixes.json" AN7581-DRIVER-FIXES-SOURCE.json
           cp "$BUILD_ROOT/openwrt/files/etc/phy-rtl826x-source.json" PHY-RTL826X-SOURCE.json

@@ -1,6 +1,6 @@
 {
   "baseline": "pbs05/ponwrt a57faf93c6c3638ba3651690228aabaa51d3f235",
-  "kernel": "6.18.55",
+  "kernel": "6.18.60",
   "packages": [
     "kmod-crypto-hw-eip93",
     "kmod-cryptodev",
@@ -35,5 +35,6 @@
   "scope": "Existing Airoha EIP93 driver and stock userspace packages; no PPE/NPU/PHY/DHCP/board configuration change",
   "openssl_safety": "Stock devcrypto config retained: DIGESTS=NONE; engine is dynamic, not forcibly built into libcrypto",
   "hardware_tested": false,
-  "runtime_install": "Requires exact running-kernel ABI; never bypass APK kernel dependency or force-load a module"
+  "runtime_install": "Requires exact running-kernel ABI; never bypass APK kernel dependency or force-load a module",
+  "kernel_upgrade": "Kernel60/SOURCE.json"
 }

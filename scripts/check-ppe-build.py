@@ -35,8 +35,8 @@ def check(manifest_dir, build_dir):
         for name in ("airoha-en7581-npu-firmware", "kmod-nf-flow", "kmod-nft-offload"):
             if name not in packages:
                 raise ValueError(f"{manifest.name}: missing {name}")
-        if not re.match(r"^6\.18\.55(?:[.~+-]|$)", packages.get("kernel", "")):
-            raise ValueError(f"{manifest.name}: expected kernel 6.18.55")
+        if not re.match(r"^6\.18\.60(?:[.~+-]|$)", packages.get("kernel", "")):
+            raise ValueError(f"{manifest.name}: expected kernel 6.18.60")
     kernels = [p.parent for p in build_dir.glob("target-*/linux-*/linux-6.18.*/.config")
                if (p.parent / "drivers/net/ethernet/airoha/airoha_ppe.c").is_file()]
     if len(kernels) != 1:

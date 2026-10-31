@@ -204,6 +204,7 @@ PONWRT_DIR=. bash "$PATCH_CPUUSAGE" || exit 1
 if [ "${PROFILE:-}" = gemtek_xg2010g ]; then
   python3 "$(dirname "$0")/scripts/apply-runtime-fixes.py" .
   python3 "$(dirname "$0")/scripts/apply-phy-pre-id-reset.py" .
+  python3 "$(dirname "$0")/scripts/upgrade-kernel60.py" .
 fi
 
 [ -z "$FW_BUILD_TIME" ] && FW_BUILD_TIME="$(TZ="${TZ:-Asia/Shanghai}" date '+%Y-%m-%d %H:%M')"

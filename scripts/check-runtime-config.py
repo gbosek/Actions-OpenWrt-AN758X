@@ -6,8 +6,8 @@ p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path
 root=p.parse_args().source.resolve()
 repo=Path(__file__).resolve().parents[1]
 version=(root/'target/linux/generic/kernel-6.18').read_text()
-assert re.search(r'^LINUX_VERSION-6\.18 = \.55$',version,re.M),'Expected Linux 6.18.55'
-assert 'LINUX_KERNEL_HASH-6.18.55 = f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9' in version
+assert re.search(r'^LINUX_VERSION-6\.18 = \.60$',version,re.M),'Expected Linux 6.18.60'
+assert 'LINUX_KERNEL_HASH-6.18.60 = 3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e' in version
 config=(root/'.config').read_text()
 selected=set(re.findall(r'^CONFIG_PACKAGE_([^=]+)=[ym]$',config,re.M))
 assert {'ttyd','luci-app-ttyd','cpufreq','xg2010g-rps'}<=selected,'Required runtime packages missing'
@@ -34,8 +34,8 @@ queue=root/'target/linux/airoha/patches-6.18'
 for number in (931,932,933,934,937,938,999):assert len(list(queue.glob(str(number)+'-*.patch')))==1,number
 assert 'CONFIG_BUSYBOX_CONFIG_FEATURE_SYSLOG_INFO=y' in config, 'BusyBox INFO logging missing'
 assert (root/'files/etc/config/fstab').is_file(), 'ROM fstab missing'
-assert not list(queue.glob('935-*patch')),'NPU watchdog fix is native in 6.18.55'
-assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.55'
+assert not list(queue.glob('935-*patch')),'NPU watchdog fix is native in 6.18.60'
+assert not list(queue.glob('936-*rx*patch')),'RX31 is native in 6.18.60'
 init=(root/'package/custom/mwan4/files/etc/init.d/mwan4').read_text()
 assert 'enabled || return 0' in init and 'service_running || return 0' in init
 assert '/usr/libexec/xg2010g-mwan4-preset || return 1' in init
@@ -48,4 +48,4 @@ for kind,name in [('backend','mwan4'),('frontend','luci-app-mwan4')]:
  assert re.search(r'^PKG_RELEASE:='+re.escape(expected)+r'$',make,re.M), 'MWAN4 package release differs from source metadata: '+name
 assert not (root/'files/etc/uci-defaults/98-xg2010g-mwan4-defaults').exists()
 assert (root/'files/etc/uci-defaults/99-xg2010g-mwan4-default-off').stat().st_mode & 0o111
-print('PASS: Linux 6.18.55, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')
+print('PASS: Linux 6.18.60, boot/event policy, ttyd, no WiFi/jitter, structured CPU/PPE observability and expected driver patch queue')

@@ -47,7 +47,9 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
         packages.update({
             'luci-theme-argon': '3.1.0-r20261022', 'luci-app-argon-config': '3.1.0-r20261022',
             'luci-i18n-argon-config-zh-cn': '3.1.0-r20261022', 'luci-app-clients': '0.1.0-r5',
-            'kernel': '6.18.55~fixture-r1', 'rtp2httpd': '3.16.0-r1',
+            'kernel': '6.18.60~fixture-r1', 'rtp2httpd': '3.16.0-r1',
+            'dnsmasq-full': '2.93-r10', 'odhcp6c': '2026.06.27~10a52220-r5',
+            'ppp': '2.5.3-r3', 'libc': '1.2.6-r6', 'kmod-nft-fullcone': '6.18.60.2023.05.17~07d93b62-r4',
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
             'luci-app-mwan4': mwan['frontend']['version'],
@@ -57,8 +59,10 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
         check({name: version.replace('-r', '-') for name, version in packages.items()}, pattern, True)
         for name, version in [
             ('mwan4', '0.1.1-r9'), ('mwan4', '0.1.1-r10'), ('mwan4', '0.1.1-r11'), ('mwan4', '0.1.1-r28'),
-            ('luci-app-mwan4', '1.0.0-r11'), ('luci-app-mwan4', '1.0.0-r12'), ('luci-app-mwan4', '1.0.0-r14'), ('luci-app-mwan4', '1.0.0-r15'), ('kernel', '6.18.54-r1'),
+            ('luci-app-mwan4', '1.0.0-r11'), ('luci-app-mwan4', '1.0.0-r12'), ('luci-app-mwan4', '1.0.0-r14'), ('luci-app-mwan4', '1.0.0-r15'), ('kernel', '6.18.54-r1'), ('kernel', '6.18.55-r1'),
             ('luci-app-airoha-npu', '2.0.0-r907'), ('mwan3', '1.0-r1'),
+            ('dnsmasq-full', '2.93-r3'), ('odhcp6c', '2026.06.27~10a52220-r3'),
+            ('ppp', '2.5.3-r2'), ('libc', '1.2.6-r5'), ('kmod-nft-fullcone', '6.18.60.2023.05.17~07d93b62-r3'),
             ('kmod-mac80211', '1.0-r1'),
             ('luci-theme-argon', '2.4.7-r20260824'), ('luci-app-argon-config', '26.288'),
             ('luci-i18n-argon-config-zh-cn', 'unknown'), ('luci-app-clients', '0.1.0-r2'),

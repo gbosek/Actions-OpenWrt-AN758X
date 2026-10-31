@@ -46,7 +46,7 @@ def check_kernel(image):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__); p.add_argument('root', type=Path); p.add_argument('--report', type=Path); a = p.parse_args()
     root = a.root.resolve()
-    kernels = list((root / 'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.55'))
+    kernels = list((root / 'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.60'))
     assert len(kernels) == 1, 'Ambiguous prepared kernel'
     source = kernels[0] / 'drivers/net/mdio/fwnode_mdio.c'; code = source.read_text()
     call = code.index('rc = fwnode_mdiobus_reset_phy_before_id_read(child);')
