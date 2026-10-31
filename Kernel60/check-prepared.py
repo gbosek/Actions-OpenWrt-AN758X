@@ -3,7 +3,7 @@
 from pathlib import Path
 import hashlib,json,re,sys
 R=Path(__file__).resolve().parents[1];S=Path(sys.argv[1]).resolve();m=json.loads((R/'Kernel60/SOURCE.json').read_text())
-sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
 for r in m['files']:assert sha(S/r['path'])==r['after_sha256'],r['path']
 actual_queue=[]
 for folder in ['generic/backport-6.18','generic/pending-6.18','generic/hack-6.18','airoha/patches-6.18']:
@@ -21,6 +21,8 @@ assert 'if (!info->num_encaps)' in path,'Native/adapted VLAN underflow guard abs
 assert path.count('static int nft_dev_path_info(')==1
 assert path.count('static int nft_dev_forward_path(')==1
 assert 'port_vlans = 0;' in path
+option=(K/'drivers/usb/serial/option.c').read_text()
+assert option.count('#define QUECTEL_PRODUCT_EG060W')==1 and option.count('USB_DEVICE_AND_INTERFACE_INFO(QUECTEL_VENDOR_ID, QUECTEL_PRODUCT_EG060W,')==1,'Native EG060W support was removed or duplicated'
 out={'kernel':'6.18.60','status':'passed','source_metadata_sha256':sha(R/'Kernel60/SOURCE.json'),'checked_files':len(m['files']),'prepared_sources':m['prepared_sources'],'scope':'Exact source identity and native-fix checks, not a device validation'}
 (S/'KERNEL60-PREPARED-VERIFICATION.json').write_text(json.dumps(out,indent=2)+'\n')
 print('PASS exact Linux6.18.60 final source/package identity and native de-duplication')

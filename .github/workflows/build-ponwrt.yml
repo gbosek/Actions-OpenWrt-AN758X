@@ -499,7 +499,8 @@ jobs:
           TARGET=$(grep '^CONFIG_TARGET_BOARD=' .config | cut -d'"' -f2)
           SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET=' .config | cut -d'"' -f2)
 
-          TOOLS_HASH=$(find tools toolchain -type f \( -name "Makefile" -o -name "*.mk" -o -name "*.patch" \) \
+          # Kernel headers also consume generic patches and copied headers.
+          TOOLS_HASH=$(find tools toolchain target/linux/generic -type f \( -name "Makefile" -o -name "*.mk" -o -name "*.patch" -o -name "*.h" -o -name "kernel-6.18" \) \
             -exec md5sum {} + 2>/dev/null | sort | md5sum | cut -d' ' -f1)
 
           CACHE_KEY="ponwrt-toolchain-${TARGET}-${SUBTARGET}-${TOOLS_HASH:0:16}"
@@ -568,6 +569,11 @@ jobs:
             exit 1
           fi
           echo "✅ 工具链源码校验通过"
+
+      - name: Validate kernel headers and target patch queues strictly forward
+        if: env.PROFILE == 'gemtek_xg2010g'
+        run: |
+          python3 "$GITHUB_WORKSPACE/Kernel60/test-patch-queue.py" "$BUILD_ROOT/openwrt"
 
       # =========================================================
       # 10. 恢复工具链 —— 第一优先 actions/cache
@@ -1094,6 +1100,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/Upstream/SOURCE.json" XG2010G-UPSTREAM-SOURCE.json
           cp "$GITHUB_WORKSPACE/Kernel60/SOURCE.json" XG2010G-KERNEL60-SOURCE.json
           cp "$BUILD_ROOT/openwrt/KERNEL60-PREPARED-VERIFICATION.json" KERNEL60-PREPARED-VERIFICATION.json
+          cp "$BUILD_ROOT/openwrt/KERNEL60-PATCH-QUEUE-VERIFICATION.json" KERNEL60-PATCH-QUEUE-VERIFICATION.json
           cp "$BUILD_ROOT/openwrt/files/etc/pon-status-layout.json" PON-STATUS-LAYOUT.json
           cp "$BUILD_ROOT/openwrt/files/etc/an7581-driver-fixes.json" AN7581-DRIVER-FIXES-SOURCE.json
           cp "$BUILD_ROOT/openwrt/files/etc/phy-rtl826x-source.json" PHY-RTL826X-SOURCE.json

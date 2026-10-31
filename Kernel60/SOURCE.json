@@ -3,7 +3,7 @@
   "parent_kernel": "6.18.55",
   "baseline_commit": "723fd37aa041d90f139d890a181e8d224d014bcf",
   "tarball_sha256": "3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e",
-  "upgrade_patch_sha256": "b8774e1429acde66054ef73d402838f597700004d183dc8912ced9344daef411",
+  "upgrade_patch_sha256": "d49c5dcbcbaf4dd31478e71ae8d2abc83fddad4fb905435bedce23136d53d615",
   "files": [
     {
       "path": "package/libs/toolchain/Makefile",
@@ -274,6 +274,12 @@
       "before_sha256": null,
       "after_sha256": "45320d9a2b0f9019e919a72277a053e22f3f00b0188fdc66a424548b51d604f8",
       "change": "add-reviewed"
+    },
+    {
+      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
+      "before_sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8",
+      "after_sha256": null,
+      "change": "remove-native-stable-duplicate"
     }
   ],
   "package_upstreams": [
@@ -417,7 +423,8 @@
     "bridge VLAN num_encaps underflow 6.18.57",
     "page_pool lifetime and alignment fixes",
     "GSO IP-in-IP recursion limit 6.18.60",
-    "fq_codel min/max MTU quantum clamping"
+    "fq_codel min/max MTU quantum clamping",
+    "USB serial Quectel EG060W: native since6.18.56 / 8b495843267b93bc1b395d51f929bcb1f97f84ba"
   ],
   "preserved": [
     "PON R68",
@@ -443,7 +450,8 @@
     "drivers/leds/trigger/ledtrig-netdev.c": "d4c322394c94e68903d4dd6119efcffce8c727f1f74645d85f7581a8ca50e165",
     "net/netfilter/nf_flow_table_path.c": "9fbb251f4186dee8067cf1ab752f864b7e2637da1319a9ae5bc53f4bb81662f0",
     "net/netfilter/nf_flow_table_ip.c": "17ef15a747a03049aba0e9c87935d14e9f9f938f1514e9db28b7c793b56b8697",
-    "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+    "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6",
+    "drivers/usb/serial/option.c": "7390a1ecd2132e0e346169551ecbb479c50d535141bb3b6f4bdf4f18dade7a49"
   },
   "patch_queue": [
     {
@@ -785,10 +793,6 @@
     {
       "path": "target/linux/generic/backport-6.18/781-v7.1-net-mvneta-support-EPROBE_DEFER-when-reading-MAC-add.patch",
       "sha256": "bfb8f0d2026ef3c3555464e72a9101cd402da0afc84ed68fbc3f6a44a8ea4b68"
-    },
-    {
-      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
-      "sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8"
     },
     {
       "path": "target/linux/generic/backport-6.18/784-06-v6.19-net-phy-realtek-Add-RTL8224-cable-testing-support.patch",
@@ -2994,5 +2998,20 @@
       "path": "target/linux/airoha/patches-6.18/999-xg2010g-bl31-compatible-overclock.patch",
       "sha256": "51b422c8a0dd55f2a8435e4e1a1085b010f0d195aa4d2e61c25c4f7711f1cee7"
     }
-  ]
+  ],
+  "removed_native_backports": [
+    {
+      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
+      "sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8",
+      "stable_commit": "8b495843267b93bc1b395d51f929bcb1f97f84ba",
+      "upstream_commit": "cd243401994880b8b6810c53177bce56eebaece5",
+      "reason": "Already in official6.18.60; old patch fails forced-forward preparation"
+    }
+  ],
+  "validation_followup": {
+    "failed_run": 41221413413,
+    "cause": "Local --batch allowed automatic reverse application of duplicate782; CI forces forward",
+    "supersedes_claim": "Initial637-patch check did not prove forward-only application",
+    "required_validation": "Strict forward-only both headers/generic and full firmware queues"
+  }
 }

@@ -41,6 +41,8 @@ for manifest in manifests:
     assert 'luci-app-rtp2httpd' in pkgs, 'Retained RTP UI missing'
     assert not any(n.startswith(('wpad','hostapd','wpa-supplicant')) or n in
         ('coremark','luci-app-coremark','iw','iwinfo','wifi-scripts','wireless-regdb','kmod-mac80211','kmod-cfg80211') for n in pkgs), 'Unused wireless packages remain'
+    assert not any(n.startswith(('kmod-usb-', 'kmod-sound-', 'kmod-snd-', 'bluez-')) or n in
+        ('kmod-usb3','kmod-bluetooth','usbutils','comgt','uqmi','umbim','modemmanager','atinout','luci-proto-qmi','luci-proto-mbim') for n in pkgs), 'Unused external USB/modem/audio/Bluetooth packages in XG2010G image'
 
     for name in ('mwan4', 'luci-app-mwan4', 'luci-i18n-mwan4-zh-cn',
                  'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn', 'xg2010g-rps', 'luci-app-pon-status',
