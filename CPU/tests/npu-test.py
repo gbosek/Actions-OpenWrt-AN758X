@@ -10,7 +10,7 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-npu-test-') as d:
   apps=list((root/'package/custom').glob('luci-app-airoha*'));assert len(apps)==1
   app=apps[0]
   release=re.search(r'^PKG_RELEASE:=(.+)$',(app/'Makefile').read_text(),re.M).group(1)
-  assert release.isdigit() and release=={'naoki':'913','luanmuc':'105'}[variant], 'APK revision must match the reviewed adapter'
+  assert release.isdigit() and release=={'naoki':'914','luanmuc':'105'}[variant], 'APK revision must match the reviewed adapter'
   if variant=='naoki':
    make=(app/'Makefile').read_text()
    body=re.search(r'^define Package/\$\(LUCI_NAME\)/install\n(.*?)^endef',make,re.M|re.S).group(1)
@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix='xg2010g-npu-test-') as d:
    stage=root/'installed';harness=root/'install.mk'
    harness.write_text('INSTALL_DIR:=install -d -m 0755\nINSTALL_BIN:=install -m 0755\nINSTALL_DATA:=install -m 0644\n'+macro+'\ndefine Install\n'+body+'endef\n.PHONY: install\ninstall:\n\t$(call Install,'+str(stage)+')\n')
    subprocess.run(['make','-s','-f',str(harness),'-C',str(app),'install'],check=True)
-   for rel in ('usr/libexec/airoha-ppe-snapshot.sh','usr/libexec/airoha-deadline.sh','usr/libexec/rpcd/luci.airoha_npu','etc/init.d/airoha-npu'):
+   for rel in ('usr/libexec/airoha-ppe-snapshot.sh','usr/libexec/airoha-deadline.sh','usr/libexec/airoha-npu-memory','usr/libexec/rpcd/luci.airoha_npu','etc/init.d/airoha-npu'):
     assert (stage/rel).is_file() and (stage/rel).stat().st_mode&0o111, 'Actual install recipe omitted '+rel
    for rel in ('etc/init.d/npu-jitter','usr/libexec/npu-jitter-daemon','etc/rc.d/S89airoha-npu'):
     assert not (stage/rel).exists(), 'Removed automatic task was reinstalled: '+rel

@@ -1,0 +1,45 @@
+#!/usr/bin/ucode
+/* Read the running DT's NPU memory-region phandles, not the rotating boot log.
+ * This is the reserved firmware carveout, not live allocation/utilization. */
+import { readfile, glob } from 'fs';
+const root = ARGV[0] || '/sys/firmware/devicetree/base';
+function cells(data) {
+    if (data == null || length(data) % 4) return null;
+    let values = [];
+    for (let i = 0; i < length(data); i += 4) {
+        let value = 0;
+        for (let j = 0; j < 4; j++) value = value * 256 + ord(data, i + j);
+        push(values, value);
+    }
+    return values;
+}
+function one(path) {
+    let value = cells(readfile(path));
+    return value && length(value) == 1 ? value[0] : null;
+}
+let refs = {};
+for (let path in glob(root + '/soc/npu@*/memory-region') || []) {
+    for (let ref in cells(readfile(path)) || []) refs[ref] = true;
+}
+let ac = one(root + '/reserved-memory/#address-cells');
+let sc = one(root + '/reserved-memory/#size-cells');
+let regions = [];
+if ((ac == 1 || ac == 2) && (sc == 1 || sc == 2)) {
+    for (let path in glob(root + '/reserved-memory/*/reg') || []) {
+        let dir = replace(path, /\/reg$/, '');
+        let ref = one(dir + '/phandle') ?? one(dir + '/linux,phandle');
+        if (ref == null || !refs[ref]) continue;
+        let values = cells(readfile(path));
+        if (!values || !length(values) || length(values) % (ac + sc)) continue;
+        let name = replace(replace(dir, /^.*\//, ''), /@.*$/, '');
+        for (let i = 0; i < length(values); i += ac + sc) {
+            let start = 0, size = 0;
+            for (let j = 0; j < ac; j++) start = start * 4294967296 + values[i+j];
+            for (let j = 0; j < sc; j++) size = size * 4294967296 + values[i+ac+j];
+            if (size <= 0 || start + size < start) continue;
+            push(regions, { name, start: sprintf('0x%x', start),
+                end: sprintf('0x%x', start + size - 1), size: (size / 1024) + ' KiB' });
+        }
+    }
+}
+printf('%s\n', length(regions) ? sprintf('%J', regions) : '[]');

@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.60 stable - retained PPE/NPU + reviewed flowtable DNS IPv6 LED fixes - NAOKI
+run-name: XG2010G 6.18.60 stable - retained PPE/NPU + flowtable DNS IPv6 LED + NPU memory fix r914 - NAOKI
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -946,6 +946,7 @@ jobs:
             UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/argon31-runtime-test.py" . --report bin/targets/airoha/an7581/ARGON31-VERIFICATION.json
             UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/clients-probe-test.py" --report bin/targets/airoha/an7581/CLIENTS-MEMORY-VERIFICATION.json
             UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/airoha-update-test.py"
+            UCODE_BIN="$PWD/staging_dir/hostpkg/bin/ucode" python3 "$GITHUB_WORKSPACE/tests/npu-memory-test.py"
             python3 "$GITHUB_WORKSPACE/scripts/check-bridge-defaults.py" --build-dir build_dir --report bin/targets/airoha/an7581/BRIDGE-DEFAULTS-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-eip93-build.py" . --report bin/targets/airoha/an7581/EIP93-BUILD-VERIFICATION.json
             python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant "$NPU_VARIANT"

@@ -53,7 +53,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             'xg2010g-rps': '20261013-r3', 'luci-app-pon-status': '20261026-r14',
             'mwan4': mwan['backend']['version'],
             'luci-app-mwan4': mwan['frontend']['version'],
-            'luci-app-airoha-npu': '2.0.0-r913' if variant == 'naoki' else '1.2.1-r105',
+            'luci-app-airoha-npu': '2.0.0-r914' if variant == 'naoki' else '1.2.1-r105',
         })
         check(packages, pattern, True)
         check({name: version.replace('-r', '-') for name, version in packages.items()}, pattern, True)
@@ -61,6 +61,7 @@ with tempfile.TemporaryDirectory(prefix='firmware-manifest-') as directory:
             ('mwan4', '0.1.1-r9'), ('mwan4', '0.1.1-r10'), ('mwan4', '0.1.1-r11'), ('mwan4', '0.1.1-r28'),
             ('luci-app-mwan4', '1.0.0-r11'), ('luci-app-mwan4', '1.0.0-r12'), ('luci-app-mwan4', '1.0.0-r14'), ('luci-app-mwan4', '1.0.0-r15'), ('kernel', '6.18.54-r1'), ('kernel', '6.18.55-r1'),
             ('luci-app-airoha-npu', '2.0.0-r907'), ('mwan3', '1.0-r1'),
+            ('luci-app-airoha-npu', '2.0.0-r913' if variant == 'naoki' else '1.2.1-r103'),
             ('dnsmasq-full', '2.93-r3'), ('odhcp6c', '2026.06.27~10a52220-r3'),
             ('ppp', '2.5.3-r2'), ('libc', '1.2.6-r5'), ('kmod-nft-fullcone', '6.18.60.2023.05.17~07d93b62-r3'),
             ('kmod-mac80211', '1.0-r1'),

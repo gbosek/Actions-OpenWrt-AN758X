@@ -7,7 +7,7 @@
     "commit": "015d457c2c9c3dc01535fe1419119f13fe817f7a"
   },
   "baseline_actions_commit": "61add44a31d704dd4b9938b71cbec6cc2b78c23e",
-  "npu_local_release": 913,
+  "npu_local_release": 914,
   "clients_local_release": 5,
   "mwan4": "r29/r16 unchanged",
   "kernel_driver_binding_changes": false,
@@ -38,7 +38,7 @@
     "Packages/NPU/naoki/luci-app-airoha-npu/htdocs/luci-static/resources/view/airoha/ds-tokens.js": "41c9cbf5c44edd6ff8a9f58c948809bd9e322c4dc8bdf2cd5322743111210ddb",
     "Packages/NPU/naoki/luci-app-airoha-npu/htdocs/luci-static/resources/view/airoha/ui.js": "3d9d0f61c424c08c1934a2369208e5607fab1297d3539d4fcb0f05a6c8f24dfe",
     "Packages/NPU/naoki/luci-app-airoha-npu/htdocs/luci-static/resources/view/airoha_npu/status.js": "729bcc96a63b9da5f7b62076115fca4cf5c473b9514ce12c51358a38097af2e3",
-    "Packages/NPU/naoki/luci-app-airoha-npu/Makefile": "4698dec5d7ebb3d98d51b7c2f1e6ecd71d03363c1f252b1c769741442b7640fb",
+    "Packages/NPU/naoki/luci-app-airoha-npu/Makefile": "e133100e3602307dc88edd6b7d808f9085c477b6b199054db0207066090a5ba3",
     "Packages/NPU/naoki/luci-app-airoha-npu/po/templates/airoha-npu.pot": "a64b43a5cf8264441ea98d3e7ddf00519db45e2830318adc0e5ad67329caec97",
     "Packages/NPU/naoki/luci-app-airoha-npu/po/zh_Hans/airoha-npu.po": "ea4d4275174aafc1203672977205e3b57418a01a90b694feb4b4e5ebbbf49007",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/etc/config/airoha_npu": "829ec90c1bae1943beb3485b642f27d49bb536902e90082c446bcc6a4e52ab18",
@@ -49,12 +49,13 @@
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/airoha-ppe.awk": "783b9010156f2d6c31f2e2f8f3462bf1bdc206a8e9400413a793d71016eeee93",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/npu-jitter-daemon": "bc5677c88eb303bc9a2d16dc5fdabe171b8c65104b4999e44da20d12d2732cc5",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/airoha-common.sh": "1a3c7b1c9d16cfc8c30c377ef5eb07cf290990230aeb7b32add211f90a44153b",
-    "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu": "be5a70c3492c910545020a9f27a10c003884c02ca09ae57a335ee294eac33c6f",
+    "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/rpcd/luci.airoha_npu": "e656845a1b8e1df7f517e4c335258d55d1350ee104b51c699e1756fdaed71ea6",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/share/luci/menu.d/luci-app-airoha-npu.json": "37ec39b014b37ddf79e58ddee14ffa86babf138fb94b21085bab823e90b4bd24",
     "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/share/rpcd/acl.d/luci-app-airoha-npu.json": "382d35f3e062f92bef6f7c617733fbbd5878c8a2dbd4d28c256b29a6f1718b64",
-    "scripts/adapt_npu.py": "be5043f9ab38e230b0ddaecc79687e2083c97b905bfbd67fb36291656cc68a83",
+    "scripts/adapt_npu.py": "7ee2e214f36a75a13e39d2d82a67d7ac8d52b8b2569dd7ab77da526be8a3d032",
     "scripts/observability.py": "c4bf5d690fc84a3d12539e1cf80ba2b286a7754a5312e466fa83cba984177305",
-    "scripts/select-npu.py": "f6c6f4072cdf0c4d26a1ab5eeeff60683333c9628059acc2e5f0f8f970dd8c5e"
+    "scripts/select-npu.py": "f6ee855923e5aa2437c3674bf16868d95d9c67351e07d04b118a44eb41868bf2",
+    "Packages/NPU/naoki/luci-app-airoha-npu/root/usr/libexec/airoha-npu-memory": "5a6203733f9b35f872191f0e230099a2d66d18fc49c2c83a22fdf5cb98c72510"
   },
   "history_publication_fix": {
     "upstream_commit": "cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210",
@@ -69,5 +70,11 @@
       "_cpu_hist"
     ],
     "target_device_tested": false
+  },
+  "npu_memory_followup": {
+    "cause": "boot reserved-memory log rotated out; previous empty cache persisted",
+    "method": "live DT phandle-owned region parsing, no fabricated size",
+    "device_reserved_bytes_verified": 10485760,
+    "not_live_usage": true
   }
 }
