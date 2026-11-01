@@ -912,6 +912,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/Upstream/test-installers.py"
           python3 "$GITHUB_WORKSPACE/Kernel60/test-install.py" .
           python3 "$GITHUB_WORKSPACE/Kernel60/check-prepared.py" .
+          python3 "$GITHUB_WORKSPACE/Kernel60/test-prepared-discovery.py" . "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
           python3 "$GITHUB_WORKSPACE/Kernel60/test-flow-path.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
 
       # =========================================================

@@ -9,8 +9,11 @@ actual_queue=[]
 for folder in ['generic/backport-6.18','generic/pending-6.18','generic/hack-6.18','airoha/patches-6.18']:
     actual_queue += [{'path':str(p.relative_to(S)),'sha256':sha(p)} for p in sorted((S/'target/linux'/folder).glob('*.patch'))]
 assert actual_queue==m['patch_queue'],'Kernel patch queue differs from the clean zero-fuzz replay'
-kernels=[Path(sys.argv[2])] if len(sys.argv)>2 else [p.parent for p in (S/'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.60/.config')]
-assert len(kernels)==1,'Expected exactly one prepared Linux 6.18.60'
+# prepare extracts/patches the source; configure creates .config afterwards.
+# This gate checks exact source hashes in both phases. Actual configuration
+# and compiled-object requirements remain in the separate post-build gates.
+kernels=[Path(sys.argv[2])] if len(sys.argv)>2 else sorted({p.parents[4] for p in (S/'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.60/drivers/net/ethernet/airoha/airoha_ppe.c') if (p.parent/'airoha_eth.h').is_file()})
+assert len(kernels)==1,f'Expected exactly one prepared Linux 6.18.60 source tree, found {len(kernels)}'
 K=kernels[0]
 for n,v in m['prepared_sources'].items():assert sha(K/n)==v,n
 offload=json.loads((R/'Offload/SOURCE.json').read_text())
