@@ -7,6 +7,12 @@ function ppeCounterText(entry, key) {
     var value = source[key];
     return value !== null && value !== undefined && /^[0-9]+$/.test(String(value)) ? String(value) : 'N/A';
 }
+function ppeRawFieldText(entry, key) {
+    // Display raw diagnostics even for UNB; exported attribution stays separate.
+    var value = entry.raw && Object.prototype.hasOwnProperty.call(entry.raw, key)
+        ? entry.raw[key] : entry[key];
+    return value === null || value === undefined || value === '' ? '-' : String(value);
+}
 function exportFullPpe(event) {
     var button=event.currentTarget, all=[], first=null, token='', offset=0;
     button.disabled=true;

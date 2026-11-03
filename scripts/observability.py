@@ -50,6 +50,16 @@ get_ppe_entries() {
             marker = f"e.{key} === null || e.{key} === undefined ? 'N/A' : String(e.{key})"
             assert s.count(marker) == 1, 'PPE counter renderer changed: ' + key
             s = s.replace(marker, f"ppeCounterText(e, '{key}')", 1)
+        for key in ('new_flow', 'vlan'):
+            marker = f"e.{key} || '-'"
+            assert s.count(marker) == 1, 'PPE field renderer changed: ' + key
+            s = s.replace(marker, f"ppeRawFieldText(e, '{key}')", 1)
+        marker = "var eth = e.eth || '';"
+        assert s.count(marker) == 1, 'PPE Ethernet renderer changed'
+        s = s.replace(marker, "var eth = ppeRawFieldText(e, 'eth');", 1)
+        marker = "\n\t\tif (eth === '00:00:00:00:00:00->00:00:00:00:00:00') eth = '-';"
+        assert s.count(marker) == 1, 'PPE zero-MAC renderer changed'
+        s = s.replace(marker, '', 1)
         marker = '\t\tpoll.add(pollFetch, POLL_SECS);'
         assert marker in s
         s = s.replace(marker, marker+"\n\t\tpoll.add(function() { var badge=document.getElementById('ppe-count'); if(badge)badge.textContent=ppeCountText(ppeCurrentEntries); }, 1);", 1)

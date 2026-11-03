@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.60 stable - retained PPE/NPU + flowtable DNS IPv6 LED + NPU memory fix r914 - NAOKI
+run-name: XG2010G 6.18.60 stable - retained PPE/NPU and NPU memory fix + raw PPE fields r915 - NAOKI
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -209,6 +209,7 @@ jobs:
           python3 Runtime/tests/runtime-test.py
           python3 Runtime/tests/route-test.py
           node Runtime/tests/export-test.js
+          python3 Runtime/tests/ppe-raw-fields-test.py
 
       - name: Cancel superseded boost builds
         if: endsWith(github.ref_name, '-boost') || github.ref_name == 'work/xg2010g-1456-ppe-20261014'
