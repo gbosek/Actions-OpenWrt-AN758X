@@ -3,7 +3,7 @@
   "parent_kernel": "6.18.55",
   "baseline_commit": "723fd37aa041d90f139d890a181e8d224d014bcf",
   "tarball_sha256": "3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e",
-  "upgrade_patch_sha256": "d49c5dcbcbaf4dd31478e71ae8d2abc83fddad4fb905435bedce23136d53d615",
+  "upgrade_patch_sha256": "7e44624de6235daef8349abd03859e3f809322e43a0623aae8828c32778b72f8",
   "files": [
     {
       "path": "package/libs/toolchain/Makefile",
@@ -26,7 +26,13 @@
     {
       "path": "package/network/services/dnsmasq/Makefile",
       "before_sha256": "7841d4faf166a1b8f8e4bd2ccb931e90d222e19b14f8d3e459074a6f1af36d27",
-      "after_sha256": "cbf2525a8b399f75bca8f47d4507027fcd6dd32e654453d748cbbc13275aca5f",
+      "after_sha256": "bfcc26bc354e57d098e8f9d97757a5742381c1810442f880e4d9d186194d7232",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "package/network/services/dnsmasq/files/dnsmasq.init",
+      "before_sha256": "aedc308c2a780957e3e5ff556df8e71931374002e333cf21e911cc0d6d162a5a",
+      "after_sha256": "9ad7307e54e5d085fc362c12f31e25fec91f67dc08b35769eb52b7931d9e57a2",
       "change": "adapt-existing"
     },
     {
@@ -198,6 +204,12 @@
       "change": "add-reviewed"
     },
     {
+      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
+      "before_sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8",
+      "after_sha256": null,
+      "change": "remove-native-duplicate"
+    },
+    {
       "path": "target/linux/generic/hack-6.18/660-fq_codel_defaults.patch",
       "before_sha256": "7164a43d7e51ea5d5c261eed657fcccaf704a143b04c55ecd2f4d6b43401e00c",
       "after_sha256": "d4dfaaeece78c3dee8bb3f37a7911322fa0a3c5fed25eed08f91d0ac0ae9e609",
@@ -219,6 +231,12 @@
       "path": "target/linux/generic/pending-6.18/304-LoongArch-vdso-keep-the-prefix-map-flags.patch",
       "before_sha256": "aaa837465e21a8c529daeeb4909c70a70d8213c0ba62665fed918e6381769f23",
       "after_sha256": "85c2896a8bf278c58568b59e13e877da5b0d915a7845a1c455116388306beeb5",
+      "change": "adapt-existing"
+    },
+    {
+      "path": "target/linux/generic/pending-6.18/456-nvmem-implement-block-NVMEM-provider.patch",
+      "before_sha256": "54e2e9ebfa62c73ed20c4d8c18cfd3b90cce4bf0ca80aab96c4a87e19cb06f87",
+      "after_sha256": "660394d0a64471f7fe8f2530cf98b6edf5ec542364827f22ff8ad7a74f927bcf",
       "change": "adapt-existing"
     },
     {
@@ -274,12 +292,6 @@
       "before_sha256": null,
       "after_sha256": "45320d9a2b0f9019e919a72277a053e22f3f00b0188fdc66a424548b51d604f8",
       "change": "add-reviewed"
-    },
-    {
-      "path": "target/linux/generic/backport-6.18/782-v7.3-USB-serial-option-add-Quectel-EG060W.patch",
-      "before_sha256": "4958a0a2e296338cbc28176fdc2b9f1bf22e1afa86de0ec78717e0c9673862c8",
-      "after_sha256": null,
-      "change": "remove-native-stable-duplicate"
     }
   ],
   "package_upstreams": [
@@ -451,7 +463,8 @@
     "net/netfilter/nf_flow_table_path.c": "9fbb251f4186dee8067cf1ab752f864b7e2637da1319a9ae5bc53f4bb81662f0",
     "net/netfilter/nf_flow_table_ip.c": "17ef15a747a03049aba0e9c87935d14e9f9f938f1514e9db28b7c793b56b8697",
     "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6",
-    "drivers/usb/serial/option.c": "7390a1ecd2132e0e346169551ecbb479c50d535141bb3b6f4bdf4f18dade7a49"
+    "drivers/usb/serial/option.c": "7390a1ecd2132e0e346169551ecbb479c50d535141bb3b6f4bdf4f18dade7a49",
+    "drivers/nvmem/block.c": "6a9191775c7f7f23761090378c1c7b1d78a749f567521e1da912ed0d8a3d83f6"
   },
   "patch_queue": [
     {
@@ -1292,7 +1305,7 @@
     },
     {
       "path": "target/linux/generic/pending-6.18/456-nvmem-implement-block-NVMEM-provider.patch",
-      "sha256": "54e2e9ebfa62c73ed20c4d8c18cfd3b90cce4bf0ca80aab96c4a87e19cb06f87"
+      "sha256": "660394d0a64471f7fe8f2530cf98b6edf5ec542364827f22ff8ad7a74f927bcf"
     },
     {
       "path": "target/linux/generic/pending-6.18/457-mmc-block-set-GENHD_FL_NVMEM.patch",
@@ -3013,5 +3026,36 @@
     "cause": "Local --batch allowed automatic reverse application of duplicate782; CI forces forward",
     "supersedes_claim": "Initial637-patch check did not prove forward-only application",
     "required_validation": "Strict forward-only both headers/generic and full firmware queues"
+  },
+  "selective_maintenance_20261104": {
+    "upstreams": [
+      {
+        "upstream": "https://github.com/openwrt/openwrt/commit/2cac72feed9460fd9303b66a11feaed89fb854fe",
+        "commit": "2cac72feed9460fd9303b66a11feaed89fb854fe",
+        "path": "package/network/services/dnsmasq/files/dnsmasq.init",
+        "review_delta": "Kernel60/maintenance/dns-atomic.patch",
+        "delta_sha256": "adc87d427a587d35847b05e4772540842d644e7f575440c945b6f38ae521aadb",
+        "before_sha256": "aedc308c2a780957e3e5ff556df8e71931374002e333cf21e911cc0d6d162a5a",
+        "after_sha256": "9ad7307e54e5d085fc362c12f31e25fec91f67dc08b35769eb52b7931d9e57a2"
+      },
+      {
+        "upstream": "https://github.com/openwrt/openwrt/commit/5b3efb652f816d8024801e0b165532e20654a678",
+        "commit": "5b3efb652f816d8024801e0b165532e20654a678",
+        "path": "target/linux/generic/pending-6.18/456-nvmem-implement-block-NVMEM-provider.patch",
+        "review_delta": "Kernel60/maintenance/blk-nvmem.patch",
+        "delta_sha256": "b2f2fa7f01110b5e83985a654cd60794a6b2d7ed59ee55701d34f18d65f60495",
+        "before_sha256": "54e2e9ebfa62c73ed20c4d8c18cfd3b90cce4bf0ca80aab96c4a87e19cb06f87",
+        "after_sha256": "660394d0a64471f7fe8f2530cf98b6edf5ec542364827f22ff8ad7a74f927bcf"
+      }
+    ],
+    "dnsmasq_release": "2.93-r11 (custom selective backports, not all upstream r11 changes)",
+    "excluded": [
+      "QDMA role/migration and LRO architecture replacement",
+      "DSA host-FDB series",
+      "DNS jail capabilities without procd dependency",
+      "NPU DMA-window RFC",
+      "IPv6 shared UPDMEM last-writer scheme"
+    ],
+    "scope": "Local exact-source and targeted validation required; no device stability guarantee"
   }
 }

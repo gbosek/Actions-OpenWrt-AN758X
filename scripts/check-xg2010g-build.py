@@ -29,7 +29,7 @@ for manifest in manifests:
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
     assert re.match(r'^6\.18\.60(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.60'
     for name, pattern in {
-        'dnsmasq-full': r'^2\.93-(?:r)?10$',
+        'dnsmasq-full': r'^2\.93-(?:r)?11$',
         'odhcp6c': r'^2026\.06\.27~10a52220-(?:r)?5$',
         'ppp': r'^2\.5\.3-(?:r)?3$',
         'libc': r'^1\.2\.6-(?:r)?6$',
@@ -96,6 +96,9 @@ assert stable['kernel'] == '6.18.60' and stable['project'] == 'pon', 'Installed 
 assert stable['tarball_sha256'] == '3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e'
 assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18.55-to-6.18.60.patch').read_bytes()).hexdigest()
 assert json.loads((installed/'etc/xg2010g-kernel60-source.json').read_text()) == json.loads((repo/'Kernel60/SOURCE.json').read_text()), 'Installed kernel60 source inventory differs'
+dns_source = next(row for row in json.loads((repo/'Kernel60/SOURCE.json').read_text())['files']
+                  if row['path'] == 'package/network/services/dnsmasq/files/dnsmasq.init')
+assert hashlib.sha256((installed/'etc/init.d/dnsmasq').read_bytes()).hexdigest() == dns_source['after_sha256'], 'Installed DNS resolver atomic-update init differs'
 driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
 driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
 assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'

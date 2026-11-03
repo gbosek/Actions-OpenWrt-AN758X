@@ -1,5 +1,5 @@
 name: Build XG2010G (Airoha AN758x PON)
-run-name: XG2010G 6.18.60 stable - retained PPE/NPU and NPU memory fix + raw PPE fields r915 - NAOKI
+run-name: XG2010G 6.18.60 - atomic DNS resolver and NVMEM error fix + retained PPE/NPU r915 - NAOKI
 
 # =========================================================
 # 固件版本后缀（显示在 LuCI 概览页「固件版本」后面）
@@ -913,6 +913,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/Upstream/test-installers.py"
           python3 "$GITHUB_WORKSPACE/Kernel60/test-install.py" .
           python3 "$GITHUB_WORKSPACE/Kernel60/check-prepared.py" .
+          python3 "$GITHUB_WORKSPACE/Kernel60/test-maintenance.py" .
           python3 "$GITHUB_WORKSPACE/Kernel60/test-prepared-discovery.py" . "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
           python3 "$GITHUB_WORKSPACE/Kernel60/test-flow-path.py" "$(find build_dir -type d -path '*/linux-airoha_an7581/linux-6.18.60' -print -quit)"
 
