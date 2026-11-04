@@ -1,0 +1,77 @@
+name: Clean PonWrt 6.18.55 XG2010G
+run-name: Original PonWrt a57faf9 + kernel 6.18.55 + requested UI MWAN4 RTL826x
+on:
+  push:
+    branches: [work/xg2010g-clean-ponwrt-20261104]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      TZ: Asia/Shanghai
+      FORCE_UNSAFE_CONFIGURE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build prerequisites
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gettext git libncurses-dev libssl-dev python3-setuptools python3-pyelftools rsync swig unzip zlib1g-dev file wget curl libelf-dev libgnutls28-dev device-tree-compiler zstd jq libfuse-dev autoconf automake pkgconf help2man gperf libtool-bin texinfo gcc-multilib g++-multilib
+          sudo mkdir -p /workdir
+          sudo chown "$USER:$USER" /workdir
+          df -h /workdir
+      - name: Fetch pristine source and apply minimal additions
+        run: |
+          git init -q /workdir/openwrt
+          git -C /workdir/openwrt remote add origin https://github.com/pbs05/ponwrt.git
+          git -C /workdir/openwrt fetch --depth=1 origin a57faf93c6c3638ba3651690228aabaa51d3f235
+          git -C /workdir/openwrt checkout --detach FETCH_HEAD
+          python3 scripts/prepare.py /workdir/openwrt --phase base
+          cd /workdir/openwrt
+          ./scripts/feeds update packages luci routing pon_drivers pon_userspace
+          ./scripts/feeds install luci luci-base luci-mod-status luci-app-pon luci-i18n-pon-zh-cn luci-app-iptv luci-i18n-iptv-zh-cn airoha-pond airoha-ponctl kmod-airoha-xpon kmod-airoha-pon-frontend conntrack ip-full jsonfilter ucode ucode-mod-fs ucode-mod-uci ucode-mod-ubus ucode-mod-uloop rpcd-mod-ucode iputils-ping ethtool-full tcpdump-mini curl ttyd luci-app-ttyd
+          cd "$GITHUB_WORKSPACE"
+          python3 scripts/prepare.py /workdir/openwrt --phase packages
+      - name: Download cache
+        uses: actions/cache@v4
+        with:
+          path: /workdir/openwrt/dl
+          key: clean-ponwrt-a57faf9-dl-${{ hashFiles('components.json', 'feeds.json') }}
+          restore-keys: |
+            clean-ponwrt-a57faf9-dl-
+            ponwrt-dl-pbs05/ponwrt-master-
+      - name: Validate selected packages and patch scope
+        run: |
+          cd /workdir/openwrt
+          make defconfig
+          python3 "$GITHUB_WORKSPACE/scripts/prepare.py" . --phase check
+          make download -j8
+      - name: Compile complete firmware
+        run: |
+          cd /workdir/openwrt
+          set -o pipefail
+          make -j2 V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Audit actual build outputs
+        run: |
+          python3 scripts/audit.py /workdir/openwrt artifacts
+      - name: Upload verified firmware and source identity
+        uses: actions/upload-artifact@v4
+        with:
+          name: XG2010G-clean-6.18.55-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-ponwrt-diagnostics-${{ github.sha }}
+          path: |
+            build.log
+            native-patch-queue.json
+            prepared-source.json
+            /workdir/openwrt/.config
+            /workdir/openwrt/logs/
+          if-no-files-found: warn

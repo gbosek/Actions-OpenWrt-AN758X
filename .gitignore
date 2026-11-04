@@ -1,0 +1,6 @@
+upstreams/
+native-patch-queue.json
+prepared-source.json
+artifacts/
+*.log
+__pycache__/

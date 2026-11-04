@@ -1,0 +1,981 @@
+diff --git a/target/linux/airoha/patches-6.18/102-02-v6.19-net-airoha-npu-Add-airoha_npu_soc_data-struct.patch b/target/linux/airoha/patches-6.18/102-02-v6.19-net-airoha-npu-Add-airoha_npu_soc_data-struct.patch
+index d2ddaf9..598a1c3 100755
+--- a/target/linux/airoha/patches-6.18/102-02-v6.19-net-airoha-npu-Add-airoha_npu_soc_data-struct.patch
++++ b/target/linux/airoha/patches-6.18/102-02-v6.19-net-airoha-npu-Add-airoha_npu_soc_data-struct.patch
+@@ -17,7 +17,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -103,6 +103,16 @@ enum {
++@@ -104,6 +104,16 @@ enum {
+  	QDMA_WAN_PON_XDSL,
+  };
+  
+@@ -34,7 +34,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  #define MBOX_MSG_FUNC_ID	GENMASK(14, 11)
+  #define MBOX_MSG_STATIC_BUF	BIT(5)
+  #define MBOX_MSG_STATUS		GENMASK(4, 2)
+-@@ -182,49 +192,53 @@ static int airoha_npu_send_msg(struct ai
++@@ -183,49 +193,53 @@ static int airoha_npu_send_msg(struct ai
+  	return ret;
+  }
+  
+@@ -113,7 +113,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  }
+  
+  static irqreturn_t airoha_npu_mbox_handler(int irq, void *npu_instance)
+-@@ -597,8 +611,19 @@ void airoha_npu_put(struct airoha_npu *n
++@@ -598,8 +612,19 @@ void airoha_npu_put(struct airoha_npu *n
+  }
+  EXPORT_SYMBOL_GPL(airoha_npu_put);
+  
+diff --git a/target/linux/airoha/patches-6.18/102-03-v6.19-net-airoha-npu-Add-7583-SoC-support.patch b/target/linux/airoha/patches-6.18/102-03-v6.19-net-airoha-npu-Add-7583-SoC-support.patch
+index 9147279..0846bce 100755
+--- a/target/linux/airoha/patches-6.18/102-03-v6.19-net-airoha-npu-Add-7583-SoC-support.patch
++++ b/target/linux/airoha/patches-6.18/102-03-v6.19-net-airoha-npu-Add-7583-SoC-support.patch
+@@ -15,7 +15,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -16,6 +16,8 @@
++@@ -17,6 +17,8 @@
+  
+  #define NPU_EN7581_FIRMWARE_DATA		"airoha/en7581_npu_data.bin"
+  #define NPU_EN7581_FIRMWARE_RV32		"airoha/en7581_npu_rv32.bin"
+@@ -24,7 +24,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  #define NPU_EN7581_FIRMWARE_RV32_MAX_SIZE	0x200000
+  #define NPU_EN7581_FIRMWARE_DATA_MAX_SIZE	0x10000
+  #define NPU_DUMP_SIZE				512
+-@@ -622,8 +624,20 @@ static const struct airoha_npu_soc_data
++@@ -623,8 +625,20 @@ static const struct airoha_npu_soc_data
+  	},
+  };
+  
+@@ -45,7 +45,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  	{ /* sentinel */ }
+  };
+  MODULE_DEVICE_TABLE(of, of_airoha_npu_match);
+-@@ -762,6 +776,8 @@ module_platform_driver(airoha_npu_driver
++@@ -756,6 +770,8 @@ module_platform_driver(airoha_npu_driver
+  
+  MODULE_FIRMWARE(NPU_EN7581_FIRMWARE_DATA);
+  MODULE_FIRMWARE(NPU_EN7581_FIRMWARE_RV32);
+diff --git a/target/linux/airoha/patches-6.18/118-v7.0-net-airoha-npu-Dump-fw-version-during-probe.patch b/target/linux/airoha/patches-6.18/118-v7.0-net-airoha-npu-Dump-fw-version-during-probe.patch
+index 1086474..0ae9b2e 100755
+--- a/target/linux/airoha/patches-6.18/118-v7.0-net-airoha-npu-Dump-fw-version-during-probe.patch
++++ b/target/linux/airoha/patches-6.18/118-v7.0-net-airoha-npu-Dump-fw-version-during-probe.patch
+@@ -14,7 +14,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -657,6 +657,7 @@ static int airoha_npu_probe(struct platf
++@@ -658,6 +658,7 @@ static int airoha_npu_probe(struct platf
+  	struct resource res;
+  	void __iomem *base;
+  	int i, irq, err;
+@@ -22,7 +22,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  
+  	base = devm_platform_ioremap_resource(pdev, 0);
+  	if (IS_ERR(base))
+-@@ -750,6 +751,11 @@ static int airoha_npu_probe(struct platf
++@@ -754,6 +755,11 @@ static int airoha_npu_probe(struct platf
+  	regmap_write(npu->regmap, REG_CR_BOOT_TRIGGER, 0x1);
+  	msleep(100);
+  
+diff --git a/target/linux/airoha/patches-6.18/121-v7.0-net-airoha-npu-Init-BA-memory-region-if-provided-via.patch b/target/linux/airoha/patches-6.18/121-v7.0-net-airoha-npu-Init-BA-memory-region-if-provided-via.patch
+index 9283e18..6419c41 100755
+--- a/target/linux/airoha/patches-6.18/121-v7.0-net-airoha-npu-Init-BA-memory-region-if-provided-via.patch
++++ b/target/linux/airoha/patches-6.18/121-v7.0-net-airoha-npu-Init-BA-memory-region-if-provided-via.patch
+@@ -15,7 +15,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -519,6 +519,14 @@ static int airoha_npu_wlan_init_memory(s
++@@ -520,6 +520,14 @@ static int airoha_npu_wlan_init_memory(s
+  	if (err)
+  		return err;
+  
+diff --git a/target/linux/airoha/patches-6.18/123-v7.0-net-airoha-npu-Add-the-capability-to-read-firmware-n.patch b/target/linux/airoha/patches-6.18/123-v7.0-net-airoha-npu-Add-the-capability-to-read-firmware-n.patch
+index 678e643..52ac3df 100755
+--- a/target/linux/airoha/patches-6.18/123-v7.0-net-airoha-npu-Add-the-capability-to-read-firmware-n.patch
++++ b/target/linux/airoha/patches-6.18/123-v7.0-net-airoha-npu-Add-the-capability-to-read-firmware-n.patch
+@@ -22,7 +22,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -16,6 +16,8 @@
++@@ -17,6 +17,8 @@
+  
+  #define NPU_EN7581_FIRMWARE_DATA		"airoha/en7581_npu_data.bin"
+  #define NPU_EN7581_FIRMWARE_RV32		"airoha/en7581_npu_rv32.bin"
+@@ -31,7 +31,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  #define NPU_AN7583_FIRMWARE_DATA		"airoha/an7583_npu_data.bin"
+  #define NPU_AN7583_FIRMWARE_RV32		"airoha/an7583_npu_rv32.bin"
+  #define NPU_EN7581_FIRMWARE_RV32_MAX_SIZE	0x200000
+-@@ -195,18 +197,18 @@ static int airoha_npu_send_msg(struct ai
++@@ -196,18 +198,18 @@ static int airoha_npu_send_msg(struct ai
+  }
+  
+  static int airoha_npu_load_firmware(struct device *dev, void __iomem *addr,
+@@ -54,7 +54,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  		ret = -E2BIG;
+  		goto out;
+  	}
+-@@ -218,6 +220,28 @@ out:
++@@ -219,6 +221,28 @@ out:
+  	return ret;
+  }
+  
+@@ -83,7 +83,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  static int airoha_npu_run_firmware(struct device *dev, void __iomem *base,
+  				   struct resource *res)
+  {
+-@@ -233,14 +257,22 @@ static int airoha_npu_run_firmware(struc
++@@ -234,14 +258,22 @@ static int airoha_npu_run_firmware(struc
+  	if (IS_ERR(addr))
+  		return PTR_ERR(addr);
+  
+@@ -108,7 +108,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  }
+  
+  static irqreturn_t airoha_npu_mbox_handler(int irq, void *npu_instance)
+-@@ -790,6 +822,8 @@ module_platform_driver(airoha_npu_driver
++@@ -784,6 +816,8 @@ module_platform_driver(airoha_npu_driver
+  
+  MODULE_FIRMWARE(NPU_EN7581_FIRMWARE_DATA);
+  MODULE_FIRMWARE(NPU_EN7581_FIRMWARE_RV32);
+diff --git a/target/linux/airoha/patches-6.18/181-v7.3-net-airoha-npu-load-the-firmware-without-the-sysfs-fall.patch b/target/linux/airoha/patches-6.18/181-v7.3-net-airoha-npu-load-the-firmware-without-the-sysfs-fall.patch
+index 3313b40..9c27c96 100755
+--- a/target/linux/airoha/patches-6.18/181-v7.3-net-airoha-npu-load-the-firmware-without-the-sysfs-fall.patch
++++ b/target/linux/airoha/patches-6.18/181-v7.3-net-airoha-npu-load-the-firmware-without-the-sysfs-fall.patch
+@@ -70,7 +70,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+ 
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -202,9 +202,10 @@ static int airoha_npu_load_firmware(stru
++@@ -203,9 +203,10 @@ static int airoha_npu_load_firmware(stru
+  	const struct firmware *fw;
+  	int ret;
+  
+@@ -83,7 +83,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  
+  	if (fw->size > fw_max_size) {
+  		dev_err(dev, "%s: fw size too overlimit (%zu)\n",
+-@@ -230,7 +231,8 @@ airoha_npu_load_firmware_from_dts(struct
++@@ -231,7 +232,8 @@ airoha_npu_load_firmware_from_dts(struct
+  	ret = of_property_read_string_array(dev->of_node, "firmware-name",
+  					    fw_names, ARRAY_SIZE(fw_names));
+  	if (ret != ARRAY_SIZE(fw_names))
+@@ -93,7 +93,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  
+  	ret = airoha_npu_load_firmware(dev, addr, fw_names[0],
+  				       NPU_EN7581_FIRMWARE_RV32_MAX_SIZE);
+-@@ -772,7 +774,7 @@ static int airoha_npu_probe(struct platf
++@@ -776,7 +778,7 @@ static int airoha_npu_probe(struct platf
+  
+  	err = airoha_npu_run_firmware(dev, base, &res);
+  	if (err)
+diff --git a/target/linux/airoha/patches-6.18/924-net-airoha-npu-use-coherent-mailbox-dma.patch b/target/linux/airoha/patches-6.18/924-net-airoha-npu-use-coherent-mailbox-dma.patch
+index 1cec50f..bfe584b 100755
+--- a/target/linux/airoha/patches-6.18/924-net-airoha-npu-use-coherent-mailbox-dma.patch
++++ b/target/linux/airoha/patches-6.18/924-net-airoha-npu-use-coherent-mailbox-dma.patch
+@@ -35,7 +35,7 @@ Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+ ---
+ --- a/drivers/net/ethernet/airoha/airoha_npu.c
+ +++ b/drivers/net/ethernet/airoha/airoha_npu.c
+-@@ -23,6 +23,12 @@
++@@ -24,6 +24,12 @@
+  #define NPU_EN7581_FIRMWARE_RV32_MAX_SIZE	0x200000
+  #define NPU_EN7581_FIRMWARE_DATA_MAX_SIZE	0x10000
+  #define NPU_DUMP_SIZE				512
+@@ -48,7 +48,7 @@ Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+  
+  #define REG_NPU_LOCAL_SRAM		0x0
+  
+-@@ -160,23 +166,34 @@ struct wlan_mbox_data {
++@@ -161,23 +167,34 @@ struct wlan_mbox_data {
+  	DECLARE_FLEX_ARRAY(u8, d);
+  };
+  
+@@ -95,7 +95,7 @@ Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+  	regmap_read(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, &val);
+  	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, val + 1);
+  	val = FIELD_PREP(MBOX_MSG_FUNC_ID, func_id) | MBOX_MSG_WAIT_RSP;
+-@@ -189,13 +206,21 @@ static int airoha_npu_send_msg(struct ai
++@@ -190,13 +207,21 @@ static int airoha_npu_send_msg(struct ai
+  	if (!ret && FIELD_GET(MBOX_MSG_STATUS, val) != NPU_MBOX_SUCCESS)
+  		ret = -EINVAL;
+  
+@@ -119,7 +119,7 @@ Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+  static int airoha_npu_load_firmware(struct device *dev, void __iomem *addr,
+  				    const char *fw_name, int fw_max_size)
+  {
+-@@ -499,9 +524,8 @@ static int airoha_npu_wlan_msg_get(struc
++@@ -500,9 +525,8 @@ static int airoha_npu_wlan_msg_get(struc
+  	wlan_data->func_type = NPU_OP_GET;
+  	wlan_data->func_id = func_id;
+  
+@@ -131,7 +131,7 @@ Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+  	kfree(wlan_data);
+  
+  	return err;
+-@@ -772,6 +796,15 @@ static int airoha_npu_probe(struct platf
++@@ -776,6 +800,15 @@ static int airoha_npu_probe(struct platf
+  	if (err)
+  		return err;
+  
+diff --git a/target/linux/generic/backport-6.18/703-02-v7.0-net-phylink-introduce-helpers-for-replaying-link-cal.patch b/target/linux/generic/backport-6.18/703-02-v7.0-net-phylink-introduce-helpers-for-replaying-link-cal.patch
+index a87b101..e2e4f36 100755
+--- a/target/linux/generic/backport-6.18/703-02-v7.0-net-phylink-introduce-helpers-for-replaying-link-cal.patch
++++ b/target/linux/generic/backport-6.18/703-02-v7.0-net-phylink-introduce-helpers-for-replaying-link-cal.patch
+@@ -76,7 +76,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  	}
+  
+  	/* If configuration of the interface failed, force the link down
+-@@ -4274,6 +4278,57 @@ void phylink_mii_c45_pcs_get_state(struc
++@@ -4288,6 +4292,57 @@ void phylink_mii_c45_pcs_get_state(struc
+  }
+  EXPORT_SYMBOL_GPL(phylink_mii_c45_pcs_get_state);
+  
+diff --git a/target/linux/generic/backport-6.18/704-v7.3-net-phylink-treat-PSGMII-as-an-inband-capable-interface.patch b/target/linux/generic/backport-6.18/704-v7.3-net-phylink-treat-PSGMII-as-an-inband-capable-interface.patch
+index 1d17137..951a3ac 100755
+--- a/target/linux/generic/backport-6.18/704-v7.3-net-phylink-treat-PSGMII-as-an-inband-capable-interface.patch
++++ b/target/linux/generic/backport-6.18/704-v7.3-net-phylink-treat-PSGMII-as-an-inband-capable-interface.patch
+@@ -43,7 +43,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  	case PHY_INTERFACE_MODE_QSGMII:
+  	case PHY_INTERFACE_MODE_QUSGMII:
+  	case PHY_INTERFACE_MODE_USXGMII:
+-@@ -4093,6 +4094,7 @@ void phylink_mii_c22_pcs_decode_state(st
++@@ -4107,6 +4108,7 @@ void phylink_mii_c22_pcs_decode_state(st
+  		break;
+  
+  	case PHY_INTERFACE_MODE_SGMII:
+@@ -51,7 +51,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  	case PHY_INTERFACE_MODE_QSGMII:
+  		if (neg_mode == PHYLINK_PCS_NEG_INBAND_ENABLED)
+  			phylink_decode_sgmii_word(state, lpa);
+-@@ -4173,6 +4175,7 @@ int phylink_mii_c22_pcs_encode_advertise
++@@ -4187,6 +4189,7 @@ int phylink_mii_c22_pcs_encode_advertise
+  			adv |= ADVERTISE_1000XPSE_ASYM;
+  		return adv;
+  	case PHY_INTERFACE_MODE_SGMII:
+diff --git a/target/linux/generic/backport-6.18/785-v7.0-09-net-pcs-pcs-mtk-lynxi-pass-SGMIISYS-OF-node-to-PCS.patch b/target/linux/generic/backport-6.18/785-v7.0-09-net-pcs-pcs-mtk-lynxi-pass-SGMIISYS-OF-node-to-PCS.patch
+index 30e8757..8798f5a 100755
+--- a/target/linux/generic/backport-6.18/785-v7.0-09-net-pcs-pcs-mtk-lynxi-pass-SGMIISYS-OF-node-to-PCS.patch
++++ b/target/linux/generic/backport-6.18/785-v7.0-09-net-pcs-pcs-mtk-lynxi-pass-SGMIISYS-OF-node-to-PCS.patch
+@@ -51,7 +51,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  			break;
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -5058,7 +5058,6 @@ static int mtk_sgmii_init(struct mtk_eth
++@@ -5062,7 +5062,6 @@ static int mtk_sgmii_init(struct mtk_eth
+  {
+  	struct device_node *np;
+  	struct regmap *regmap;
+@@ -59,7 +59,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+  	int i;
+  
+  	for (i = 0; i < MTK_MAX_DEVS; i++) {
+-@@ -5067,18 +5066,16 @@ static int mtk_sgmii_init(struct mtk_eth
++@@ -5071,18 +5070,16 @@ static int mtk_sgmii_init(struct mtk_eth
+  			break;
+  
+  		regmap = syscon_node_to_regmap(np);
+diff --git a/target/linux/generic/hack-6.18/721-net-add-packet-mangeling.patch b/target/linux/generic/hack-6.18/721-net-add-packet-mangeling.patch
+index cfd0097..606c084 100755
+--- a/target/linux/generic/hack-6.18/721-net-add-packet-mangeling.patch
++++ b/target/linux/generic/hack-6.18/721-net-add-packet-mangeling.patch
+@@ -52,7 +52,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+   */
+ --- a/include/linux/skbuff.h
+ +++ b/include/linux/skbuff.h
+-@@ -3362,6 +3362,10 @@ static inline int pskb_trim(struct sk_bu
++@@ -3345,6 +3345,10 @@ static inline int pskb_trim(struct sk_bu
+  	return (len < skb->len) ? __pskb_trim(skb, len) : 0;
+  }
+  
+@@ -63,7 +63,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  /**
+   *	pskb_trim_unique - remove end from a paged unique (not cloned) buffer
+   *	@skb: buffer to alter
+-@@ -3527,16 +3531,6 @@ static inline struct sk_buff *dev_alloc_
++@@ -3510,16 +3514,6 @@ static inline struct sk_buff *dev_alloc_
+  }
+  
+  
+diff --git a/target/linux/generic/hack-6.18/739-net-ethernet-mtk_eth_soc-fix-offload-with-incompatible-.patch b/target/linux/generic/hack-6.18/739-net-ethernet-mtk_eth_soc-fix-offload-with-incompatible-.patch
+index 87997fb..b242a81 100755
+--- a/target/linux/generic/hack-6.18/739-net-ethernet-mtk_eth_soc-fix-offload-with-incompatible-.patch
++++ b/target/linux/generic/hack-6.18/739-net-ethernet-mtk_eth_soc-fix-offload-with-incompatible-.patch
+@@ -41,7 +41,7 @@ Signed-off-by: Mieczyslaw Nalewaj <namiltd@yahoo.com>
+ 
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -5114,6 +5114,35 @@ static u16 mtk_select_queue(struct net_d
++@@ -5118,6 +5118,35 @@ static u16 mtk_select_queue(struct net_d
+  	return queue;
+  }
+  
+@@ -77,7 +77,7 @@ Signed-off-by: Mieczyslaw Nalewaj <namiltd@yahoo.com>
+  static const struct ethtool_ops mtk_ethtool_ops = {
+  	.get_link_ksettings	= mtk_get_link_ksettings,
+  	.set_link_ksettings	= mtk_set_link_ksettings,
+-@@ -5153,6 +5182,9 @@ static const struct net_device_ops mtk_n
++@@ -5157,6 +5186,9 @@ static const struct net_device_ops mtk_n
+  	.ndo_bpf		= mtk_xdp,
+  	.ndo_xdp_xmit		= mtk_xdp_xmit,
+  	.ndo_select_queue	= mtk_select_queue,
+diff --git a/target/linux/generic/kernel-6.18 b/target/linux/generic/kernel-6.18
+index a1f94c6..443d40e 100755
+--- a/target/linux/generic/kernel-6.18
++++ b/target/linux/generic/kernel-6.18
+@@ -1,2 +1,2 @@
+-LINUX_VERSION-6.18 = .54
+-LINUX_KERNEL_HASH-6.18.54 = 9df30b02dd8102bbd0be52556288ef6889ddbe7f1ddb96fbf847d0becf3eacac
++LINUX_VERSION-6.18 = .55
++LINUX_KERNEL_HASH-6.18.55 = f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9
+diff --git a/target/linux/generic/pending-6.18/630-packet_socket_type.patch b/target/linux/generic/pending-6.18/630-packet_socket_type.patch
+index ee19f43..a9017de 100755
+--- a/target/linux/generic/pending-6.18/630-packet_socket_type.patch
++++ b/target/linux/generic/pending-6.18/630-packet_socket_type.patch
+@@ -87,7 +87,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	if (!net_eq(dev_net(dev), sock_net(sk)))
+  		goto drop;
+  
+-@@ -3411,6 +3413,7 @@ static int packet_create(struct net *net
++@@ -3438,6 +3440,7 @@ static int packet_create(struct net *net
+  	mutex_init(&po->pg_vec_lock);
+  	po->rollover = NULL;
+  	po->prot_hook.func = packet_rcv;
+@@ -95,7 +95,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  
+  	if (sock->type == SOCK_PACKET)
+  		po->prot_hook.func = packet_rcv_spkt;
+-@@ -4079,6 +4082,16 @@ packet_setsockopt(struct socket *sock, i
++@@ -4106,6 +4109,16 @@ packet_setsockopt(struct socket *sock, i
+  		packet_sock_flag_set(po, PACKET_SOCK_QDISC_BYPASS, val);
+  		return 0;
+  	}
+@@ -112,7 +112,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	default:
+  		return -ENOPROTOOPT;
+  	}
+-@@ -4141,6 +4154,13 @@ static int packet_getsockopt(struct sock
++@@ -4168,6 +4181,13 @@ static int packet_getsockopt(struct sock
+  	case PACKET_COPY_THRESH:
+  		val = READ_ONCE(pkt_sk(sk)->copy_thresh);
+  		break;
+diff --git a/target/linux/generic/pending-6.18/655-increase_skb_pad.patch b/target/linux/generic/pending-6.18/655-increase_skb_pad.patch
+index f8dc76c..637ca18 100755
+--- a/target/linux/generic/pending-6.18/655-increase_skb_pad.patch
++++ b/target/linux/generic/pending-6.18/655-increase_skb_pad.patch
+@@ -9,7 +9,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+ 
+ --- a/include/linux/skbuff.h
+ +++ b/include/linux/skbuff.h
+-@@ -3328,7 +3328,7 @@ static inline int pskb_network_may_pull(
++@@ -3311,7 +3311,7 @@ static inline int pskb_network_may_pull(
+   * NET_IP_ALIGN(2) + ethernet_header(14) + IP_header(20/40) + ports(8)
+   */
+  #ifndef NET_SKB_PAD
+diff --git a/target/linux/generic/pending-6.18/670-ipv6-allow-rejecting-with-source-address-failed-policy.patch b/target/linux/generic/pending-6.18/670-ipv6-allow-rejecting-with-source-address-failed-policy.patch
+index 5265326..e8ce76e 100755
+--- a/target/linux/generic/pending-6.18/670-ipv6-allow-rejecting-with-source-address-failed-policy.patch
++++ b/target/linux/generic/pending-6.18/670-ipv6-allow-rejecting-with-source-address-failed-policy.patch
+@@ -119,7 +119,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  static void		ip6_link_failure(struct sk_buff *skb);
+  static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
+  					   struct sk_buff *skb, u32 mtu,
+-@@ -316,6 +318,18 @@ static const struct rt6_info ip6_prohibi
++@@ -317,6 +319,18 @@ static const struct rt6_info ip6_prohibi
+  	.rt6i_flags	= (RTF_REJECT | RTF_NONEXTHOP),
+  };
+  
+@@ -138,7 +138,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  static const struct rt6_info ip6_blk_hole_entry_template = {
+  	.dst = {
+  		.__rcuref	= RCUREF_INIT(1),
+-@@ -1089,6 +1103,7 @@ static const int fib6_prop[RTN_MAX + 1]
++@@ -1090,6 +1104,7 @@ static const int fib6_prop[RTN_MAX + 1]
+  	[RTN_BLACKHOLE]	= -EINVAL,
+  	[RTN_UNREACHABLE] = -EHOSTUNREACH,
+  	[RTN_PROHIBIT]	= -EACCES,
+@@ -146,7 +146,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  	[RTN_THROW]	= -EAGAIN,
+  	[RTN_NAT]	= -EINVAL,
+  	[RTN_XRESOLVE]	= -EINVAL,
+-@@ -1124,6 +1139,10 @@ static void ip6_rt_init_dst_reject(struc
++@@ -1125,6 +1140,10 @@ static void ip6_rt_init_dst_reject(struc
+  		rt->dst.output = ip6_pkt_prohibit_out;
+  		rt->dst.input = ip6_pkt_prohibit;
+  		break;
+@@ -157,7 +157,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  	case RTN_THROW:
+  	case RTN_UNREACHABLE:
+  	default:
+-@@ -4666,6 +4685,17 @@ static int ip6_pkt_prohibit_out(struct n
++@@ -4672,6 +4691,17 @@ static int ip6_pkt_prohibit_out(struct n
+  	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
+  }
+  
+@@ -175,7 +175,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  /*
+   *	Allocate a dst for local (unicast / anycast) address.
+   */
+-@@ -5221,7 +5251,8 @@ static int rtm_to_fib6_config(struct sk_
++@@ -5227,7 +5257,8 @@ static int rtm_to_fib6_config(struct sk_
+  	if (rtm->rtm_type == RTN_UNREACHABLE ||
+  	    rtm->rtm_type == RTN_BLACKHOLE ||
+  	    rtm->rtm_type == RTN_PROHIBIT ||
+@@ -185,7 +185,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  		cfg->fc_flags |= RTF_REJECT;
+  
+  	if (rtm->rtm_type == RTN_LOCAL)
+-@@ -6492,6 +6523,8 @@ static int ip6_route_dev_notify(struct n
++@@ -6498,6 +6529,8 @@ static int ip6_route_dev_notify(struct n
+  #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+  		net->ipv6.ip6_prohibit_entry->dst.dev = dev;
+  		net->ipv6.ip6_prohibit_entry->rt6i_idev = in6_dev_get(dev);
+@@ -194,7 +194,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  		net->ipv6.ip6_blk_hole_entry->dst.dev = dev;
+  		net->ipv6.ip6_blk_hole_entry->rt6i_idev = in6_dev_get(dev);
+  #endif
+-@@ -6503,6 +6536,7 @@ static int ip6_route_dev_notify(struct n
++@@ -6509,6 +6542,7 @@ static int ip6_route_dev_notify(struct n
+  		in6_dev_put_clear(&net->ipv6.ip6_null_entry->rt6i_idev);
+  #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+  		in6_dev_put_clear(&net->ipv6.ip6_prohibit_entry->rt6i_idev);
+@@ -202,7 +202,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  		in6_dev_put_clear(&net->ipv6.ip6_blk_hole_entry->rt6i_idev);
+  #endif
+  	}
+-@@ -6698,6 +6732,8 @@ static int __net_init ip6_route_net_init
++@@ -6704,6 +6738,8 @@ static int __net_init ip6_route_net_init
+  
+  #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+  	net->ipv6.fib6_has_custom_rules = false;
+@@ -211,7 +211,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  	net->ipv6.ip6_prohibit_entry = kmemdup(&ip6_prohibit_entry_template,
+  					       sizeof(*net->ipv6.ip6_prohibit_entry),
+  					       GFP_KERNEL);
+-@@ -6708,11 +6744,21 @@ static int __net_init ip6_route_net_init
++@@ -6714,11 +6750,21 @@ static int __net_init ip6_route_net_init
+  			 ip6_template_metrics, true);
+  	INIT_LIST_HEAD(&net->ipv6.ip6_prohibit_entry->dst.rt_uncached);
+  
+@@ -234,7 +234,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  	net->ipv6.ip6_blk_hole_entry->dst.ops = &net->ipv6.ip6_dst_ops;
+  	dst_init_metrics(&net->ipv6.ip6_blk_hole_entry->dst,
+  			 ip6_template_metrics, true);
+-@@ -6739,6 +6785,8 @@ out:
++@@ -6745,6 +6791,8 @@ out:
+  	return ret;
+  
+  #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+@@ -243,7 +243,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  out_ip6_prohibit_entry:
+  	kfree(net->ipv6.ip6_prohibit_entry);
+  out_ip6_null_entry:
+-@@ -6758,6 +6806,7 @@ static void __net_exit ip6_route_net_exi
++@@ -6764,6 +6812,7 @@ static void __net_exit ip6_route_net_exi
+  	kfree(net->ipv6.ip6_null_entry);
+  #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+  	kfree(net->ipv6.ip6_prohibit_entry);
+@@ -251,7 +251,7 @@ Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+  	kfree(net->ipv6.ip6_blk_hole_entry);
+  #endif
+  	dst_entries_destroy(&net->ipv6.ip6_dst_ops);
+-@@ -6841,6 +6890,9 @@ void __init ip6_route_init_special_entri
++@@ -6847,6 +6896,9 @@ void __init ip6_route_init_special_entri
+  	init_net.ipv6.ip6_prohibit_entry->rt6i_idev = in6_dev_get(init_net.loopback_dev);
+  	init_net.ipv6.ip6_blk_hole_entry->dst.dev = init_net.loopback_dev;
+  	init_net.ipv6.ip6_blk_hole_entry->rt6i_idev = in6_dev_get(init_net.loopback_dev);
+diff --git a/target/linux/generic/pending-6.18/681-net-remove-NETIF_F_GSO_FRAGLIST-from-NETIF_F_GSO_SOF.patch b/target/linux/generic/pending-6.18/681-net-remove-NETIF_F_GSO_FRAGLIST-from-NETIF_F_GSO_SOF.patch
+index 435b443..a170c73 100755
+--- a/target/linux/generic/pending-6.18/681-net-remove-NETIF_F_GSO_FRAGLIST-from-NETIF_F_GSO_SOF.patch
++++ b/target/linux/generic/pending-6.18/681-net-remove-NETIF_F_GSO_FRAGLIST-from-NETIF_F_GSO_SOF.patch
+@@ -76,7 +76,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	if ((ret & NETIF_F_GSO_ENCAP_ALL) && (ret & NETIF_F_CSUM_MASK))
+ --- a/net/8021q/vlan_dev.c
+ +++ b/net/8021q/vlan_dev.c
+-@@ -517,7 +517,7 @@ static int vlan_dev_init(struct net_devi
++@@ -522,7 +522,7 @@ static int vlan_dev_init(struct net_devi
+  		dev->state |= (1 << __LINK_STATE_NOCARRIER);
+  
+  	dev->hw_features = NETIF_F_HW_CSUM | NETIF_F_SG |
+@@ -85,7 +85,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  			   NETIF_F_GSO_ENCAP_ALL |
+  			   NETIF_F_HIGHDMA | NETIF_F_SCTP_CRC |
+  			   NETIF_F_FCOE_CRC | NETIF_F_FSO;
+-@@ -609,7 +609,7 @@ static netdev_features_t vlan_dev_fix_fe
++@@ -614,7 +614,7 @@ static netdev_features_t vlan_dev_fix_fe
+  	if (lower_features & (NETIF_F_IP_CSUM|NETIF_F_IPV6_CSUM))
+  		lower_features |= NETIF_F_HW_CSUM;
+  	features = netdev_intersect_features(features, lower_features);
+diff --git a/target/linux/generic/pending-6.18/701-netfilter-nf_tables-ignore-EOPNOTSUPP-on-flowtable-d.patch b/target/linux/generic/pending-6.18/701-netfilter-nf_tables-ignore-EOPNOTSUPP-on-flowtable-d.patch
+index 89712eb..fdf4626 100755
+--- a/target/linux/generic/pending-6.18/701-netfilter-nf_tables-ignore-EOPNOTSUPP-on-flowtable-d.patch
++++ b/target/linux/generic/pending-6.18/701-netfilter-nf_tables-ignore-EOPNOTSUPP-on-flowtable-d.patch
+@@ -18,7 +18,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+ 
+ --- a/net/netfilter/nf_tables_api.c
+ +++ b/net/netfilter/nf_tables_api.c
+-@@ -8898,7 +8898,7 @@ static int nft_register_flowtable_ops(st
++@@ -8904,7 +8904,7 @@ static int nft_register_flowtable_ops(st
+  
+  	err = flowtable->data.type->setup(&flowtable->data,
+  					  ops->dev, FLOW_BLOCK_BIND);
+diff --git a/target/linux/generic/pending-6.18/702-net-ethernet-mtk_eth_soc-enable-threaded-NAPI.patch b/target/linux/generic/pending-6.18/702-net-ethernet-mtk_eth_soc-enable-threaded-NAPI.patch
+index 7444f4f..b60f46d 100755
+--- a/target/linux/generic/pending-6.18/702-net-ethernet-mtk_eth_soc-enable-threaded-NAPI.patch
++++ b/target/linux/generic/pending-6.18/702-net-ethernet-mtk_eth_soc-enable-threaded-NAPI.patch
+@@ -10,7 +10,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+ 
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -5353,6 +5353,8 @@ static int mtk_probe(struct platform_dev
++@@ -5357,6 +5357,8 @@ static int mtk_probe(struct platform_dev
+  		dev_err(eth->dev, "failed to allocated dummy device\n");
+  		goto err_unreg_netdev;
+  	}
+diff --git a/target/linux/generic/pending-6.18/710-bridge-add-knob-for-filtering-rx-tx-BPDU-pack.patch b/target/linux/generic/pending-6.18/710-bridge-add-knob-for-filtering-rx-tx-BPDU-pack.patch
+index 3bfc4b1..c45781d 100755
+--- a/target/linux/generic/pending-6.18/710-bridge-add-knob-for-filtering-rx-tx-BPDU-pack.patch
++++ b/target/linux/generic/pending-6.18/710-bridge-add-knob-for-filtering-rx-tx-BPDU-pack.patch
+@@ -74,7 +74,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  };
+ --- a/net/bridge/br_stp_bpdu.c
+ +++ b/net/bridge/br_stp_bpdu.c
+-@@ -80,7 +80,8 @@ void br_send_config_bpdu(struct net_brid
++@@ -83,7 +83,8 @@ void br_send_config_bpdu(struct net_brid
+  {
+  	unsigned char buf[35];
+  
+@@ -84,7 +84,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		return;
+  
+  	buf[0] = 0;
+-@@ -127,7 +128,8 @@ void br_send_tcn_bpdu(struct net_bridge_
++@@ -130,7 +131,8 @@ void br_send_tcn_bpdu(struct net_bridge_
+  {
+  	unsigned char buf[4];
+  
+@@ -94,7 +94,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		return;
+  
+  	buf[0] = 0;
+-@@ -172,6 +174,9 @@ void br_stp_rcv(const struct stp_proto *
++@@ -175,6 +177,9 @@ void br_stp_rcv(const struct stp_proto *
+  	if (!(br->dev->flags & IFF_UP))
+  		goto out;
+  
+diff --git a/target/linux/generic/pending-6.18/732-03-net-ethernet-mtk_eth_soc-optimize-dma-ring-address-i.patch b/target/linux/generic/pending-6.18/732-03-net-ethernet-mtk_eth_soc-optimize-dma-ring-address-i.patch
+index 9852264..d30cd49 100755
+--- a/target/linux/generic/pending-6.18/732-03-net-ethernet-mtk_eth_soc-optimize-dma-ring-address-i.patch
++++ b/target/linux/generic/pending-6.18/732-03-net-ethernet-mtk_eth_soc-optimize-dma-ring-address-i.patch
+@@ -291,7 +291,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  				  eth->scratch_ring, eth->phy_scratch_ring,
+  				  true);
+  		eth->scratch_ring = NULL;
+-@@ -5441,6 +5445,9 @@ static void mtk_remove(struct platform_d
++@@ -5445,6 +5449,9 @@ static void mtk_remove(struct platform_d
+  	mtk_mdio_cleanup(eth);
+  }
+  
+@@ -301,7 +301,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  static const struct mtk_soc_data mt2701_data = {
+  	.reg_map = &mtk_reg_map,
+  	.caps = MT7623_CAPS | MTK_HWLRO,
+-@@ -5449,14 +5456,14 @@ static const struct mtk_soc_data mt2701_
++@@ -5453,14 +5460,14 @@ static const struct mtk_soc_data mt2701_
+  	.required_pctl = true,
+  	.version = 1,
+  	.tx = {
+@@ -318,7 +318,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+  		.dma_size = MTK_DMA_SIZE(2K),
+-@@ -5477,14 +5484,14 @@ static const struct mtk_soc_data mt7621_
++@@ -5481,14 +5488,14 @@ static const struct mtk_soc_data mt7621_
+  	.hash_offset = 2,
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.tx = {
+@@ -335,7 +335,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+  		.dma_size = MTK_DMA_SIZE(2K),
+-@@ -5507,14 +5514,14 @@ static const struct mtk_soc_data mt7622_
++@@ -5511,14 +5518,14 @@ static const struct mtk_soc_data mt7622_
+  	.has_accounting = true,
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.tx = {
+@@ -352,7 +352,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+  		.dma_size = MTK_DMA_SIZE(2K),
+-@@ -5536,14 +5543,14 @@ static const struct mtk_soc_data mt7623_
++@@ -5540,14 +5547,14 @@ static const struct mtk_soc_data mt7623_
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.disable_pll_modes = true,
+  	.tx = {
+@@ -369,7 +369,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+  		.dma_size = MTK_DMA_SIZE(2K),
+-@@ -5562,14 +5569,14 @@ static const struct mtk_soc_data mt7629_
++@@ -5566,14 +5573,14 @@ static const struct mtk_soc_data mt7629_
+  	.has_accounting = true,
+  	.version = 1,
+  	.tx = {
+@@ -386,7 +386,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+  		.dma_size = MTK_DMA_SIZE(2K),
+-@@ -5592,14 +5599,14 @@ static const struct mtk_soc_data mt7981_
++@@ -5596,14 +5603,14 @@ static const struct mtk_soc_data mt7981_
+  	.has_accounting = true,
+  	.foe_entry_size = MTK_FOE_ENTRY_V2_SIZE,
+  	.tx = {
+@@ -403,7 +403,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+-@@ -5622,14 +5629,14 @@ static const struct mtk_soc_data mt7986_
++@@ -5626,14 +5633,14 @@ static const struct mtk_soc_data mt7986_
+  	.has_accounting = true,
+  	.foe_entry_size = MTK_FOE_ENTRY_V2_SIZE,
+  	.tx = {
+@@ -420,7 +420,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+-@@ -5652,14 +5659,14 @@ static const struct mtk_soc_data mt7988_
++@@ -5656,14 +5663,14 @@ static const struct mtk_soc_data mt7988_
+  	.has_accounting = true,
+  	.foe_entry_size = MTK_FOE_ENTRY_V3_SIZE,
+  	.tx = {
+@@ -437,7 +437,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.irq_done_mask = MTK_RX_DONE_INT_V2,
+  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
+-@@ -5676,13 +5683,13 @@ static const struct mtk_soc_data rt5350_
++@@ -5680,13 +5687,13 @@ static const struct mtk_soc_data rt5350_
+  	.required_pctl = false,
+  	.version = 1,
+  	.tx = {
+diff --git a/target/linux/generic/pending-6.18/737-09-net-ethernet-mtk_eth_soc-improve-probe-deferal.patch b/target/linux/generic/pending-6.18/737-09-net-ethernet-mtk_eth_soc-improve-probe-deferal.patch
+index b72364c..d056af5 100755
+--- a/target/linux/generic/pending-6.18/737-09-net-ethernet-mtk_eth_soc-improve-probe-deferal.patch
++++ b/target/linux/generic/pending-6.18/737-09-net-ethernet-mtk_eth_soc-improve-probe-deferal.patch
+@@ -18,7 +18,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+ 
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -5048,17 +5048,6 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5052,17 +5052,6 @@ static int mtk_add_mac(struct mtk_eth *e
+  	mac->hw = eth;
+  	mac->of_node = np;
+  
+@@ -36,7 +36,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	memset(mac->hwlro_ip, 0, sizeof(mac->hwlro_ip));
+  	mac->hwlro_ip_cnt = 0;
+  
+-@@ -5214,6 +5203,26 @@ free_netdev:
++@@ -5218,6 +5207,26 @@ free_netdev:
+  	return err;
+  }
+  
+@@ -63,7 +63,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  void mtk_eth_set_dma_device(struct mtk_eth *eth, struct device *dma_dev)
+  {
+  	struct net_device *dev, *tmp;
+-@@ -5473,6 +5482,28 @@ static int mtk_probe(struct platform_dev
++@@ -5477,6 +5486,28 @@ static int mtk_probe(struct platform_dev
+  		}
+  	}
+  
+diff --git a/target/linux/generic/pending-6.18/737-10-net-ethernet-mtk_eth_soc-add-paths-and-SerDes-modes-.patch b/target/linux/generic/pending-6.18/737-10-net-ethernet-mtk_eth_soc-add-paths-and-SerDes-modes-.patch
+index 1e750d2..4dc8f95 100755
+--- a/target/linux/generic/pending-6.18/737-10-net-ethernet-mtk_eth_soc-add-paths-and-SerDes-modes-.patch
++++ b/target/linux/generic/pending-6.18/737-10-net-ethernet-mtk_eth_soc-add-paths-and-SerDes-modes-.patch
+@@ -275,7 +275,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.mac_config = mtk_mac_config,
+  	.mac_finish = mtk_mac_finish,
+  	.mac_link_down = mtk_mac_link_down,
+-@@ -5007,6 +5040,31 @@ static const struct net_device_ops mtk_n
++@@ -5011,6 +5044,31 @@ static const struct net_device_ops mtk_n
+  	.ndo_select_queue	= mtk_select_queue,
+  };
+  
+@@ -307,7 +307,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
+  {
+  	const struct phylink_mac_ops *mac_ops = &mtk_phylink_ops;
+-@@ -5014,7 +5072,7 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5018,7 +5076,7 @@ static int mtk_add_mac(struct mtk_eth *e
+  	phy_interface_t phy_mode;
+  	struct phylink *phylink;
+  	struct mtk_mac *mac;
+@@ -316,7 +316,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	int txqs = 1;
+  	u32 val;
+  
+-@@ -5085,6 +5143,8 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5089,6 +5147,8 @@ static int mtk_add_mac(struct mtk_eth *e
+  	/* LPI above 1 Gbps is not supported */
+  	mac->phylink_config.lpi_capabilities = MAC_100FD | MAC_1000FD;
+  	mac->phylink_config.lpi_timer_default = 1000;
+@@ -325,7 +325,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  
+  	/* MT7623 gmac0 is now missing its speed-specific PLL configuration
+  	 * in its .mac_config method (since state->speed is not valid there.
+-@@ -5115,13 +5175,52 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5119,13 +5179,52 @@ static int mtk_add_mac(struct mtk_eth *e
+  
+  	if (MTK_HAS_CAPS(mac->hw->soc->caps, MTK_SGMII)) {
+  		__set_bit(PHY_INTERFACE_MODE_SGMII,
+@@ -381,7 +381,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	if (mtk_is_netsys_v3_or_greater(mac->hw) &&
+  	    MTK_HAS_CAPS(mac->hw->soc->caps, MTK_ESW) &&
+  	    id == MTK_GMAC1_ID) {
+-@@ -5131,6 +5230,14 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5135,6 +5234,14 @@ static int mtk_add_mac(struct mtk_eth *e
+  		phy_interface_zero(mac->phylink_config.supported_interfaces);
+  		__set_bit(PHY_INTERFACE_MODE_INTERNAL,
+  			  mac->phylink_config.supported_interfaces);
+@@ -396,7 +396,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	}
+  
+  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
+-@@ -5141,6 +5248,23 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5145,6 +5252,23 @@ static int mtk_add_mac(struct mtk_eth *e
+  		__set_bit(PHY_INTERFACE_MODE_INTERNAL,
+  			  mac->phylink_config.supported_interfaces);
+  
+@@ -420,7 +420,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	/* LPI wake-up timing is only verified on MTK_GMAC_EEE SoCs */
+  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_GMAC_EEE)) {
+  		phy_interface_copy(mac->phylink_config.lpi_interfaces,
+-@@ -5163,23 +5287,6 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5167,23 +5291,6 @@ static int mtk_add_mac(struct mtk_eth *e
+  
+  	mac->phylink = phylink;
+  
+@@ -444,7 +444,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SOC_MT7628))
+  		eth->netdev[id]->max_mtu = MTK_MAX_RX_LENGTH - MTK_RX_ETH_HLEN;
+  	else
+-@@ -5373,7 +5480,8 @@ static int mtk_probe(struct platform_dev
++@@ -5377,7 +5484,8 @@ static int mtk_probe(struct platform_dev
+  			regmap_write(cci, 0, 3);
+  	}
+  
+diff --git a/target/linux/generic/pending-6.18/738-01-net-ethernet-mtk_eth_soc-reduce-rx-ring-size-for-older.patch b/target/linux/generic/pending-6.18/738-01-net-ethernet-mtk_eth_soc-reduce-rx-ring-size-for-older.patch
+index 9f63d53..9cc2d66 100755
+--- a/target/linux/generic/pending-6.18/738-01-net-ethernet-mtk_eth_soc-reduce-rx-ring-size-for-older.patch
++++ b/target/linux/generic/pending-6.18/738-01-net-ethernet-mtk_eth_soc-reduce-rx-ring-size-for-older.patch
+@@ -30,7 +30,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+ 
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -5755,7 +5755,7 @@ static const struct mtk_soc_data mt2701_
++@@ -5759,7 +5759,7 @@ static const struct mtk_soc_data mt2701_
+  		DESC_SIZE(struct mtk_rx_dma),
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+@@ -39,7 +39,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+  	},
+-@@ -5783,7 +5783,7 @@ static const struct mtk_soc_data mt7621_
++@@ -5787,7 +5787,7 @@ static const struct mtk_soc_data mt7621_
+  		DESC_SIZE(struct mtk_rx_dma),
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+@@ -48,7 +48,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+  	},
+-@@ -5813,7 +5813,7 @@ static const struct mtk_soc_data mt7622_
++@@ -5817,7 +5817,7 @@ static const struct mtk_soc_data mt7622_
+  		DESC_SIZE(struct mtk_rx_dma),
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+@@ -57,7 +57,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+  	},
+-@@ -5842,7 +5842,7 @@ static const struct mtk_soc_data mt7623_
++@@ -5846,7 +5846,7 @@ static const struct mtk_soc_data mt7623_
+  		DESC_SIZE(struct mtk_rx_dma),
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+@@ -66,7 +66,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+  	},
+-@@ -5868,7 +5868,7 @@ static const struct mtk_soc_data mt7629_
++@@ -5872,7 +5872,7 @@ static const struct mtk_soc_data mt7629_
+  		DESC_SIZE(struct mtk_rx_dma),
+  		.irq_done_mask = MTK_RX_DONE_INT,
+  		.dma_l4_valid = RX_DMA_L4_VALID,
+@@ -75,7 +75,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+  	},
+-@@ -5900,7 +5900,7 @@ static const struct mtk_soc_data mt7981_
++@@ -5904,7 +5904,7 @@ static const struct mtk_soc_data mt7981_
+  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+@@ -84,7 +84,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	},
+  };
+  
+-@@ -5930,7 +5930,7 @@ static const struct mtk_soc_data mt7986_
++@@ -5934,7 +5934,7 @@ static const struct mtk_soc_data mt7986_
+  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+@@ -93,7 +93,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	},
+  };
+  
+-@@ -5983,7 +5983,7 @@ static const struct mtk_soc_data rt5350_
++@@ -5987,7 +5987,7 @@ static const struct mtk_soc_data rt5350_
+  		.dma_l4_valid = RX_DMA_L4_VALID_PDMA,
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+  		.dma_len_offset = 16,
+diff --git a/target/linux/generic/pending-6.18/738-02-net-ethernet-mtk_eth_soc-do-not-enable-page-pool-sta.patch b/target/linux/generic/pending-6.18/738-02-net-ethernet-mtk_eth_soc-do-not-enable-page-pool-sta.patch
+index 9feb25b..e1788b0 100755
+--- a/target/linux/generic/pending-6.18/738-02-net-ethernet-mtk_eth_soc-do-not-enable-page-pool-sta.patch
++++ b/target/linux/generic/pending-6.18/738-02-net-ethernet-mtk_eth_soc-do-not-enable-page-pool-sta.patch
+@@ -25,7 +25,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	help
+ --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+ +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+-@@ -4852,6 +4852,7 @@ static int mtk_get_sset_count(struct net
++@@ -4856,6 +4856,7 @@ static int mtk_get_sset_count(struct net
+  
+  static void mtk_ethtool_pp_stats(struct mtk_eth *eth, u64 *data)
+  {
+@@ -33,7 +33,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
+  	struct page_pool_stats stats = {};
+  	int i;
+  
+-@@ -4864,6 +4865,7 @@ static void mtk_ethtool_pp_stats(struct
++@@ -4868,6 +4869,7 @@ static void mtk_ethtool_pp_stats(struct
+  		page_pool_get_stats(ring->page_pool, &stats);
+  	}
+  	page_pool_ethtool_stats_get(data, &stats);
+diff --git a/target/linux/generic/pending-6.18/795-04-net-ethernet-mtk_eth_soc-per-SoC-QDMA-TX-queue-count.patch b/target/linux/generic/pending-6.18/795-04-net-ethernet-mtk_eth_soc-per-SoC-QDMA-TX-queue-count.patch
+index 222a6be..2461caa 100755
+--- a/target/linux/generic/pending-6.18/795-04-net-ethernet-mtk_eth_soc-per-SoC-QDMA-TX-queue-count.patch
++++ b/target/linux/generic/pending-6.18/795-04-net-ethernet-mtk_eth_soc-per-SoC-QDMA-TX-queue-count.patch
+@@ -98,7 +98,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  		return NOTIFY_DONE;
+  
+  	if (mac->speed > 0 && mac->speed <= s.base.speed)
+-@@ -5095,7 +5099,7 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5099,7 +5103,7 @@ static int mtk_add_mac(struct mtk_eth *e
+  	}
+  
+  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_QDMA))
+@@ -107,7 +107,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  
+  	eth->netdev[id] = alloc_etherdev_mqs(sizeof(*mac), txqs, 1);
+  	if (!eth->netdev[id]) {
+-@@ -5746,6 +5750,7 @@ static const struct mtk_soc_data mt2701_
++@@ -5750,6 +5754,7 @@ static const struct mtk_soc_data mt2701_
+  	.required_clks = MT7623_CLKS_BITMAP,
+  	.required_pctl = true,
+  	.version = 1,
+@@ -115,7 +115,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma),
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+-@@ -5773,6 +5778,7 @@ static const struct mtk_soc_data mt7621_
++@@ -5777,6 +5782,7 @@ static const struct mtk_soc_data mt7621_
+  	.offload_version = 1,
+  	.ppe_num = 1,
+  	.hash_offset = 2,
+@@ -123,7 +123,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma),
+-@@ -5803,6 +5809,7 @@ static const struct mtk_soc_data mt7622_
++@@ -5807,6 +5813,7 @@ static const struct mtk_soc_data mt7622_
+  	.ppe_num = 1,
+  	.hash_offset = 2,
+  	.has_accounting = true,
+@@ -131,7 +131,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma),
+-@@ -5831,6 +5838,7 @@ static const struct mtk_soc_data mt7623_
++@@ -5835,6 +5842,7 @@ static const struct mtk_soc_data mt7623_
+  	.offload_version = 1,
+  	.ppe_num = 1,
+  	.hash_offset = 2,
+@@ -139,7 +139,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.foe_entry_size = MTK_FOE_ENTRY_V1_SIZE,
+  	.disable_pll_modes = true,
+  	.tx = {
+-@@ -5859,6 +5867,7 @@ static const struct mtk_soc_data mt7629_
++@@ -5863,6 +5871,7 @@ static const struct mtk_soc_data mt7629_
+  	.required_pctl = false,
+  	.has_accounting = true,
+  	.version = 1,
+@@ -147,7 +147,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma),
+  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
+-@@ -5888,6 +5897,7 @@ static const struct mtk_soc_data mt7981_
++@@ -5892,6 +5901,7 @@ static const struct mtk_soc_data mt7981_
+  	.ppe_num = 2,
+  	.hash_offset = 4,
+  	.has_accounting = true,
+@@ -155,7 +155,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.foe_entry_size = MTK_FOE_ENTRY_V2_SIZE,
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma_v2),
+-@@ -5918,6 +5928,7 @@ static const struct mtk_soc_data mt7986_
++@@ -5922,6 +5932,7 @@ static const struct mtk_soc_data mt7986_
+  	.ppe_num = 2,
+  	.hash_offset = 4,
+  	.has_accounting = true,
+@@ -163,7 +163,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	.foe_entry_size = MTK_FOE_ENTRY_V2_SIZE,
+  	.tx = {
+  		DESC_SIZE(struct mtk_tx_dma_v2),
+-@@ -5948,6 +5959,7 @@ static const struct mtk_soc_data mt7988_
++@@ -5952,6 +5963,7 @@ static const struct mtk_soc_data mt7988_
+  	.ppe_num = 3,
+  	.hash_offset = 4,
+  	.has_accounting = true,
+diff --git a/target/linux/generic/pending-6.18/795-05-net-ethernet-mtk_eth_soc-add-per-conduit-DSA-user-po.patch b/target/linux/generic/pending-6.18/795-05-net-ethernet-mtk_eth_soc-add-per-conduit-DSA-user-po.patch
+index e080a9e..e67032f 100755
+--- a/target/linux/generic/pending-6.18/795-05-net-ethernet-mtk_eth_soc-add-per-conduit-DSA-user-po.patch
++++ b/target/linux/generic/pending-6.18/795-05-net-ethernet-mtk_eth_soc-add-per-conduit-DSA-user-po.patch
+@@ -114,7 +114,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  	if (__ethtool_get_link_ksettings(dev, &s))
+  		return NOTIFY_DONE;
+  
+-@@ -5112,6 +5156,16 @@ static int mtk_add_mac(struct mtk_eth *e
++@@ -5116,6 +5160,16 @@ static int mtk_add_mac(struct mtk_eth *e
+  	mac->hw = eth;
+  	mac->of_node = np;
+  
+diff --git a/target/linux/generic/pending-6.18/795-06-net-ethernet-mtk_eth_soc-use-DSA-queue-map-in-TX-pat.patch b/target/linux/generic/pending-6.18/795-06-net-ethernet-mtk_eth_soc-use-DSA-queue-map-in-TX-pat.patch
+index e4be143..13eaa7e 100755
+--- a/target/linux/generic/pending-6.18/795-06-net-ethernet-mtk_eth_soc-use-DSA-queue-map-in-TX-pat.patch
++++ b/target/linux/generic/pending-6.18/795-06-net-ethernet-mtk_eth_soc-use-DSA-queue-map-in-TX-pat.patch
+@@ -62,7 +62,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+  
+  	return NOTIFY_DONE;
+  }
+-@@ -5036,12 +5041,17 @@ static u16 mtk_select_queue(struct net_d
++@@ -5040,12 +5045,17 @@ static u16 mtk_select_queue(struct net_d
+  			    struct net_device *sb_dev)
+  {
+  	struct mtk_mac *mac = netdev_priv(dev);

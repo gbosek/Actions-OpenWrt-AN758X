@@ -1,0 +1,14 @@
+{
+  "base": {"repository":"pbs05/ponwrt","commit":"a57faf93c6c3638ba3651690228aabaa51d3f235","native_kernel":"6.18.52"},
+  "airoha": {"repository":"naoki66/luci-app-airoha","commit":"0b1d8a0a250cb2e4a218b1fad5df2b923a0b0e00","package":"luci-app-airoha-npu","ui_only_adjustment":"Show raw zero MACs; retain real zero counters; missing counters are dash, not invented zero"},
+  "pon_card": {"repository":"naoki66/OpenWrt_ONU_CONFIG","commit":"3cb13560459f1d51136dac662baa1f399028b2b4","package":"luci-app-pon-status"},
+  "mwan4": {"repository":"brauliobo/mwan4","commit":"bf79656d4d2685b7e76b6e4cff140386677624aa","version":"0.1.1-r30"},
+  "luci_mwan4": {"repository":"brauliobo/luci-app-mwan4","commit":"e235aacaac8ae52d36f0dab23cefbbf32c0f391d","version":"1.0.0-r18"},
+  "rtl826x_candidate": {"repository":"openwrt/openwrt","commit":"76da1ee259c5804e105c3f044fcf94833608b227","scope":["strict BE/N package model","disable multi-gigabit EEE","150ms soft-reset settle"]},
+  "rtl826x_firmware": {"repository":"balika011/realtek_phy_firmware","commit":"0cd4abe2b0bf197f75c27088f86a74c7ddb103b4","release":4,"update_needed":false},
+  "previous_local_patch_sets_inherited":false,
+  "selected_kernel":"6.18.55",
+  "kernel_choice_pending":false,
+  "mwan4_ui_compatibility":"Keep status RPC unbatched for pinned LuCI; no historical backend adaptation bundle",
+  "build_policy":"Build and audit only; do not install or flash automatically"
+}
