@@ -41,7 +41,7 @@ LUCI_DESCRIPTION:=Unified Airoha XR1710G and XG2010G SoC/NPU status app with CPU
 # XR1710G already gets all three from its config seed, and XG2010G gets the
 # applet from busybox's per-device CONFIG_DEVMEM override; declaring them here
 # is what protects any other target this app is built into.
-LUCI_DEPENDS:=+luci-base +kmod-br-netfilter \
+LUCI_DEPENDS:=+luci-base +kmod-br-netfilter +ucode +ucode-mod-fs \
 	+@KERNEL_DEVMEM \
 	+@BUSYBOX_DEFAULT_DEVMEM \
 	+@BUSYBOX_CONFIG_DEVMEM
@@ -100,6 +100,7 @@ define Package/$(LUCI_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./root/usr/libexec/npu-jitter-daemon $(1)/usr/libexec/
 	$(INSTALL_DATA) ./root/usr/libexec/airoha-ppe.awk $(1)/usr/libexec/
+	$(INSTALL_BIN) ./root/usr/libexec/airoha-npu-memory $(1)/usr/libexec/
 
 	# Install RPC backend scripts (executable) together with the shared helpers,
 	# so airoha-common.sh ships inside this package (no cross-package dependency).

@@ -125,5 +125,6 @@
     "whole_gdm_qos_lro_replacement_added": false,
     "mt7988_or_uboot_changes_added": false,
     "firmware_hardware_validated": false
-  }
+  },
+  "maintenance": "Maintenance55/SOURCE.json"
 }

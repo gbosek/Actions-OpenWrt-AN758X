@@ -1,0 +1,99 @@
+From: XG2010G maintenance
+Subject: [PATCH] netfilter: backport stable flow work/GC and failed-init reference fixes
+
+Selected from Linux6.18.56; adapt the retained pending-work lifetime fix.
+
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -604,7 +604,12 @@
+ static void nf_flow_offload_gc_step(struct nf_flowtable *flow_table,
+ 				    struct flow_offload *flow, void *data)
+ {
+-	bool teardown = test_bit(NF_FLOW_TEARDOWN, &flow->flags);
++	bool teardown;
++
++	if (test_bit(NF_FLOW_PENDING, &flow->flags))
++		return;
++
++	teardown = test_bit(NF_FLOW_TEARDOWN, &flow->flags);
+ 
+ 	if (nf_flow_has_expired(flow) ||
+ 	    nf_ct_is_dying(flow->ct) ||
+--- a/net/netfilter/nf_flow_table_offload.c
++++ b/net/netfilter/nf_flow_table_offload.c
+@@ -1027,6 +1027,7 @@
+ 	flow_offload_tuple_del(offload, FLOW_OFFLOAD_DIR_ORIGINAL);
+ 	if (test_bit(NF_FLOW_HW_BIDIRECTIONAL, &offload->flow->flags))
+ 		flow_offload_tuple_del(offload, FLOW_OFFLOAD_DIR_REPLY);
++	set_bit(NF_FLOW_HW_DEAD, &offload->flow->flags);
+ }
+ 
+ static void flow_offload_tuple_stats(struct flow_offload_work *offload,
+@@ -1088,13 +1089,8 @@
+ 		default:
+ 			WARN_ON_ONCE(1);
+ 	}
+-
+-	clear_bit(NF_FLOW_HW_PENDING, &offload->flow->flags);
+-	if (offload->cmd == FLOW_CLS_DESTROY) {
+-		/* Publish after the worker's last flow access. */
+-		smp_mb__before_atomic();
+-		set_bit(NF_FLOW_HW_DEAD, &offload->flow->flags);
+-	}
++	smp_mb__before_atomic();
++	clear_bit(NF_FLOW_PENDING, &offload->flow->flags);
+ 
+ 	kfree(offload);
+ }
+@@ -1121,12 +1117,12 @@
+ {
+ 	struct flow_offload_work *offload;
+ 
+-	if (test_and_set_bit(NF_FLOW_HW_PENDING, &flow->flags))
++	if (test_and_set_bit(NF_FLOW_PENDING, &flow->flags))
+ 		return NULL;
+ 
+ 	offload = kmalloc(sizeof(struct flow_offload_work), GFP_ATOMIC);
+ 	if (!offload) {
+-		clear_bit(NF_FLOW_HW_PENDING, &flow->flags);
++		clear_bit(NF_FLOW_PENDING, &flow->flags);
+ 		return NULL;
+ 	}
+ 
+--- a/net/netfilter/nft_flow_offload.c
++++ b/net/netfilter/nft_flow_offload.c
+@@ -217,6 +217,7 @@
+ 	struct nft_flow_offload *priv = nft_expr_priv(expr);
+ 	u8 genmask = nft_genmask_next(ctx->net);
+ 	struct nft_flowtable *flowtable;
++	int err;
+ 
+ 	if (!tb[NFTA_FLOW_TABLE_NAME])
+ 		return -EINVAL;
+@@ -231,7 +232,11 @@
+ 
+ 	priv->flowtable = flowtable;
+ 
+-	return nf_ct_netns_get(ctx->net, ctx->family);
++	err = nf_ct_netns_get(ctx->net, ctx->family);
++	if (err < 0)
++		nft_use_dec(&flowtable->use);
++
++	return err;
+ }
+ 
+ static void nft_flow_offload_deactivate(const struct nft_ctx *ctx,
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -173,10 +173,10 @@
+ 	NF_FLOW_DNAT,
+ 	NF_FLOW_CLOSING,
+ 	NF_FLOW_TEARDOWN,
++	NF_FLOW_PENDING,
+ 	NF_FLOW_HW,
+ 	NF_FLOW_HW_DYING,
+ 	NF_FLOW_HW_DEAD,
+-	NF_FLOW_HW_PENDING,
+ 	NF_FLOW_HW_BIDIRECTIONAL,
+ 	NF_FLOW_HW_ESTABLISHED,
+ };

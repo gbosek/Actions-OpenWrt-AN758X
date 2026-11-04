@@ -97,6 +97,12 @@ def check(root):
         assert re.search(rf'^{key}=y$',cfg,re.M),key
     driver=kernel/'drivers/pmdomain/mediatek'
     body=(driver/'airoha-cpu-pmdomain.c').read_text();helper=(driver/'xg2010g-cpu-boost.h').read_text()
+    # Retain hardware-derived readings and ordinary BL31 ownership across rebases.
+    for marker in ('mhz = xg2010g_pll_mhz(&priv->boost);',
+                   'READ_ONCE(priv->boost.parked)',
+                   'READ_ONCE(priv->boost.last_stable_mhz)',
+                   'AIROHA_AVS_OP_FREQ_DYN_ADJ', 'airoha_cpu_smc_set_state'):
+        assert marker in body, 'CPU readback/transition/SMC contract missing: '+marker
     for marker in ('xg2010g_boost_set_state','boost_capable','boost_backend','boost_transitioning','gemtek,1400mhz-boost'):
         assert marker in body,marker
     for marker in ('stop_machine(xg2010g_pll_program','stop_machine(xg2010g_pll_finish','msleep(1000)','rollback failed','XG_BOOST_STATE 15'):

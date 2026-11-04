@@ -12,7 +12,7 @@ args = parser.parse_args()
 root = args.source
 meta = json.loads((root / 'files/etc/airoha-build-source.json').read_text())
 expected = {
-    'naoki': ('naoki66/luci-app-airoha', 'cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210', r'^2\.0\.0-(?:r)?913$'),
+    'naoki': ('naoki66/luci-app-airoha', 'cf9c4c11cbc670ef1cf15d0a1a1d3e9dc250b210', r'^2\.0\.0-(?:r)?915$'),
     'luanmuc': ('luanmuc/luci-app-airoha-npu', '5c6e9e079ad9ecb1446c674e964f797842675856', r'^1\.2\.1-(?:r)?105$'),
 }
 variant = meta['variant']
@@ -28,11 +28,21 @@ assert manifests, 'No firmware manifest'
 for manifest in manifests:
     pkgs = dict(re.findall(r'^(\S+) - (.+)$', manifest.read_text(), re.M))
     assert re.match(r'^6\.18\.55(?:[.~+-]|$)',pkgs.get('kernel','')), 'Expected exactly Linux 6.18.55'
+    for name, pattern in {
+        'dnsmasq-full': r'^2\.93-(?:r)?11$',
+        'odhcp6c': r'^2026\.06\.27~10a52220-(?:r)?5$',
+        'ppp': r'^2\.5\.3-(?:r)?3$',
+        'libc': r'^1\.2\.6-(?:r)?6$',
+        'kmod-nft-fullcone': r'^6\.18\.55.*-(?:r)?4$',
+    }.items():
+        assert re.match(pattern, pkgs.get(name,'')), 'Reviewed kernel60 package fix absent: '+name
     assert 'ttyd' in pkgs and 'luci-app-ttyd' in pkgs, 'Requested web terminal missing'
     assert re.match(r'^3\.16\.0-(?:r)?1$', pkgs.get('rtp2httpd','')), 'Retained RTP backend version missing'
     assert 'luci-app-rtp2httpd' in pkgs, 'Retained RTP UI missing'
     assert not any(n.startswith(('wpad','hostapd','wpa-supplicant')) or n in
         ('coremark','luci-app-coremark','iw','iwinfo','wifi-scripts','wireless-regdb','kmod-mac80211','kmod-cfg80211') for n in pkgs), 'Unused wireless packages remain'
+    assert not any(n.startswith(('kmod-usb-', 'kmod-sound-', 'kmod-snd-', 'bluez-')) or n in
+        ('kmod-usb3','kmod-bluetooth','usbutils','comgt','uqmi','umbim','modemmanager','atinout','luci-proto-qmi','luci-proto-mbim') for n in pkgs), 'Unused external USB/modem/audio/Bluetooth packages in XG2010G image'
 
     for name in ('mwan4', 'luci-app-mwan4', 'luci-i18n-mwan4-zh-cn',
                  'luci-app-airoha-npu', 'luci-i18n-airoha-npu-zh-cn', 'xg2010g-rps', 'luci-app-pon-status',
@@ -81,10 +91,10 @@ if variant == 'naoki':
     assert path.is_file() and path.stat().st_mode & 0o111, 'Manual CPU alias missing'
     assert not re.search(r'^START=', path.read_text(), re.M), 'Duplicate CPU boot owner'
 repo = Path(__file__).resolve().parents[1]
-stable = json.loads((installed / 'etc/kernel-stable-backport.json').read_text())
-assert stable['kernel'] == '6.18.55' and stable['project'] == 'pon', 'Installed stable-kernel provenance mismatch'
-assert stable['tarball_sha256'] == 'f410638061a165c12f42ab871d2f3fcd525515359b5faeee80969cff84524df9'
-assert stable['patch_sha256'] == hashlib.sha256((repo / 'source-patches/pon-6.18.54-to-6.18.55.patch').read_bytes()).hexdigest()
+assert json.loads((installed/'etc/xg2010g-maintenance55-source.json').read_text()) == json.loads((repo/'Maintenance55/SOURCE.json').read_text()), 'Installed .55 maintenance source differs'
+dns_source = next(row for row in json.loads((repo/'Maintenance55/SOURCE.json').read_text())['files']
+                  if row['path'] == 'package/network/services/dnsmasq/files/dnsmasq.init')
+assert hashlib.sha256((installed/'etc/init.d/dnsmasq').read_bytes()).hexdigest() == dns_source['after_sha256'], 'Installed DNS resolver atomic-update init differs'
 driver_meta = json.loads((repo / 'AN7581-DRIVER-FIXES-SOURCE.json').read_text())
 driver_meta.update(project='pon', selected_baseline=driver_meta['baselines']['pon'])
 assert json.loads((installed / 'etc/an7581-driver-fixes.json').read_text()) == driver_meta, 'Installed upstream driver-fix provenance mismatch'
