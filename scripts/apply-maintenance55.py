@@ -10,7 +10,11 @@ def install(S):
     assert sha(patch)==m['maintenance_patch_sha256'],'Maintenance delta changed'
     before=all(sha(S/x['path'])==x['before_sha256'] for x in m['files'])
     after=all(sha(S/x['path'])==x['after_sha256'] for x in m['files'])
-    assert before or after,'Source differs from exact reviewed .55 maintenance states'
+    if not (before or after):
+        mismatch=[dict(path=x['path'],expected_before=x['before_sha256'],
+                       expected_after=x['after_sha256'],actual=sha(S/x['path']))
+                  for x in m['files'] if sha(S/x['path']) not in (x['before_sha256'],x['after_sha256'])]
+        raise AssertionError('Source differs from exact reviewed .55 maintenance states: '+json.dumps(mismatch))
     subprocess.run(['git','apply','--whitespace=nowarn','--check',*(['--reverse'] if after else []),str(patch)],cwd=S,check=True)
     if before:subprocess.run(['git','apply','--whitespace=nowarn',str(patch)],cwd=S,check=True)
     assert all(sha(S/x['path'])==x['after_sha256'] for x in m['files'])

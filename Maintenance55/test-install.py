@@ -14,10 +14,18 @@ if len(sys.argv)>1:
             p=d/x['path'];p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(S/x['path'],p)
         n='target/linux/generic/kernel-6.18';p=d/n;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(S/n,p)
         subprocess.run(['git','apply','--reverse','--whitespace=nowarn',str(patch)],cwd=d,check=True)
+        init=d/'package/network/services/dnsmasq/files/dnsmasq.init'
+        before=init.read_bytes()
+        assert before.count(b'/usr/libexec/xg2010g-dnsmasq-log-guard || return 1')==1,'Pre-maintenance DNS log guard missing'
+        assert b'/etc/ethers /etc/localtime /tmp/localtime' in before,'Pre-maintenance timezone mounts missing'
+        guard=[sys.executable,str(R/'scripts/apply-dnsmasq-log-guard.py'),str(d)]
+        subprocess.run(guard,check=True);assert init.read_bytes()==before
         cmd=[sys.executable,str(R/'scripts/apply-maintenance55.py'),str(d)]
         subprocess.run(cmd,check=True);subprocess.run(cmd,check=True)
+        after=init.read_bytes();subprocess.run(guard,check=True);assert init.read_bytes()==after
+        subprocess.run(cmd,check=True)
         for x in m['files']:assert hashlib.sha256((d/x['path']).read_bytes()).hexdigest()==x['after_sha256']
         p=d/m['files'][0]['path'];p.write_bytes(p.read_bytes()+b'\n/* drift */\n')
         assert subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0
-    print('PASS actual .55 installer, repeat execution, final hashes and drift rejection')
+    print('PASS actual .55 installer, pre/post DNS guard ordering, final hashes and drift rejection')
 else:print('PASS .55 maintenance source inventory and delta hash')
