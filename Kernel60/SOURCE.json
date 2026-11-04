@@ -31,8 +31,8 @@
     },
     {
       "path": "package/network/services/dnsmasq/files/dnsmasq.init",
-      "before_sha256": "aedc308c2a780957e3e5ff556df8e71931374002e333cf21e911cc0d6d162a5a",
-      "after_sha256": "9ad7307e54e5d085fc362c12f31e25fec91f67dc08b35769eb52b7931d9e57a2",
+      "before_sha256": "033c138869fd9dfead7c29ee2d298f3321f81d5c0495c91dc0f254f369038b7c",
+      "after_sha256": "54bbe5f3513ab184d2758da6954974f94055810dc8fbba4f7bcef0bfc725fb34",
       "change": "adapt-existing"
     },
     {
@@ -3035,8 +3035,8 @@
         "path": "package/network/services/dnsmasq/files/dnsmasq.init",
         "review_delta": "Kernel60/maintenance/dns-atomic.patch",
         "delta_sha256": "adc87d427a587d35847b05e4772540842d644e7f575440c945b6f38ae521aadb",
-        "before_sha256": "aedc308c2a780957e3e5ff556df8e71931374002e333cf21e911cc0d6d162a5a",
-        "after_sha256": "9ad7307e54e5d085fc362c12f31e25fec91f67dc08b35769eb52b7931d9e57a2"
+        "before_sha256": "033c138869fd9dfead7c29ee2d298f3321f81d5c0495c91dc0f254f369038b7c",
+        "after_sha256": "54bbe5f3513ab184d2758da6954974f94055810dc8fbba4f7bcef0bfc725fb34"
       },
       {
         "upstream": "https://github.com/openwrt/openwrt/commit/5b3efb652f816d8024801e0b165532e20654a678",
@@ -3057,5 +3057,13 @@
       "IPv6 shared UPDMEM last-writer scheme"
     ],
     "scope": "Local exact-source and targeted validation required; no device stability guarantee"
+  },
+  "ci_dns_input_followup": {
+    "failed_run": 41743917137,
+    "cause": "Baseline init omitted existing pre-maintenance log guard and jail timezone mounts",
+    "before_sha256": "033c138869fd9dfead7c29ee2d298f3321f81d5c0495c91dc0f254f369038b7c",
+    "after_sha256": "54bbe5f3513ab184d2758da6954974f94055810dc8fbba4f7bcef0bfc725fb34",
+    "source_guard_relaxed": false,
+    "reproduction": "Pinned a57faf9 archive plus actual prerequisite installers; only dnsmasq.init differed"
   }
 }

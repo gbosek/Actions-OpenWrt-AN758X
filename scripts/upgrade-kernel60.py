@@ -13,7 +13,11 @@ def install(root):
     assert digest(patch)==meta['upgrade_patch_sha256'],'Unreviewed upgrade delta'
     before=all(digest(root/r['path'])==r['before_sha256'] for r in meta['files'])
     after=all(digest(root/r['path'])==r['after_sha256'] for r in meta['files'])
-    assert before or after,'Source differs from both exact reviewed migration states'
+    if not (before or after):
+        mismatch=[dict(path=r['path'],expected_before=r['before_sha256'],
+                       expected_after=r['after_sha256'],actual=digest(root/r['path']))
+                  for r in meta['files'] if digest(root/r['path']) not in (r['before_sha256'],r['after_sha256'])]
+        raise AssertionError('Source differs from both exact reviewed migration states: '+json.dumps(mismatch))
     subprocess.run(['git','apply','--whitespace=nowarn','--check',*(['--reverse'] if after else []),str(patch)],cwd=root,check=True)
     if before:subprocess.run(['git','apply','--whitespace=nowarn',str(patch)],cwd=root,check=True)
     assert all(digest(root/r['path'])==r['after_sha256'] for r in meta['files'])

@@ -16,8 +16,15 @@ if len(sys.argv)>1:
             if r['after_sha256'] is None:continue
             dest=root/r['path'];dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source/r['path'],dest)
         subprocess.run(['git','apply','--whitespace=nowarn','--reverse',str(patch)],cwd=root,check=True)
+        init=root/'package/network/services/dnsmasq/files/dnsmasq.init';before=init.read_bytes()
+        assert before.count(b'/usr/libexec/xg2010g-dnsmasq-log-guard || return 1')==1,'Pre-migration DNS log guard missing'
+        assert b'/etc/ethers /etc/localtime /tmp/localtime' in before,'Pre-migration timezone mounts missing'
+        guard=[sys.executable,str(R/'scripts/apply-dnsmasq-log-guard.py'),str(root)]
+        subprocess.run(guard,check=True);assert init.read_bytes()==before
         command=[sys.executable,str(R/'scripts/upgrade-kernel60.py'),str(root)]
         subprocess.run(command,check=True);subprocess.run(command,check=True)
+        after=init.read_bytes();subprocess.run(guard,check=True);assert init.read_bytes()==after
+        subprocess.run(command,check=True)
         for r in meta['files']:
             path=root/r['path']
             actual=hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
