@@ -26,3 +26,5 @@ Failure follow-up: the first local --batch-only check auto-reversed native EG060
 The broader GDM/QDMA/LRO migration, DSA host-FDB series, NPU DMA-window RFC and shared IPv6 UPDMEM proposal remain excluded from this small maintenance change. Neither added fix is presented as a proven repair for dual-10G loss or a BND increase. No device test is implied.
 
 CI-input follow-up from the parallel .55 run41743917137: the exact DNS init baseline must include the pre-existing log-facility guard and jail timezone mounts installed before maintenance. Metadata now records that real prerequisite state and the final preserved-guard init. The atomic patch and kernel queue are unchanged. Installer regressions exercise the guard before and after migration and continue to reject unknown drift; no source-identity condition is relaxed.
+
+Host-fixture portability follow-up from the parallel .55 run41754210856: include `<stdbool.h>` and explicitly compile the NVMEM ASan fixture as GNU C11. This prevents a newer host compiler's default C23 mode from hiding a missing header that the CI GCC13 compiler rejects. Product kernel sources and all safety assertions remain unchanged.

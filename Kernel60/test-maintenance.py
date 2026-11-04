@@ -93,6 +93,7 @@ assert hashlib.sha256(block.encode()).hexdigest()==m['prepared_sources']['driver
 register=block[block.index('static int blk_nvmem_register('):block.index('\nstatic void blk_nvmem_unregister(')]
 stub=r'''
 #include <assert.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -156,7 +157,7 @@ with tempfile.TemporaryDirectory(prefix='nvmem-error-path-') as d:
     control=d/'old.c';control.write_text(stub+old+main)
     env=os.environ|{'ASAN_OPTIONS':'detect_leaks=0:halt_on_error=1'}
     for c in [fixed,control]:
-        subprocess.run(['gcc','-O0','-g','-fsanitize=address',str(c),'-o',str(c.with_suffix(''))],check=True)
+        subprocess.run(['gcc','-std=gnu11','-O0','-g','-fsanitize=address',str(c),'-o',str(c.with_suffix(''))],check=True)
         result=subprocess.run([str(c.with_suffix(''))],env=env,text=True,capture_output=True)
         if c==fixed:assert result.returncode==0,result.stderr
         else:assert result.returncode!=0 and 'heap-use-after-free' in result.stderr,result.stderr
