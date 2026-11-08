@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Audit the shipped FIT/SquashFS, rather than only the build staging tree."""
 from pathlib import Path
-import argparse,struct,hashlib,json,subprocess,gzip,lzma,shutil,zlib,tempfile,re
-p=argparse.ArgumentParser();p.add_argument('source',type=Path);p.add_argument('output',type=Path);a=p.parse_args();S=a.source.resolve();O=a.output.resolve();O.mkdir(parents=True,exist_ok=True);P=Path(__file__).resolve().parents[1]
+import argparse,struct,hashlib,json,subprocess,gzip,lzma,shutil,zlib,tempfile,re,os
+p=argparse.ArgumentParser();p.add_argument('source',type=Path);p.add_argument('output',type=Path);p.add_argument('--recovered-image',action='store_true');p.add_argument('--build-commit',default=os.environ.get('GITHUB_SHA'));a=p.parse_args();S=a.source.resolve();O=a.output.resolve();O.mkdir(parents=True,exist_ok=True);P=Path(__file__).resolve().parents[1]
 images=list((S/'bin/targets/airoha/an7581').glob('*gemtek_xg2010g*squashfs-sysupgrade.itb'));assert len(images)==1,images
 image=images[0];d=image.read_bytes();h=struct.unpack('>10I',d[:40]);assert h[0]==0xd00dfeed
 pos=h[2];strings=d[h[3]:h[3]+h[8]];stack=[];nodes={}
@@ -38,9 +38,16 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  root=Path(folder)/'root'
  unpack=next((str(x) for x in [S/'staging_dir/host/bin/unsquashfs',S/'staging_dir/host/bin/unsquashfs4'] if x.is_file()),None) or shutil.which('unsquashfs')
  assert unpack,'Install squashfs-tools or build unsquashfs4 before auditing'
- subprocess.run([unpack,'-no-progress','-d',str(root),str(sq)],check=True,stdout=subprocess.DEVNULL)
+ # /dev nodes are irrelevant to this file/module audit, and creating them
+ # requires privileges unavailable on an ordinary GitHub-hosted runner.
+ # Keep check=True: other extraction errors must still fail the audit.
+ subprocess.run([unpack,'-no-progress','-d',str(root),'-excludes',str(sq),'dev'],check=True,stdout=subprocess.DEVNULL)
  required=['usr/libexec/rpcd/luci.airoha_npu','www/luci-static/resources/view/airoha_npu/status.js','www/luci-static/resources/view/status/include/29a_pon.js','etc/init.d/mwan4','lib/mwan4/mwan4.uc','lib/firmware/rtl8261n.bin','lib/modules/6.18.55/realtek.ko','etc/clean-build-source.json']
+ required += ['etc/uci-defaults/99-xg2010g-baseline']
  hashes={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in required}
+ assert json.loads((root/'etc/clean-build-source.json').read_text())==json.loads((P/'components.json').read_text()),'Image component pins differ from expected build source'
+ baseline=(root/'etc/uci-defaults/99-xg2010g-baseline').read_text()
+ assert 'omcproxy' not in baseline and 'ra-refresh' not in baseline
  view=(root/required[1]).read_text();assert 'require view' in view;assert "if (eth === '00:00:00:00:00:00->00:00:00:00:00:00')" not in view
  assert not (root/'usr/sbin/xg-dns-log-limit').exists()
  assert (root/'www/luci-static/argon').is_dir()
@@ -55,17 +62,21 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  for rel in ['usr/libexec/rpcd/luci.airoha_npu','etc/init.d/airoha-npu']:assert (root/rel).stat().st_mode&0o111,rel
  firmware_hash=hashlib.sha256((root/'lib/firmware/rtl8261n.bin').read_bytes()).hexdigest();assert firmware_hash=='ae1963b2a84a17eaa2fb9052591bdb5152838feda045d7313f45a8608b918533'
  module=(root/'lib/modules/6.18.55/realtek.ko').read_bytes();assert b'vermagic=6.18.55 ' in module
- tools=list((S/'staging_dir').glob('toolchain-aarch64*/bin/aarch64-openwrt-linux-musl-objdump'));assert tools
- asm=subprocess.check_output([str(tools[0]),'-dr',str(root/'lib/modules/6.18.55/realtek.ko')],text=True)
+ tools=list((S/'staging_dir').glob('toolchain-aarch64*/bin/aarch64-openwrt-linux-musl-objdump'))
+ objdump=str(tools[0]) if tools else shutil.which('aarch64-linux-gnu-objdump') or shutil.which('llvm-objdump')
+ assert objdump,'AArch64-capable objdump is required'
+ args=[objdump,'-dr']+(['--print-imm-hex'] if 'llvm' in objdump else [])
+ asm=subprocess.check_output(args+[str(root/'lib/modules/6.18.55/realtek.ko')],text=True)
  fn=asm.split('<rtl826x_config_init>:',1)[1].split('\n\n',1)[0]
  assert re.search(r'mov\s+w0, #0x96',fn), 'Actual RTL826x module does not contain expected 150ms delay'
  (O/'rtl826x-config-init.asm').write_text(fn)
- source=(next((S/'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.55'))/'drivers/net/phy/realtek/realtek_main.c').read_text()
- assert 'RTL826X_VEND1_PKG_MODEL_8261' in source and 'ETHTOOL_LINK_MODE_10000baseT_Full_BIT' in source
- result={'image':image.name,'image_sha256':hashlib.sha256(d).hexdigest(),'bytes':len(d),'kernel':'6.18.55','fit_regions':regions,'files_sha256':hashes,'rtl826x_delay_ms':150,'previous_local_feature_patch_sets_inherited':False,'hardware_tested':False,'scope':'Actual FIT hash, kernel banner, extracted SquashFS files and module disassembly; no flash or device stability claim'}
+ if not a.recovered_image:
+  source=(next((S/'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.55'))/'drivers/net/phy/realtek/realtek_main.c').read_text()
+  assert 'RTL826X_VEND1_PKG_MODEL_8261' in source and 'ETHTOOL_LINK_MODE_10000baseT_Full_BIT' in source
+ result={'build_commit':a.build_commit,'recovered_image':a.recovered_image,'max_cpu_opp_hz':max(hz),'image':image.name,'image_sha256':hashlib.sha256(d).hexdigest(),'bytes':len(d),'kernel':'6.18.55','fit_regions':regions,'files_sha256':hashes,'rtl826x_delay_ms':150,'previous_local_feature_patch_sets_inherited':False,'hardware_tested':False,'scope':'Actual FIT hash, kernel banner, extracted SquashFS files and module disassembly; no flash or device stability claim'}
  (O/'verification.json').write_text(json.dumps(result,indent=2)+'\n')
 sq.unlink();shutil.copy2(image,O/image.name)
 for f in image.parent.glob('*gemtek_xg2010g.manifest'):shutil.copy2(f,O/f.name)
 for name in ['components.json','feeds.json','native-patch-queue.json','prepared-source.json']:shutil.copy2(P/name,O/name)
-shutil.copy2(S/'.config',O/'build.config')
+if (S/'.config').is_file():shutil.copy2(S/'.config',O/'build.config')
 print(json.dumps(result,indent=2))
