@@ -24,4 +24,6 @@ Do not add a daily DNS-log checker. Do not bake automatic disabling of `omcproxy
 
 Feed pins are a historical compatibility snapshot. LuCI's commit is confirmed by the old delivered manifest, but not all original transient feed checkout timestamps were recorded; this is not a claim of bit-for-bit reconstruction. Package closure, native CPU policy and effective live code are checked locally before starting CI. The workflow additionally audits actual FIT region hashes, kernel banner, extracted files, module disassembly and image manifest. An offline audit is not a flash test or a device stability test.
 
-The LuCI firmware description includes `2026.11.09-refresh1` and the actual build date/time. Identify delivered images by build commit, Actions artifact identity and SHA256, not by file size or filename alone.
+The LuCI firmware description includes `2026.11.09-refresh2` and the actual build date/time. Identify delivered images by build commit, Actions artifact identity and SHA256, not by file size or filename alone.
+
+The first refresh compiled successfully but failed the release audit because LuCI assigned version `0` to the vendored MWAN4 translation package. Set its explicit `PKG_PO_VERSION` to the matching app release and check that generated package metadata before compilation; do not relax the final manifest assertion to accept an unversioned translation.

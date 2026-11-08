@@ -59,7 +59,7 @@ elif a.phase=='finish':
  t+='\n# CONFIG_PACKAGE_luci-app-argon-config is not set\nCONFIG_PACKAGE_wget-ssl=y\nCONFIG_PACKAGE_coreutils=y\nCONFIG_PACKAGE_coreutils-timeout=y\nCONFIG_PACKAGE_ucode-mod-math=y\n'
  for key in ['IMAGEOPT','VERSIONOPT','VERSION_NUMBER','VERSION_DIST']:
   t=re.sub(r'^(?:CONFIG_'+key+r'=.*|# CONFIG_'+key+r' is not set)\n?','',t,flags=re.M)
- t+='CONFIG_IMAGEOPT=y\nCONFIG_VERSIONOPT=y\nCONFIG_VERSION_DIST="PonWrt"\nCONFIG_VERSION_NUMBER="2026.11.09-refresh1"\n'
+ t+='CONFIG_IMAGEOPT=y\nCONFIG_VERSIONOPT=y\nCONFIG_VERSION_DIST="PonWrt"\nCONFIG_VERSION_NUMBER="2026.11.09-refresh2"\n'
  f.write_text(t)
  out=S/'files/etc/stable-refresh-source.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(meta,indent=2)+'\n')
  mwan_meta={k:v for k,v in meta['mwan4'].items() if k!='files'}
@@ -71,7 +71,9 @@ elif a.phase=='check':
  symbols=package_symbols()
  baseline={symbols.get(l.split(' - ',1)[0],l.split(' - ',1)[0]) for l in (P/'baseline.manifest').read_text().splitlines() if ' - ' in l}-{'kernel','luci-app-argon-config'}
  assert not baseline-selected,'Unexpected missing baseline packages: '+str(sorted(baseline-selected))
- assert 'CONFIG_VERSION_NUMBER="2026.11.09-refresh1"' in cfg,'Dated version was not retained by Kconfig'
+ assert 'CONFIG_VERSION_NUMBER="2026.11.09-refresh2"' in cfg,'Dated version was not retained by Kconfig'
+ info=(S/'tmp/.packageinfo').read_text()
+ assert re.search(r'^Package: luci-i18n-mwan4-zh-cn\n(?:(?!Package:).)*?^Version: 1\.0\.0-r19$',info,re.M|re.S),'Vendored MWAN4 translation version is missing'
  assert 'LINUX_VERSION-6.18 = .55' in (S/'target/linux/generic/kernel-6.18').read_text()
  dts=(S/'target/linux/airoha/dts/an7581.dtsi').read_text();hz=[int(x) for x in re.findall(r'opp-hz\s*=\s*/bits/\s*64\s*<\s*(\d+)',dts)]
  assert hz and max(hz)==1200000000,hz

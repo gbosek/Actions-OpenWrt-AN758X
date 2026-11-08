@@ -13,6 +13,6 @@ for rel in ['usr/bin/mwan4-rule-guard.sh','usr/libexec/xg2010g-mwan4-preset','us
  assert (root/rel).read_bytes()==(P/'root'/rel).read_bytes(),rel
 assert not (root/'usr/libexec/xg2010g-cpu-policy').exists()
 assert not (root/'etc/uci-defaults/99-xg2010g-mwan4-default-off').exists()
-desc=(root/'etc/openwrt_release').read_text();assert '2026.11.09-refresh1' in desc and re.search(r'20\d\d-\d\d-\d\d \d\d:\d\d',desc),desc
+desc=(root/'etc/openwrt_release').read_text();assert '2026.11.09-refresh2' in desc and re.search(r'20\d\d-\d\d-\d\d \d\d:\d\d',desc),desc
 assert json.loads((root/'etc/stable-refresh-source.json').read_text())==json.loads((P/'source.json').read_text())
 print('PASS actual full package manifest, live safeguards, dated version and no custom overclock helper')
