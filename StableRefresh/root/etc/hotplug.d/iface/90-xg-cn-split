@@ -1,0 +1,6 @@
+#!/bin/sh
+case "$ACTION:$INTERFACE" in
+ ifup:lan|ifupdate:lan|ifup:wan|ifupdate:wan|ifup:wanb|ifupdate:wanb|ifup:wan_6|ifupdate:wan_6|ifup:wanb_6|ifupdate:wanb_6)
+  /usr/sbin/xg-cn-split-setup
+ ;;
+esac

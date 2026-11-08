@@ -1,0 +1,8 @@
+# SNAT for cn_split traffic forwarded to bypass router (192.168.10.2)
+# Fixes: bypass router returns RST for forwarded connections without SNAT
+# Added by WorkBuddy 2026-11-05
+table inet fw4 {
+	chain srcnat {
+		ip daddr 192.168.10.2 counter masquerade comment "cn-split-snat-to-bypass"
+	}
+}

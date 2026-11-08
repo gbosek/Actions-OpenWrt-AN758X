@@ -1,7 +1,7 @@
 #!/bin/sh
 # One-time XG2010G migration, also runs after a retained-settings upgrade.
 [ "$(cat /tmp/sysinfo/board_name 2>/dev/null)" = gemtek,xg2010g ] || exit 0
-for service in npu-jitter xg2010g-rps airoha-npu wpad; do
+for service in npu-jitter xg2010g-rps wpad; do
     if [ -x "/etc/init.d/$service" ]; then
         case "$service" in airoha-npu) ;; *) /etc/init.d/"$service" stop ;; esac
         /etc/init.d/"$service" disable

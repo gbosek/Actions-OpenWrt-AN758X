@@ -1,0 +1,234 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright 2026 MOSSDeF, Stan Grishin (stangri@melmac.ca).
+# Based on original mwan3 by Florian Eckert <fe@dev.tdt.de>
+
+# Migrate mwan3 configuration to mwan4 (one-time migration)
+if [ -f /etc/config/mwan3 ] && [ ! -f /etc/config/mwan3.migrated ]; then
+	[ -f /etc/config/mwan4 ] && mv /etc/config/mwan4 /etc/config/mwan4.default
+	cp /etc/config/mwan3 /etc/config/mwan4
+	mv /etc/config/mwan3 /etc/config/mwan3.migrated
+	logger -t mwan4-migration "Copied /etc/config/mwan3 to /etc/config/mwan4"
+fi
+
+# Migrate mwan4 config terminology and formats:
+# section types: member->route, policy->strategy
+# options: use_member->use_route, use_policy->use_strategy
+# option family -> list family (interfaces and rules)
+# option flush_conntrack 'always'/'never' -> list flush_conntrack
+# globals: legacy dotted aliases -> canonical plain options
+# interface ids: seed id/table_id/mark from the current section order
+
+# Preserve legacy input once before changing its types and member lists.
+if [ -f /etc/config/mwan4 ] && grep -qE '(^[[:space:]]*config[[:space:]]+(member|policy)[[:space:]]|^[[:space:]]*(option|list)[[:space:]]+use_member[[:space:]])' /etc/config/mwan4; then
+	[ -f /etc/config/mwan4.pre-paired-migration ] || cp -p /etc/config/mwan4 /etc/config/mwan4.pre-paired-migration || exit 1
+fi
+
+. /lib/functions.sh
+
+mwan4_interface_index=0
+mwan4_mmx_mask='0x3F00'
+mwan4_legacy_rule_semantics=0
+
+is_positive_int() {
+	case "$1" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+
+	[ "$1" -gt 0 ] 2>/dev/null
+}
+
+id_to_mark() {
+	local id="$1"
+	local mask="$2"
+	local bit=0
+	local bit_val=0
+	local result=0
+	local m
+	local v
+
+	case "$mask" in
+		0x[0-9A-Fa-f]*|[0-9]*) ;;
+		*) mask='0x3F00' ;;
+	esac
+
+	m=$((mask))
+	v=$((id))
+
+	while [ "$bit" -lt 32 ]; do
+		if [ $(((m >> bit) & 1)) -eq 1 ]; then
+			if [ $(((v >> bit_val) & 1)) -eq 1 ]; then
+				result=$((result | (1 << bit)))
+			fi
+			bit_val=$((bit_val + 1))
+		fi
+		bit=$((bit + 1))
+	done
+
+	printf '0x%x' "$result"
+}
+
+get_dotted_global_alias() {
+	local name="$1"
+	local alias="$2"
+
+	uci -q get "mwan4.$name.$alias" 2>/dev/null
+}
+
+migrate_global_option() {
+	local name="$1"
+	local option="$2"
+	local alias="$3"
+	local value
+	local alias_value
+
+	config_get value "$name" "$option"
+	alias_value="$(get_dotted_global_alias "$name" "$alias")"
+
+	if [ -z "$value" ] && [ -n "$alias_value" ]; then
+		uci_set mwan4 "$name" "$option" "$alias_value"
+		value="$alias_value"
+	fi
+
+	[ "$option" = mmx_mask ] && [ -n "$value" ] && mwan4_mmx_mask="$value"
+
+	[ -n "$alias_value" ] && uci -q delete "mwan4.$name.$alias" 2>/dev/null
+}
+
+migrate_globals() {
+	local name="$1"
+
+	migrate_global_option "$name" mmx_mask mwan4.mmx_mask
+	migrate_global_option "$name" source_routing mwan4.source_routing
+}
+
+# Migrate 'member' section type to 'route'
+migrate_member() {
+	local name="$1"
+	uci_set mwan4 "$name" route
+}
+
+# Migrate 'policy' section type to 'strategy'
+# Also rename use_member list to use_route
+migrate_strategy() {
+	local name="$1"
+	local members
+	local routes
+	local member
+	config_get members "$name" use_member
+	config_get routes "$name" use_route
+	if [ -n "$members" ]; then
+		for member in $members; do
+			case " $routes " in
+				*" $member "*) ;;
+				*) uci_add_list mwan4 "$name" use_route "$member"
+				   routes="${routes:+$routes }$member" ;;
+			esac
+		done
+		uci_remove mwan4 "$name" use_member
+	fi
+}
+
+migrate_policy() {
+	local name="$1"
+	uci_set mwan4 "$name" strategy
+	migrate_strategy "$name"
+}
+
+# Migrate 'option family' to 'list family'
+migrate_family() {
+	local name="$1"
+	local family
+
+	config_get family "$name" family
+	# config_get joins a list with spaces: only a single value can be an old 'option family'
+	if [ -n "$family" ] && [ "${family#* }" = "$family" ]; then
+		uci_remove mwan4 "$name" family
+		uci_add_list mwan4 "$name" family "$family"
+	fi
+}
+
+# Migrate flush_conntrack from option to list
+migrate_flush_conntrack() {
+	local name="$1"
+	local value
+
+	config_get value "$name" flush_conntrack
+	case $value in
+		always)
+			uci_remove mwan4 "$name" flush_conntrack
+			uci_add_list mwan4 "$name" flush_conntrack ifup
+			uci_add_list mwan4 "$name" flush_conntrack ifdown
+			;;
+		never)
+			uci_remove mwan4 "$name" flush_conntrack
+			;;
+	esac
+}
+
+# Migrate use_policy option to use_strategy in rules
+# Also migrate 'option family' to 'list family'
+migrate_rule() {
+	local name="$1"
+	local use_policy
+	local local_rule
+
+	# r10 matched router-originated traffic too; retain that only for legacy rules.
+	config_get local_rule "$name" local
+	if [ "$mwan4_legacy_rule_semantics" -eq 1 ] && [ -z "$local_rule" ]; then
+		uci_set mwan4 "$name" local 1
+	fi
+
+	config_get use_policy "$name" use_policy
+	if [ -n "$use_policy" ]; then
+		uci_rename mwan4 "$name" use_policy use_strategy
+	fi
+
+	migrate_family "$name"
+}
+
+# Migrate interface options
+migrate_interface() {
+	local name="$1"
+	local id
+	local table_id
+	local mark
+
+	mwan4_interface_index=$((mwan4_interface_index + 1))
+
+	config_get id "$name" id
+	if ! is_positive_int "$id"; then
+		id="$mwan4_interface_index"
+		uci_set mwan4 "$name" id "$id"
+	fi
+
+	config_get table_id "$name" table_id
+	if ! is_positive_int "$table_id"; then
+		uci_set mwan4 "$name" table_id "$id"
+	fi
+
+	config_get mark "$name" mark
+	if [ -z "$mark" ]; then
+		uci_set mwan4 "$name" mark "$(id_to_mark "$id" "$mwan4_mmx_mask")"
+	fi
+
+	migrate_family "$name"
+	migrate_flush_conntrack "$name"
+}
+
+config_load mwan4
+config_get rule_semantics globals xg2010g_rule_semantics
+[ "$rule_semantics" = 1 ] || mwan4_legacy_rule_semantics=1
+config_foreach migrate_globals globals
+config_get loaded_mmx_mask globals mmx_mask
+[ -n "$loaded_mmx_mask" ] && mwan4_mmx_mask="$loaded_mmx_mask"
+config_foreach migrate_member member
+config_foreach migrate_strategy strategy
+config_foreach migrate_policy policy
+config_foreach migrate_rule rule
+config_foreach migrate_interface interface
+
+uci_set mwan4 globals xg2010g_rule_semantics 1
+uci_commit mwan4
+
+exit 0

@@ -1,0 +1,1561 @@
+#!/bin/sh
+
+# Airoha NPU Status RPC backend for LuCI (NPU + CPU + Offload)
+
+. /lib/functions.sh
+
+. /usr/libexec/rpcd/airoha-common.sh
+
+# 1 while get_dashboard() is gathering a round whose PPE table was deferred
+# ({"ppe":0}). get_status() reads the flow-table totals from the file published
+# by get_ppe_entries() in that case, because those two greps over the PPE
+# debugfs files cost as much as half of the deferred first paint and read the
+# very same files the table parse already consumed. Only get_dashboard() ever
+# sets it, and it resets it immediately afterwards: the standalone getStatus
+# RPC has no publisher behind it, so it must always read live.
+AIROHA_PPE_DEFERRED=0
+
+# Escape a value before it is embedded in a JSON string literal.
+#
+# Every value that reaches printf below is either read from sysfs or echoed
+# straight back to the caller in an error message. The error paths are the
+# dangerous ones: they report the input that was rejected, so a caller can
+# smuggle a quote or a brace into the object and make rpcd (and the page)
+# parse something that was never produced here.
+_json_escape() {
+	printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\r\n\t' '   '
+}
+
+_has_active_wan() {
+	local wan_status up l3_device ipv4 ipv6
+
+	wan_status=$(ubus call network.interface.wan status 2>/dev/null)
+	[ -n "$wan_status" ] || return 1
+
+	up=$(printf '%s' "$wan_status" | jsonfilter -e "@.up" 2>/dev/null)
+	[ "$up" = "true" ] || return 1
+
+	l3_device=$(printf '%s' "$wan_status" | jsonfilter -e "@.l3_device" 2>/dev/null)
+	ipv4=$(printf '%s' "$wan_status" | jsonfilter -e "@['ipv4-address'][0].address" 2>/dev/null)
+	ipv6=$(printf '%s' "$wan_status" | jsonfilter -e "@['ipv6-address'][0].address" 2>/dev/null)
+
+	[ -n "$l3_device$ipv4$ipv6" ]
+}
+
+_bridge_offload_blocked() {
+	# PON 设备线路承载 tagged 业务 VLAN（IPTV/语音/多业务），即便 pon0 作为
+	# WAN 已激活，也允许开启桥卸载以加速/匹配这些 VLAN 流量。普通以太网路由
+	# 仍保持原限制：路由模式下用硬件流量加速，不开桥 netfilter。
+	[ "$(airoha_pon_present)" = "1" ] && return 1
+	_has_active_wan
+}
+
+_bridge_offload_block_error() {
+	echo '{"error":"Bridge VLAN-tag / PPPoE-passthrough / AP-mode offload is disabled while WAN is active; use Hardware Flow Offload in router mode"}'
+}
+
+get_device_mode() {
+	local dhcp_ignore blocked
+
+	if _has_active_wan; then
+		# PON 设备即使 WAN 激活也允许桥卸载；普通以太网路由保持受限。
+		if [ "$(airoha_pon_present)" = "1" ]; then
+			blocked=false
+		else
+			blocked=true
+		fi
+		printf '{"mode":"router","reason":"active_wan","bridge_offload_blocked":%s}' "$blocked"
+		return
+	fi
+
+	dhcp_ignore=$(uci get dhcp.lan.ignore 2>/dev/null)
+	if [ "$dhcp_ignore" = "1" ]; then
+		printf '{"mode":"ap","reason":"dhcp_disabled","bridge_offload_blocked":false}'
+	else
+		printf '{"mode":"ap","reason":"no_active_wan","bridge_offload_blocked":false}'
+	fi
+}
+
+_cpu_ticks_json() {
+	awk '
+		BEGIN { printf "[" }
+		/^cpu[0-9]+[ \t]/ {
+			total = 0
+			for (i = 2; i <= 9; i++)
+				total += $i
+			printf "%s{\"total\":%d,\"idle\":%d}", (n++ ? "," : ""), total, $5 + $6
+		}
+		END { printf "]" }
+	' /proc/stat 2>/dev/null
+}
+
+# ── History ring buffer (per-core usage) ──────────────────────────────────
+# The usage chart is backed by a bounded FIFO file on tmpfs instead of the
+# browser's sessionStorage: a reload, a second tab, or a tab reopened ten
+# minutes later all show the same curve, and the per-core utilisation is
+# differentiated once here instead of once per tab.
+#
+# There is deliberately no second (frequency) buffer any more: the boards this
+# app ships on are fixed-clock, so a frequency curve is a horizontal line, and
+# sampling frequency on every poll cost a sysfs read for a picture nobody can
+# act on.
+#
+# Cost per poll: one `date`, one awk for the sample, one awk for the JSON. The
+# sampler counts the lines it has to read anyway (to place the gate), so no
+# `wc` is spawned; the trim runs once every ~80 s and rewrites ~2 KB on tmpfs.
+# Nothing here reads a file it did not just write, and every parse tolerates a
+# torn or hand-edited line instead of failing the whole reply.
+#
+# Sampling is gated to one point per HIST_GATE seconds. The page polls every
+# 10 s, so every round passes and the curves get one point per poll; what the
+# gate still removes is the pair of dashboards a page load fires back to back
+# (0.05-2 s apart), and a second tab happening to poll in the same instant.
+# 8 s keeps both margins: below the 10 s poll, above the first-paint gap.
+# Because the newest timestamp is shared, a tab that always polls a little
+# behind another reads the curve instead of doubling its rate.
+HIST_MAX=120            # samples kept: 120 x 10 s = 20 minutes
+HIST_TRIM_AT=128        # append up to this many, then trim back to HIST_MAX
+HIST_GATE=8             # minimum seconds between two accepted samples (~10 s)
+HIST_TTL=1800           # samples older than this are not published (30 min)
+HIST_DIR=/tmp
+HIST_LOAD=$HIST_DIR/luci-airoha-npu.cpu.load.hist
+HIST_BASE=$HIST_DIR/luci-airoha-npu.cpu.load.base
+HIST_LOCK=$HIST_DIR/luci-airoha-npu.cpu.hist.lock
+
+# Append one line to a history file and keep the file bounded.
+#   $1 file, $2 line, $3 lines the file held before this append
+# Trimming on every append would rewrite the file 12 times a minute for nothing:
+# let it grow HIST_TRIM_AT - HIST_MAX lines past the cap, then rewrite once.
+# tmp+mv because a reader that catches the rewrite must still see a whole file.
+_hist_append() {
+	local file="$1" line="$2" before="$3" tmp
+
+	printf '%s\n' "$line" >> "$file" 2>/dev/null || return 1
+	[ $((before + 1)) -gt "$HIST_TRIM_AT" ] || return 0
+	tmp=$(mktemp "$file.XXXXXX" 2>/dev/null) || return 0
+	tail -n "$HIST_MAX" "$file" > "$tmp" 2>/dev/null &&
+		mv -f "$tmp" "$file" 2>/dev/null || rm -f "$tmp"
+}
+
+# Fold one /proc/stat snapshot into the ring file.
+# Prints "<now> <load_lines> <old_format>" and then the lines that still have to
+# be appended ("L ..."). The append itself is left to the caller: awk's
+# `print > file` truncates on first use inside one program run, so it can write
+# the new baseline but cannot append a sample.
+#
+# A load sample is one integer per core in TENTHS of a percent (43 = 4.3 %), not
+# a decimal: rpcd parses the reply and re-serialises it, which turns 4.3 into
+# 4.2999999999999998 - twenty characters per core per sample on the wire, for a
+# value the chart cannot show anyway. Integers survive that round trip verbatim.
+# <old_format> is 1 when the file still holds the pre-integer format (a decimal
+# point anywhere in a sample): the caller then drops the file instead of
+# publishing 120 nulls for the next twenty minutes.
+#   $1 clock as seconds since the epoch
+_cpu_hist_sample() {
+	local now="$1" out line nl
+
+	out=$(awk -v now="$now" -v gate="$HIST_GATE" \
+		-v loadf="$HIST_LOAD" -v basef="$HIST_BASE" '
+		BEGIN {
+			nl = 0; ll = 0; bts = 0; nbc = 0; oldfmt = 0
+			# The file is read here anyway to place the gate, so counting its
+			# lines costs no extra pass and saves a `wc` fork.
+			while ((getline l < loadf) > 0) {
+				split(l, a, " ")
+				if (a[1] ~ /^[0-9]+$/) { nl++; ll = a[1] + 0 }
+				if (l ~ /[0-9]\.[0-9]/) oldfmt = 1
+			}
+			close(loadf)
+			# Previous reference, "<ts> <total> <idle> <total> <idle> ...".
+			if ((getline l < basef) > 0) {
+				n = split(l, a, " ")
+				ok = (n >= 3 && (n - 1) % 2 == 0) ? 1 : 0
+				for (i = 1; ok && i <= n; i++)
+					if (a[i] !~ /^[0-9]+$/) ok = 0
+				if (ok) {
+					bts = a[1] + 0
+					for (i = 2; i + 1 <= n; i += 2) {
+						nbc++
+						bt[nbc] = a[i] + 0
+						bi[nbc] = a[i + 1] + 0
+					}
+				}
+			}
+			close(basef)
+		}
+		/^cpu[0-9]+[ \t]/ {
+			nc++
+			t = 0
+			for (i = 2; i <= 9; i++) t += $i
+			ct[nc] = t
+			ci[nc] = $5 + $6
+		}
+		END {
+			printf "%d %d %d\n", now, nl, oldfmt
+			if (nc < 1) exit
+
+			# The reference advances on every round that got the lock, even
+			# when no point is published below: the gate decides whether an
+			# interval is worth a sample, not what the next interval spans.
+			line = now ""
+			for (i = 1; i <= nc; i++) line = line " " ct[i] " " ci[i]
+			print line > basef
+			close(basef)
+
+			# The gate looks at the newest published timestamp, never at `bts`
+			# - the reference is rewritten every round, so `now - bts` is
+			# always one poll interval and would block every sample the moment
+			# the gate exceeds the poll.
+			if (ll > 0 && now - ll < gate && now >= ll) exit
+
+			if (bts > 0 && nbc == nc) {
+				out = ""
+				measured = 0
+				for (i = 1; i <= nc; i++) {
+					dt = ct[i] - bt[i]
+					di = ci[i] - bi[i]
+					# A counter that went backwards is a reboot (or a wrapped
+					# field): publish nothing and let the fresh reference above
+					# start a new run instead of drawing a value that never was.
+					if (dt < 0) { measured = 0; break }
+					if (dt > 0 && di >= 0 && di <= dt) {
+						out = out sprintf(" %d", int((1 - di / dt) * 1000 + 0.5))
+						measured = 1
+					} else {
+						out = out " -"
+					}
+				}
+				if (measured) printf "L %d%s\n", now, out
+			}
+		}
+	' 2>/dev/null < /proc/stat) || return 1
+
+	# The count line comes first by construction; anything else is a sample
+	# line for one of the two files.
+	while IFS= read -r line; do
+		case "$line" in
+			L\ *) _hist_append "$HIST_LOAD" "${line#L }" "${nl:-0}" ;;
+			*)
+				set -- $line
+				nl="${2:-0}"
+				# A file written by the pre-integer format cannot be read as
+				# tenths, and mixing the two would draw a curve ten times too
+				# high. Drop it once; the next rounds rebuild it.
+				[ "${3:-0}" = 1 ] && : > "$HIST_LOAD"
+				;;
+		esac
+	done <<EOF
+$out
+EOF
+}
+
+# Publish the ring file as one JSON object. A sample that is not strictly
+# formed is skipped: a torn line costs one point, never the whole reply.
+#   $1 clock in seconds (empty = no age filter)
+_cpu_hist_json() {
+	awk -v now="${1:-0}" -v ttl="$HIST_TTL" -v loadf="$HIST_LOAD" '
+		BEGIN {
+			printf "{\"load\":["
+			n = 0
+			while ((getline l < loadf) > 0) {
+				split(l, a, " ")
+				if (a[1] !~ /^[0-9]+$/ || length(a) < 2) continue
+				t = a[1] + 0
+				if (now > 0 && (t < now - ttl || t > now + 60)) continue
+				s = ""
+				for (i = 2; i <= length(a); i++) {
+					# Tenths of a percent, always an integer - see the format
+					# note on _cpu_hist_sample. Anything else is a torn line.
+					# Awk only understands `#`: a /* */ comment is parsed as a
+					# regex literal (/ * ... * / has nothing to repeat), busybox
+					# awk then aborts before BEGIN runs and this whole program
+					# prints nothing - which silently published empty arrays for
+					# both history curves.
+					if (a[i] ~ /^[0-9]+$/)
+						s = s (i > 2 ? "," : "") (a[i] + 0)
+					else
+						s = s (i > 2 ? "," : "") "null"
+				}
+				printf "%s[%d,[%s]]", (n++ ? "," : ""), t, s
+			}
+			close(loadf)
+			printf "]}"
+		}'
+}
+
+# Sample the ring buffer (at most one point per HIST_GATE) and print it for the
+# status reply. Every failure path still prints the current contents: a denied
+# lock, a missing clock or an unwritable file must never blank a chart that is
+# already showing a valid curve.
+_cpu_hist() {
+	local now lock=0
+
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
+
+	if [ -n "$now" ]; then
+		# One sampler at a time. A second tab polling in the same instant must
+		# not differentiate the same reference twice; -n means "skip this
+		# round", never "queue behind it" - a queued sample is a duplicate.
+		# Without flock, sample anyway: the readers tolerate a torn line.
+		lock=1
+		if command -v flock >/dev/null 2>&1; then
+			if exec 9>>"$HIST_LOCK" 2>/dev/null; then
+				flock -x -n 9 2>/dev/null || lock=0
+			fi
+		fi
+		[ "$lock" = 1 ] && _cpu_hist_sample "$now"
+		exec 9>&- 2>/dev/null
+	fi
+
+	_cpu_hist_json "$now"
+}
+
+get_status() {
+	# === NPU Status ===
+	local npu_ver=$(airoha_npu_version)
+
+	local npu_loaded="false"
+	local npu_device=""
+	local npu_driver_path="/sys/bus/platform/drivers/airoha-npu"
+
+	if [ -d "$npu_driver_path" ]; then
+		npu_device=$(ls -1 "$npu_driver_path" 2>/dev/null | grep '\.npu$' | head -1)
+		if [ -n "$npu_device" ]; then
+			npu_loaded="true"
+		fi
+	fi
+
+	local npu_clock=0 npu_clock_v=""
+	# read, not $(cat): one less fork+exec per poll. Emptied first because a
+	# failed redirect leaves the variable untouched (would keep the default),
+	# and -r guarded because 2>/dev/null cannot silence ash's own message about
+	# a redirect that fails to open.
+	if [ -r "/sys/kernel/debug/clk/npu/clk_rate" ]; then
+		read -r npu_clock_v < /sys/kernel/debug/clk/npu/clk_rate
+		[ -n "$npu_clock_v" ] && npu_clock="$npu_clock_v"
+	fi
+
+	local npu_cores=$(grep -c "airoha-npu-wdt" /proc/interrupts 2>/dev/null)
+
+	# The flow-table totals. Two greps over the PPE debugfs files cost ~0.5 s
+	# on the PON ONU - about half of a deferred first paint - and they read the
+	# same two files the table parse already consumed. When the dashboard
+	# deferred the table, reuse what that parse published (one builtin read);
+	# otherwise read live, which is also the only correct answer for the
+	# standalone getStatus RPC and for the very first dashboard call, before any
+	# counts file exists: showing 0 there would be a visible regression.
+	local offload_bound=0 offload_total=0 _airoha_ppe_counts=""
+	if [ "$AIROHA_PPE_DEFERRED" = 1 ] && [ -r /tmp/luci-airoha-npu.ppe.counts ]; then
+		read -r _airoha_ppe_counts < /tmp/luci-airoha-npu.ppe.counts
+	fi
+	if [ -n "$_airoha_ppe_counts" ]; then
+		# get_status takes no arguments, so reusing the positional parameters
+		# here cannot clobber a caller's.
+		set -- $_airoha_ppe_counts
+		offload_total="${1:-0}"
+		offload_bound="${2:-0}"
+		# A truncated or hand-edited counts file must degrade to 0, never to a
+		# non-numeric token in the JSON below.
+		case "$offload_total" in ''|*[!0-9]*) offload_total=0 ;; esac
+		case "$offload_bound" in ''|*[!0-9]*) offload_bound=0 ;; esac
+	else
+		# grep -c PATTERN FILE instead of cat FILE | grep -c PATTERN: the pipe
+		# cost a second fork for no benefit, and the output is a bare count
+		# either way.
+		offload_bound=$(grep -c "^[0-9a-fA-F]" /sys/kernel/debug/ppe/bind 2>/dev/null)
+		offload_total=$(grep -c "^[0-9a-fA-F]" /sys/kernel/debug/ppe/entries 2>/dev/null)
+	fi
+
+	# NPU memory regions don't change after boot — cache to avoid slow dmesg on every poll
+	local mem_cache="/tmp/npu-mem-regions.json"
+	local mem_tmp="" regions="[]"
+	if [ -f "$mem_cache" ]; then
+		regions=$(cat "$mem_cache" 2>/dev/null)
+	else
+		local mem_info=$(dmesg 2>/dev/null | grep "reserved mem.*npu" | head -4)
+		if [ -n "$mem_info" ]; then
+			regions=$(echo "$mem_info" | awk '
+			BEGIN { printf "[" }
+			{
+				if (NR > 1) printf ","
+				match($0, /0x[0-9a-fA-F]+\.\.0x[0-9a-fA-F]+/)
+				range = substr($0, RSTART, RLENGTH)
+				split(range, a, "\\.\\.")
+				match($0, /\([0-9]+ [KMG]i?B\)/)
+				size = substr($0, RSTART+1, RLENGTH-2)
+				match($0, /non-reusable [^ ]+/)
+				name = substr($0, RSTART+13)
+				gsub(/@.*/, "", name)
+				printf "{\"name\":\"%s\",\"start\":\"%s\",\"end\":\"%s\",\"size\":\"%s\"}", name, a[1], a[2], size
+			}
+			END { printf "]" }
+			')
+		fi
+		# tmp+mv rather than `>`: the redirect truncates the live cache before
+		# writing it, so a second rpcd child reading at that instant gets an
+		# empty file - the very input the guard below exists for.
+		mem_tmp=$(mktemp /tmp/npu-mem-regions.XXXXXX 2>/dev/null)
+		if [ -n "$mem_tmp" ]; then
+			printf '%s' "$regions" > "$mem_tmp" 2>/dev/null &&
+				mv -f "$mem_tmp" "$mem_cache" 2>/dev/null || rm -f "$mem_tmp"
+		fi
+	fi
+	# The cached text is spliced into the reply as-is, so anything that is not
+	# a JSON array - an empty or truncated cache, a hand-edited file - would
+	# emit `"memory_regions":,` and make the whole RPC unparseable, taking
+	# getDashboard down with getStatus.
+	case "$regions" in
+		'['*']') ;;
+		*) regions='[]' ;;
+	esac
+
+	# Nothing about cpufreq is read or published any more: these boards are
+	# fixed-clock, and the three tuning RPCs that used the same data are gone.
+	local tmp="" type="" temp="" zone
+
+	local has_pon
+	has_pon=$(airoha_pon_present)
+
+	# Count online CPUs: a glob plus a -d test replaces `ls -d ... | wc -l`,
+	# which was two forks and a subshell for a number the shell can count itself.
+	local cpu_count=0 d
+	if [ -d "/sys/devices/system/cpu" ]; then
+		for d in /sys/devices/system/cpu/cpu[0-9]*; do
+			[ -d "$d" ] && cpu_count=$((cpu_count + 1))
+		done
+	fi
+
+	# Per-CPU load baseline for the usage history chart. Validated here rather
+	# than trusting awk: an empty or half-written result would splice
+	# `"cpu_ticks":,` into the object and take the whole status (and therefore
+	# getDashboard) down with it.
+	local cpu_ticks
+	cpu_ticks=$(_cpu_ticks_json)
+	case "$cpu_ticks" in
+		'['*']') ;;
+		*) cpu_ticks='[]' ;;
+	esac
+
+	# History for the usage curve. One clock read here, reused by the JSON.
+	local cpu_hist
+	cpu_hist=$(_cpu_hist)
+	case "$cpu_hist" in
+		'{'*'}') ;;
+		*) cpu_hist='{"load":[]}' ;;
+	esac
+
+	# CPU architecture info: one sed instead of grep -m1 | awk -F': ' (two
+	# forks for one line). The field separator is the FIRST colon - matching
+	# awk's -F': ' - and is followed by optional blanks: ARM's /proc/cpuinfo
+	# pads the key ("model name\t: ..."), so anchoring on "model name:" alone
+	# would silently drop the architecture on those boards.
+	local cpu_arch=""
+	if [ -f "/proc/cpuinfo" ]; then
+		cpu_arch=$(sed -n '/^model name[ \t]*:/{s/^[^:]*:[ \t]*//p;q;}' /proc/cpuinfo 2>/dev/null)
+	fi
+
+	# CPU temperature. Both attributes come from `read`: the loop walks every
+	# thermal zone until it finds a CPU-ish one, so each non-matching zone was
+	# costing a cat fork. temp is reset per zone for the same read-no-op reason
+	# as above - a zone without a readable temp must not report its neighbour's.
+	local cpu_temp="N/A"
+	for zone in /sys/class/thermal/thermal_zone*; do
+		if [ -f "$zone/temp" ] && [ -f "$zone/type" ]; then
+			type=""; read -r type < "$zone/type"
+			if echo "$type" | grep -qiE 'cpu|airoha|en7581|an7581'; then
+				temp=""; read -r temp < "$zone/temp"
+				if [ -n "$temp" ] && [ "$temp" -gt 0 ]; then
+					cpu_temp="$((temp/1000)).$((temp%1000/100))°C"
+				else
+					cpu_temp="N/A"
+				fi
+				break
+			fi
+		fi
+	done
+
+	# SoC model — read the first device-tree compatible string instead of
+	# hardcoding one board's label, so the UI follows whatever it boots on.
+	local soc_compat=""
+	local dt
+	for dt in /proc/device-tree/compatible /sys/firmware/devicetree/base/compatible; do
+		if [ -f "$dt" ]; then
+			soc_compat=$(tr '\000' '\n' < "$dt" 2>/dev/null | sed -n '1p')
+			[ -n "$soc_compat" ] && break
+		fi
+	done
+	[ -n "$soc_compat" ] || soc_compat="Unknown"
+
+	# System uptime and load average: two single-file reads, and the two things
+	# the CPU card could not answer - how long this boot has been up, and how
+	# much runnable work the scheduler is holding (1 / 5 / 15 min averages).
+	# /proc/uptime is a float ("1234.56 6789.01"), so only the integer part is
+	# published; the load figures stay a verbatim string because they are
+	# already human-scaled and a busybox printf of a float is not portable.
+	sys_uptime=""
+	[ -r /proc/uptime ] && read -r sys_uptime _ < /proc/uptime
+	sys_uptime=${sys_uptime%%.*}
+	loadavg=""
+	if [ -r /proc/loadavg ]; then
+		read -r _l1 _l2 _l3 _ < /proc/loadavg
+		[ -n "$_l1" ] && loadavg="$_l1 $_l2 $_l3"
+	fi
+
+	# Strings read back from sysfs / /proc / the device tree are escaped: they
+	# are kernel-owned today, but a value carrying a quote or a brace would
+	# otherwise be spliced into the object verbatim.
+	printf '{"npu_version":"%s","npu_loaded":%s,"npu_device":"%s","npu_clock":%d,"npu_cores":%d,"offload_bound":%d,"offload_total":%d,"memory_regions":%s,"cpu_count":%d,"cpu_ticks":%s,"cpu_history":%s,"cpu_arch":"%s","cpu_temp":"%s","soc_compat":"%s","has_pon":%d,"sys_uptime":%d,"loadavg":"%s"}' \
+		"$(_json_escape "${npu_ver:-Unknown}")" "$npu_loaded" "$(_json_escape "${npu_device:-}")" "${npu_clock:-0}" "${npu_cores:-0}" "${offload_bound:-0}" "${offload_total:-0}" "$regions" \
+		"${cpu_count:-0}" "$cpu_ticks" "$cpu_hist" \
+		"$(_json_escape "${cpu_arch:-}")" "${cpu_temp:-N/A}" "$(_json_escape "${soc_compat:-}")" "${has_pon:-0}" "${sys_uptime:-0}" "$(_json_escape "${loadavg:-}")"
+}
+
+get_topology() {
+	airoha_port_topology_json
+}
+
+# Publish the flow-table totals for the deferred dashboard path, which needs
+# them without touching debugfs. This is the only place that knows them: the
+# counts come out of the same parse that produced the table. Two jsonfilter
+# calls here - on a path that already costs ~2 s - buy a zero-fork `read` on
+# the hot path. Never called for the "PPE unavailable" fallbacks, so an
+# unreadable debugfs cannot publish a fake 0.
+_airoha_ppe_publish_counts() {
+	local total bound tmp
+	total=$(printf '%s' "$1" | jsonfilter -e '@.total' 2>/dev/null)
+	bound=$(printf '%s' "$1" | jsonfilter -e '@.bound' 2>/dev/null)
+	case "$total" in ''|*[!0-9]*) return 0 ;; esac
+	case "$bound" in ''|*[!0-9]*) bound=0 ;; esac
+	tmp=$(mktemp /tmp/luci-airoha-npu.ppe.counts.XXXXXX 2>/dev/null) || return 0
+	printf '%s %s\n' "$total" "$bound" > "$tmp" 2>/dev/null &&
+		mv -f "$tmp" /tmp/luci-airoha-npu.ppe.counts 2>/dev/null || rm -f "$tmp"
+}
+
+# Remove this page's own /tmp litter that outlived the call that created it.
+# A dashboard killed mid-flight (rpcd restart, client gone, OOM) never reaches
+# its `rm -rf`, and a probe killed hard leaves airoha-common.* fragments plus,
+# rarely, a half-written history trim. All of it is small, but none of it is
+# bounded by anything, so it is swept here.
+#
+# Age is the safety property, not existence: a live dashboard owns its
+# directory for well under ten seconds and a probe for under two, so -mmin +10
+# cannot touch a running call. The ppe.cache / counts / hist files are
+# deliberately not matched (their names have no mktemp suffix).
+#   $1 clock in seconds since the epoch
+_airoha_tmp_sweep() {
+	local now="$1" last=""
+
+	[ -n "$now" ] || return 0
+	# Once per ten minutes. Without the marker this would be a find fork on
+	# every 20 s PPE round for a condition that changes at most a few times a
+	# day; with it, the whole sweep costs six find runs per hour.
+	if [ -r "$HIST_DIR/luci-airoha-npu.sweep" ]; then
+		read -r last < "$HIST_DIR/luci-airoha-npu.sweep" 2>/dev/null
+		case "$last" in ''|*[!0-9]*) last="" ;; esac
+		if [ -n "$last" ] && [ "$now" -ge "$last" ] &&
+		   [ $((now - last)) -lt 600 ]; then
+			return 0
+		fi
+	fi
+	printf '%s\n' "$now" > "$HIST_DIR/luci-airoha-npu.sweep" 2>/dev/null
+	find "$HIST_DIR" -maxdepth 1 \
+		\( -name 'luci-airoha-npu.dash.*' -o -name 'airoha-common.*' \
+		-o -name 'luci-airoha-npu.cpu.*.hist.??????' \) \
+		-mmin +10 -exec rm -rf {} \; 2>/dev/null
+}
+
+get_ppe_entries() {
+	local entries_file="/sys/kernel/debug/ppe/entries"
+	local cache_file="/tmp/luci-airoha-npu.ppe.cache"
+	local cache_ttl=2 now cache_time age cached_json
+	local snapshot cache_tmp parsed
+
+	# PPE is volatile, so two seconds is deliberately short: adjacent dashboard
+	# requests share the expensive 1024-entry parse without making flows look
+	# stale across the normal five-second UI poll interval.
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
+	# This is the slow branch of the page (every ~20 s) and the one place that
+	# already holds a clock reading, which is what the sweep needs. It is
+	# marker-gated to once per ten minutes, so the fork lands on ~6 rounds/hour.
+	[ -n "$now" ] && _airoha_tmp_sweep "$now"
+	if [ -n "$now" ] && [ -s "$cache_file" ]; then
+		IFS= read -r cache_time < "$cache_file" 2>/dev/null
+		case "$cache_time" in
+			''|*[!0-9]*) cache_time="" ;;
+		esac
+		if [ -n "$cache_time" ] && [ "$now" -ge "$cache_time" ] 2>/dev/null; then
+			age=$((now - cache_time))
+			if [ "$age" -lt "$cache_ttl" ]; then
+				cached_json=$(sed -n '2,$p' "$cache_file" 2>/dev/null)
+				case "$cached_json" in
+					\{*\})
+						_airoha_ppe_publish_counts "$cached_json"
+						printf '%s' "$cached_json"
+						return
+						;;
+				esac
+			fi
+		fi
+	fi
+
+	# date-less minimal builds still execute the live path; only reuse/write is
+	# disabled so a missing clock utility can never turn the response empty.
+	snapshot=$(mktemp "/tmp/luci-airoha-npu.ppe.snapshot.XXXXXX" 2>/dev/null) || {
+		echo '{"available":false,"entries":[],"total":0}'
+		return
+	}
+	if [ ! -r "$entries_file" ] ||
+	   ! _run_with_deadline 2 ppe cp "$entries_file" "$snapshot"; then
+		rm -f "$snapshot"
+		echo '{"available":false,"entries":[],"total":0}'
+		return
+	fi
+
+	if ! parsed=$(airoha_ppe_parse "$snapshot" "" 1024 2>/dev/null); then
+		parsed=""
+	fi
+	rm -f "$snapshot"
+	case "$parsed" in
+		\{*\}) ;;
+		*)
+			echo '{"available":false,"entries":[],"total":0}'
+			return
+			;;
+	esac
+
+	# Timestamp at publication, not before the potentially two-second snapshot,
+	# otherwise a slow successful parse could expire its own cache immediately.
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
+	if [ -n "$now" ]; then
+		cache_tmp=$(mktemp "/tmp/luci-airoha-npu.ppe.cache.XXXXXX" 2>/dev/null)
+		if [ -n "$cache_tmp" ]; then
+			{
+				printf '%s\n' "$now"
+				printf '%s\n' "$parsed"
+			} > "$cache_tmp"
+			mv -f "$cache_tmp" "$cache_file" 2>/dev/null || rm -f "$cache_tmp"
+		fi
+	fi
+	_airoha_ppe_publish_counts "$parsed"
+	printf '%s' "$parsed"
+}
+
+get_token_info() {
+	local token_file="/sys/kernel/debug/ieee80211/phy0/mt76/token_info"
+	local has_wifi; has_wifi=$(airoha_has_wifi)
+
+	# Gather per-band WiFi station stats (count, retries, failures)
+	local sta_json="" band
+	# `iw dev` used to run inside the band loop - three execs, ~2 cs each on
+	# the WiFi board - purely to map a band onto its interfaces. It is captured
+	# once here and scanned with shell builtins, so a band that owns no
+	# interface costs no exec at all instead of a guaranteed one.
+	local iw_dev="" ifaces="" ifaces0="" ifaces1="" ifaces2="" stats="" w prev
+	iw_dev=$(iw dev 2>/dev/null)
+	# One pass for all three bands. The capture names an interface as
+	# "Interface <name>", which is what the old per-band awk matched
+	# (/Interface phy0.N-/ { print $2 }); matching only the word right after
+	# the keyword keeps a stray SSID from being mistaken for one.
+	for w in $iw_dev; do
+		if [ "$prev" = Interface ]; then
+			case "$w" in
+				phy0.0-*) ifaces0="$ifaces0 $w" ;;
+				phy0.1-*) ifaces1="$ifaces1 $w" ;;
+				phy0.2-*) ifaces2="$ifaces2 $w" ;;
+			esac
+		fi
+		prev="$w"
+	done
+	for band in 0 1 2; do
+		case "$band" in
+			0) ifaces="$ifaces0" ;;
+			1) ifaces="$ifaces1" ;;
+			2) ifaces="$ifaces2" ;;
+		esac
+		stats=""
+		# No interfaces: no station dump, and the awk below is skipped too.
+		# Its empty-output case is identical to running it on an empty pipe,
+		# which is what the loop used to do, so the emitted zeros match.
+		if [ -n "$ifaces" ]; then
+			stats=$(
+				for iface in $ifaces; do
+					iw dev "$iface" station dump 2>/dev/null
+				done | awk '
+			BEGIN { n=0; tp=0; tr=0 }
+			/^Station/ { n++ }
+			/tx packets:/ { tp += $3 }
+			/tx retries:/ { tr += $3 }
+			END { printf "%d %d %d", n, tp, tr }'
+			)
+		fi
+		set -- $stats
+		[ -n "$sta_json" ] && sta_json="${sta_json},"
+		sta_json="${sta_json}{\"band\":${band},\"count\":${1:-0},\"tx_packets\":${2:-0},\"tx_retries\":${3:-0}}"
+	done
+
+	if [ ! -f "$token_file" ]; then
+		printf '{"token_count":0,"token_size":0,"npu_active":false,"tx_queues":[],"station_counts":[%s],"has_wifi":%s}' "$sta_json" "$has_wifi"
+		return
+	fi
+
+	awk -v stations="$sta_json" -v hw="$has_wifi" '
+	BEGIN {
+		tc=0; ts=0; npu=0
+		tq_n=0
+	}
+	/^  token_count:/ { tc=$2+0; ts=$4+0 }
+	/status:.*active/ { npu=1 }
+	/band [0-9]/ {
+		gsub(/\|/, " ")
+		for(i=1;i<=NF;i++) {
+			if($i=="band") tq_band[tq_n]=$(i+1)+0
+			if($i=="npu" || $i=="dma") tq_type[tq_n]=$i
+		}
+		cnt=0
+		for(i=1;i<=NF;i++) {
+			if($i ~ /^[0-9]+$/ && $(i-1)!="band") {
+				tq_v[tq_n,cnt++]=$i+0
+			}
+		}
+		tq_n++
+	}
+	END {
+		printf "{\"token_count\":%d,\"token_size\":%d,\"npu_active\":%s,\"tx_queues\":[", \
+			tc, ts, (npu?"true":"false")
+
+		for(i=0;i<tq_n;i++) {
+			if(i>0) printf ","
+			printf "{\"band\":%d,\"type\":\"%s\",\"ndesc\":%d,\"queued\":%d,\"head\":%d,\"tail\":%d}", \
+				tq_band[i], tq_type[i], tq_v[i,0], tq_v[i,1], tq_v[i,2], tq_v[i,3]
+		}
+
+		printf "],\"station_counts\":[%s],\"has_wifi\":%s}", stations, hw
+	}
+	' "$token_file" 2>/dev/null || printf '{"token_count":0,"token_size":0,"npu_active":false,"tx_queues":[],"station_counts":[%s],"has_wifi":%s}' "$sta_json" "$has_wifi"
+}
+
+# ---------------------------------------------------------------------------
+# Frame Engine (GDM / CDM) counters
+#
+# The frame-engine register block (0x1fb50000 on AN7581/EN7581) has no debugfs
+# view, so these counters are read straight from the registers with the busybox
+# devmem applet. The addresses are the SoC's, not the board's: the XR1710G
+# (WiFi router) and the Nokia XG-040G-MD (PON ONU) expose the same layout, so
+# one set of offsets serves both. A build without devmem or /dev/mem reports
+# the block as unavailable instead of rendering an empty or bogus one.
+#
+#   GDM - the Ethernet data MACs. On the XR1710G the three GDMs are the
+#         internal-switch CPU port, the USXGMII WAN and the USXGMII LAN2; on
+#         the Nokia they are the switch CPU port, the PON uplink and lan1.
+#         The frontend labels each card from the device-tree topology, so the
+#         same register block reads correctly on both boards.
+#   CDM - the CPU DMA engines. The RX split (CPU path vs PPE-forwarded) is the
+#         hardware-offload ratio the UI shows.
+# ---------------------------------------------------------------------------
+
+# One 32-bit register read. Prints the decimal value, or nothing with rc 1 when
+# devmem is missing or the read did not return a plain word - a failed read
+# must never be folded into the arithmetic below as an empty string.
+_devmem32() {
+	local v
+	command -v devmem >/dev/null 2>&1 || return 1
+	v=$(devmem "$1" 2>/dev/null) || return 1
+	case "$v" in
+		0x[0-9a-fA-F]*) printf '%s' "$((v))" ;;
+		[0-9]*) printf '%s' "$v" ;;
+		*) return 1 ;;
+	esac
+}
+
+# Register at <base> + <offset>; both accept 0x hex or decimal.
+_devmem32_at() {
+	_devmem32 "$(printf '0x%x' $(( ($1) + ($2) )))"
+}
+
+# JSON for one GDM port: TX_OK +0x04, TX_DROP +0x08, RX_OK +0x48, RX_FC_DROP +0x4c,
+# plus the three other RX drop reasons +0x50/+0x54/+0x58. The four RX reasons are
+# the vendor's GDMA1_RX_FC/RC/OVER/ERROR_DROP_CNT and the kernel's
+# REG_FE_GDM_RX_FC/RC/OVERFLOW/ERROR_DROP_CNT - the same words, documented on
+# both sides.
+_gdm_json() {
+	local reg="$1" base="$2" tx tx_drop rx rx_drop rc_drop over_drop err_drop
+	tx=$(_devmem32_at "$base" 0x04) || return 1
+	tx_drop=$(_devmem32_at "$base" 0x08) || return 1
+	rx=$(_devmem32_at "$base" 0x48) || return 1
+	rx_drop=$(_devmem32_at "$base" 0x4c) || return 1
+	rc_drop=$(_devmem32_at "$base" 0x50) || return 1
+	over_drop=$(_devmem32_at "$base" 0x54) || return 1
+	err_drop=$(_devmem32_at "$base" 0x58) || return 1
+	printf '{"reg":%s,"tx":%s,"tx_drop":%s,"rx":%s,"rx_drop":%s,"rx_rc_drop":%s,"rx_over_drop":%s,"rx_error_drop":%s}' \
+		"$reg" "$tx" "$tx_drop" "$rx" "$rx_drop" \
+		"$rc_drop" "$over_drop" "$err_drop"
+}
+
+# JSON for one CDM engine, base = GDMA_BASE + 0x80. The five long-standing
+# fields are TX_OK +0x00, RXCPU_OK +0x10, RXHWF_OK +0x14, RXCPU_DROP +0x20 and
+# RXHWF_DROP +0x24; the rest are the EN7581/EN7523 branch of the vendor's
+# CDMA1_* set (fe_reg_en7512.h), at GDMA_BASE +0x8c/+0x98/+0x9c/+0xa8/+0xac/
+# +0xb0..+0xbc/+0xd0..+0xdc:
+#   +0x0c RXCPU_KA (keep-alive), +0x18 RXHWF_FAST_ALL, +0x1c RXOQ5_OK (TSO),
+#   +0x28 RXHWF_FAST_DROP, +0x2c RXOQ5_DROP, +0x30..0x3c per-CPU RX_OK,
+#   +0x50..0x5c per-CPU RX_DROP.
+#
+# The +0x00 word keeps the JSON key "tx" (renaming it would break a device
+# still running this older backend behind a newer view), but the UI shows it as
+# "Total received": it is a per-engine total of its own and is NOT the sum of
+# the CPU/HW delivery split - on the two test boards it advances on a different
+# frame stream and can stay far below rx_cpu.
+_cdm_json() {
+	local reg="$1" base="$2"
+	local tx rxcpu rxhwf rxcpud rxhwfd
+	local rxka hwffast oq5 hwffastd oq5d
+	local cpu0 cpu1 cpu2 cpu3 cpu0d cpu1d cpu2d cpu3d
+
+	tx=$(_devmem32_at "$base" 0x00) || return 1
+	rxcpu=$(_devmem32_at "$base" 0x10) || return 1
+	rxhwf=$(_devmem32_at "$base" 0x14) || return 1
+	rxcpud=$(_devmem32_at "$base" 0x20) || return 1
+	rxhwfd=$(_devmem32_at "$base" 0x24) || return 1
+	rxka=$(_devmem32_at "$base" 0x0c) || return 1
+	hwffast=$(_devmem32_at "$base" 0x18) || return 1
+	oq5=$(_devmem32_at "$base" 0x1c) || return 1
+	hwffastd=$(_devmem32_at "$base" 0x28) || return 1
+	oq5d=$(_devmem32_at "$base" 0x2c) || return 1
+	cpu0=$(_devmem32_at "$base" 0x30) || return 1
+	cpu1=$(_devmem32_at "$base" 0x34) || return 1
+	cpu2=$(_devmem32_at "$base" 0x38) || return 1
+	cpu3=$(_devmem32_at "$base" 0x3c) || return 1
+	cpu0d=$(_devmem32_at "$base" 0x50) || return 1
+	cpu1d=$(_devmem32_at "$base" 0x54) || return 1
+	cpu2d=$(_devmem32_at "$base" 0x58) || return 1
+	cpu3d=$(_devmem32_at "$base" 0x5c) || return 1
+
+	printf '{"reg":%s,"tx":%s,"rx_cpu":%s,"rx_hwf":%s,"rx_cpu_drop":%s,"rx_hwf_drop":%s,"rx_cpu_ka":%s,"rx_hwf_fast":%s,"rx_oq5":%s,"rx_hwf_fast_drop":%s,"rx_oq5_drop":%s,"rx_cpu0":%s,"rx_cpu1":%s,"rx_cpu2":%s,"rx_cpu3":%s,"rx_cpu0_drop":%s,"rx_cpu1_drop":%s,"rx_cpu2_drop":%s,"rx_cpu3_drop":%s}' \
+		"$reg" "$tx" "$rxcpu" "$rxhwf" "$rxcpud" "$rxhwfd" \
+		"$rxka" "$hwffast" "$oq5" "$hwffastd" "$oq5d" \
+		"$cpu0" "$cpu1" "$cpu2" "$cpu3" \
+		"$cpu0d" "$cpu1d" "$cpu2d" "$cpu3d"
+}
+
+_get_frame_engine_live() {
+	local psb pk pse_used pse_free pse_peak gdm cdm entry reg base spec
+
+	if ! command -v devmem >/dev/null 2>&1; then
+		printf '{"available":false,"reason":"devmem_unavailable"}'
+		return
+	fi
+
+	# PSE shared buffer: [30:16] buffers in use, [14:0] free. Both halves are
+	# 0x7fff fields as the vendor defines them (PSE_SHARE_BUF_USED_CNT_MASK /
+	# PSE_SHARE_BUF_FREE_CNT_MASK); reading the whole upper half as 0xffff
+	# would include a reserved bit that is not part of the count.
+	psb=$(_devmem32 0x1fb50104) || {
+		printf '{"available":false,"reason":"register_read_failed"}'
+		return
+	}
+	pse_used=$(( (psb >> 16) & 0x7FFF ))
+	pse_free=$(( psb & 0x7FFF ))
+
+	# FE+0x100 (PSE_BUF_USE_REC) is the hardware's own high-water mark:
+	# [30:16] SHARE_USED_CNT_MAX, [14:0] FQ_CNT_MIN. The shared pool only absorbs
+	# bursts that overrun the per-port reservations, so the instantaneous word at
+	# 0x104 is back to zero within milliseconds; the latched max is what a poll
+	# every few seconds can actually observe. A failed read degrades to 0 rather
+	# than dropping the whole card.
+	pk=$(_devmem32 0x1fb50100) || pk=0
+	pse_peak=$(( (pk >> 16) & 0x7FFF ))
+
+	# Per-port queue occupancy (FE+0x150+4i) is deliberately not exported: every
+	# idle port reports a constant IQ of 2, which reads as a permanent backlog
+	# and says nothing about load. PSE drop visibility also lives elsewhere - the
+	# vendor's PSE_DROP_CNT(i) at FE+0x178+4i never reads back monotonically on
+	# either test board, so drops come from the GDM MIB reason counters below.
+
+	# GDM register blocks, keyed by the device-tree ethernet@N index so the
+	# frontend can label each card from the same topology the port table uses.
+	# A port that fails to decode is skipped, not fatal.
+	gdm=""
+	for spec in "1:0x1fb50600" "2:0x1fb51600" "4:0x1fb52600"; do
+		reg="${spec%%:*}"
+		base="${spec##*:}"
+		entry=$(_gdm_json "$reg" "$base") || continue
+		[ -z "$gdm" ] || gdm="$gdm,"
+		gdm="$gdm$entry"
+	done
+
+	# CDM engines (CPU DMA).
+	cdm=""
+	for spec in "1:0x1fb50580" "2:0x1fb51580"; do
+		reg="${spec%%:*}"
+		base="${spec##*:}"
+		entry=$(_cdm_json "$reg" "$base") || continue
+		[ -z "$cdm" ] || cdm="$cdm,"
+		cdm="$cdm$entry"
+	done
+
+	# Nothing decoded at all means every address read back as garbage - report
+	# the block as unavailable rather than an empty frame engine.
+	if [ -z "$gdm" ] && [ -z "$cdm" ]; then
+		printf '{"available":false,"reason":"register_read_failed"}'
+		return
+	fi
+
+	printf '{"available":true,"pse":{"used":%s,"free":%s,"peak":%s},"gdm":[%s],"cdm":[%s]}' \
+		"$pse_used" "$pse_free" "$pse_peak" "$gdm" "$cdm"
+}
+
+# Frame engine snapshot behind a 20 s TTL.
+#
+# The devmem reads are the whole cost of this probe (~0.34 s for three PSE
+# registers plus a GDM and a CDM block), and what they publish - PSE shared
+# buffer occupancy with its latched high-water mark, GDM/CDM MIBs - is meant to
+# be read as a trend, not as a per-second counter. Caching the finished object
+# for 20 s turns the cost into one round in every two at the page's 10 s poll,
+# and because the dashboard keeps carrying the field, the view needs no change:
+# it simply redraws the same numbers in between.
+#
+# Only a successful read is cached. `available:false` is either permanent
+# (devmem not installed) or transient (a register read failed); caching the
+# transient one would leave the card blank for a full TTL after it recovers.
+get_frame_engine() {
+	local cache="/tmp/luci-airoha-npu.frame.cache"
+	local ttl=20 now="" ts="" json="" tmp=""
+
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
+	if [ -n "$now" ] && [ -s "$cache" ]; then
+		IFS= read -r ts < "$cache" 2>/dev/null
+		case "$ts" in ''|*[!0-9]*) ts="" ;; esac
+		if [ -n "$ts" ] && [ "$now" -ge "$ts" ] &&
+		   [ $((now - ts)) -lt "$ttl" ]; then
+			json=$(sed -n '2,$p' "$cache" 2>/dev/null)
+			case "$json" in
+				'{'*'"available":true'*'}')
+					printf '%s' "$json"
+					return
+					;;
+			esac
+		fi
+	fi
+
+	json=$(_get_frame_engine_live)
+
+	case "$json" in
+		'{'*'"available":true'*'}') ;;
+		*) printf '%s' "$json"; return ;;
+	esac
+	[ -n "$now" ] || { printf '%s' "$json"; return; }
+
+	tmp=$(mktemp "$cache.XXXXXX" 2>/dev/null)
+	if [ -n "$tmp" ]; then
+		{
+			printf '%s\n' "$now"
+			printf '%s\n' "$json"
+		} > "$tmp" 2>/dev/null && mv -f "$tmp" "$cache" 2>/dev/null || rm -f "$tmp"
+	fi
+	printf '%s' "$json"
+}
+
+# NSS (EIP93) crypto engine snapshot.
+#
+# Every probe is independent and optional: a board built without
+# kmod-crypto-hw-eip93, without kmod-cryptodev or without the OpenSSL
+# devcrypto engine must still get a card that names what is missing, so no
+# check here assumes another succeeded.
+#
+# `openssl engine` is the only fork in this function (~50-100 ms on the SoC)
+# and the engine list cannot change before a reboot, so its answer is cached
+# for a minute to keep repeated page loads cheap.
+get_crypto_info() {
+	local present=0 bound=0 algos=0 refs=0 sess=0 algostat="" chardev=0 openssl=0 engine="" irqs="null"
+	local ciphers="" ciphers_json="[]" dump="" irate="null" p_stamp="" p_irq=""
+	local dir now stamp saved saved_ciphers age cache="/tmp/luci-airoha-npu.crypto.cache"
+	local irc="/tmp/luci-airoha-npu.crypto.irq"
+
+	# One clock read serves the engine-probe cache, the interrupt-rate sample
+	# and the "no baseline yet" answer, so it happens before any probe runs.
+	now=$(date +%s 2>/dev/null)
+	case "$now" in ''|*[!0-9]*) now="" ;; esac
+
+	[ -d /sys/module/crypto_hw_eip93 ] && present=1
+	[ -e /dev/crypto ] && chardev=1
+
+	# Driver-name agnostic binding check: the DT node is crypto@1fb70000, so a
+	# bound platform device always shows up as 1fb70000.crypto, whatever
+	# directory the inside-secure driver registered itself under.
+	for dir in /sys/bus/platform/drivers/*/; do
+		[ -e "$dir/1fb70000.crypto" ] && { bound=1; break; }
+	done
+
+	# /proc/crypto prints a name line before its driver line, so remember the
+	# name and only count it when the driver is the EIP93 one. The match also
+	# accepts "safexcel" because the compatible string is
+	# inside-secure,safexcel-eip93ies and the driver name varies by kernel.
+	#
+	# Only the counts are published. The full list is the driver's registered
+	# algorithm set: it cannot change before a reboot, it says nothing about
+	# which of them are in use, and 32 names in one line is unreadable on a
+	# page that redraws every 5 s - the count plus the refcnt below carry the
+	# same information.
+	#
+	# refcnt is the number of live tfm users of that algorithm, and it is the
+	# only built-in counter this driver exposes (there is no debugfs node on the
+	# vendor kernel). It is NOT a load counter as printed: every algorithm in
+	# the registered set carries a permanent baseline of 1, so summing it raw
+	# reproduces the algorithm count (32/32 on a completely idle engine - the
+	# generic software blocks read the same baseline, which proves the value is
+	# registration state and not usage). Only the references above that
+	# baseline are live sessions, hence max(0, refcnt - 1) per block; both the
+	# raw sum (`refcnt`) and the derived `sessions` are published so the card
+	# can show a number that actually moves. The field ordering (driver before
+	# refcnt) holds on both 5.4 and 6.x, but `matched` is reset on every name
+	# line so a reordered or extra field can never leak a count from another
+	# block.
+	if [ -r /proc/crypto ]; then
+		algostat=$(awk '
+			/^name[ \t]*:/ {
+				name = $0
+				sub(/^name[ \t]*:[ \t]*/, "", name)
+				sub(/[ \t]+$/, "", name)
+				matched = 0
+			}
+			/^driver[ \t]*:/ {
+				if (tolower($0) ~ /eip93|safexcel/) {
+					matched = 1
+					if (name != "" && !(name in seen)) {
+						seen[name] = 1
+						n++
+					}
+				}
+			}
+			/^refcnt[ \t]*:/ {
+				if (matched) {
+					value = $0
+					sub(/^refcnt[ \t]*:[ \t]*/, "", value)
+					sub(/[ \t]+$/, "", value)
+					if (value ~ /^[0-9]+$/) {
+						value += 0
+						refs += value
+						if (value > 1) extra += value - 1
+					}
+				}
+			}
+			END { printf "%d|%d|%d", n + 0, refs + 0, extra + 0 }
+		' /proc/crypto 2>/dev/null)
+		algos="${algostat%%|*}"
+		algostat="${algostat#*|}"
+		refs="${algostat%%|*}"
+		sess="${algostat#*|}"
+		case "$algos" in ''|*[!0-9]*) algos=0 ;; esac
+		case "$refs" in ''|*[!0-9]*) refs=0 ;; esac
+		case "$sess" in ''|*[!0-9]*) sess=0 ;; esac
+	fi
+
+	# EIP93 sits on GIC SPI 44; the line name is the platform device
+	# (1fb70000.crypto) on newer kernels and the driver name on older ones, so
+	# both are accepted. The line layout is
+	#   IRQ:  cpu0 cpu1 ...   GICv3  <hwirq>  Level  <device>
+	# so only the leading per-CPU columns are counts and the loop must stop at
+	# the first non-numeric field. Accumulating every numeric field (the old
+	# behaviour) added the hwirq number as well, which is why an engine that had
+	# never fired still reported 76: that is SPI 44 + 32, not 76 interrupts.
+	irqs=$(awk '
+		/crypto@1fb70000|1fb70000\.crypto|eip93/ {
+			found = 1
+			for (i = 2; i <= NF; i++) {
+				if ($i ~ /^[0-9]+$/) sum += $i
+				else break
+			}
+		}
+		END { if (found) print sum + 0; else print "" }
+	' /proc/interrupts 2>/dev/null)
+	[ -n "$irqs" ] || irqs="null"
+
+	if command -v openssl >/dev/null 2>&1; then
+		openssl=1
+		if [ -n "$now" ] && [ -s "$cache" ]; then
+			{ IFS= read -r stamp; IFS= read -r saved; IFS= read -r saved_ciphers; } <"$cache" 2>/dev/null
+			case "$stamp" in ''|*[!0-9]*) stamp="" ;; esac
+			case "$saved" in 0|1) ;; *) saved="" ;; esac
+			if [ -n "$stamp" ] && [ -n "$saved" ] && [ "$now" -ge "$stamp" ] 2>/dev/null; then
+				age=$((now - stamp))
+				[ "$age" -lt 60 ] && { engine="$saved"; ciphers="$saved_ciphers"; }
+			fi
+		fi
+		if [ -z "$engine" ]; then
+			# `-pre DUMP_INFO` is the only probe that answers "which algorithms
+			# can actually be offloaded": it walks every cipher the engine knows,
+			# opens a kernel session for it and prints the backing driver with a
+			# "(hw accelerated)" marker, or `CIOCGSESSION … failed` for the ones
+			# the driver refuses (AES-CBC on this board). Advertised = the marked
+			# ones only; the failed lines are exactly what makes a plain
+			# `openssl enc -aes-128-cbc` silently stay on the CPU. `[ available ]`
+			# in the same output is the engine-level check the card already used.
+			# One fork, cached for a minute: none of it can change before a reboot.
+			dump=$(openssl engine -t -c -vv -pre DUMP_INFO devcrypto 2>&1)
+			case "$dump" in
+			*"[ available ]"*) engine=1 ;;
+			*) engine=0 ;;
+			esac
+			ciphers=$(printf '%s\n' "$dump" \
+				| sed -n 's/^Cipher \(.*\), NID=[0-9]*, .*(hw accelerated).*$/\1/p' \
+				| tr '\n' ',' | sed 's/,$//')
+			[ -n "$now" ] && printf '%s\n%s\n%s\n' "$now" "$engine" "$ciphers" >"$cache" 2>/dev/null
+		fi
+	fi
+	# JSON array of the usable ciphers, empty when the engine is absent. The
+	# names come from the engine itself, so they contain no quotes to escape.
+	if [ -n "$ciphers" ]; then
+		ciphers_json="[\"$(printf '%s' "$ciphers" | sed 's/,/","/g')\"]"
+	fi
+
+	# Interrupt rate. There is no packet or byte counter in the register map to
+	# read (PE_CD_COUNT / PE_RD_COUNT are ring depths, not totals), so the only
+	# runtime quantity this engine exposes is its completion-interrupt total -
+	# and a rate needs two samples. The previous sample is kept next to the
+	# engine cache and rewritten on every call, which lines up with the ~20 s
+	# poll cadence of the card rather than with each 5 s page tick.
+	if [ "$irqs" != "null" ] && [ -n "$now" ]; then
+		if [ -s "$irc" ]; then
+			{ IFS= read -r p_stamp; IFS= read -r p_irq; } <"$irc" 2>/dev/null
+			case "$p_stamp" in ''|*[!0-9]*) p_stamp="" ;; esac
+			case "$p_irq" in ''|*[!0-9]*) p_irq="" ;; esac
+			if [ -n "$p_stamp" ] && [ -n "$p_irq" ] && [ "$now" -gt "$p_stamp" ] 2>/dev/null; then
+				if [ "$irqs" -ge "$p_irq" ] 2>/dev/null; then
+					irate=$(( (irqs - p_irq) / (now - p_stamp) ))
+				else
+					# Counter went backwards: the board rebooted between the two
+					# samples, so the delta is meaningless rather than negative.
+					irate=0
+				fi
+			fi
+		fi
+		printf '%s\n%s\n' "$now" "$irqs" >"$irc" 2>/dev/null
+	fi
+
+	printf '{"available":true,"present":%d,"bound":%d,"algos":%d,"refcnt":%d,"sessions":%d,"devcrypto":%d,"openssl":%d,"engine":%s,"irqs":%s,"irq_rate":%s,"ciphers":%s}' \
+		"$present" "$bound" "$algos" "$refs" "$sess" \
+		"$chardev" "$openssl" "${engine:-null}" "$irqs" "$irate" "$ciphers_json"
+}
+
+get_vlan_offload() {
+	airoha_bridge_offload_supported || {
+		echo '{"supported":false,"enabled":0}'
+		return
+	}
+	local tagged indev
+	# Mirror of this pair's owner semantics (set_vlan_offload): the two keys
+	# are one unit, so enabled is reported only when BOTH read 1.
+	tagged=$(cat /proc/sys/net/bridge/bridge-nf-filter-vlan-tagged 2>/dev/null)
+	indev=$(cat /proc/sys/net/bridge/bridge-nf-pass-vlan-input-dev 2>/dev/null)
+	if [ "$tagged" = "1" ] && [ "$indev" = "1" ]; then
+		printf '{"enabled":1}'
+	else
+		printf '{"enabled":0}'
+	fi
+}
+
+set_vlan_offload() {
+	airoha_bridge_offload_supported || {
+		echo '{"error":"VLAN offload is not supported on this device"}'
+		return
+	}
+	local enabled
+	enabled=$(echo "$1" | jsonfilter -e "@.enabled" 2>/dev/null)
+	[ -z "$enabled" ] && enabled="0"
+	if [ "$enabled" != "0" ] && [ "$enabled" != "1" ]; then
+		echo '{"error":"enabled must be 0 or 1"}'
+		return
+	fi
+	if [ "$enabled" = "1" ] && _bridge_offload_blocked; then
+		_bridge_offload_block_error
+		return
+	fi
+	# Owner of the VLAN passthrough pair (bridge-nf-filter-vlan-tagged +
+	# bridge-nf-pass-vlan-input-dev). BOTH keys are written unconditionally
+	# from "$enabled": VLAN filtering can be turned on AFTER this switch, and
+	# the pair must already be in place when that happens - conditioning on a
+	# VLAN-filtering bridge existing left a stale =0 snapshot behind on exactly
+	# that path. br_netfilter is loaded so the switch can bootstrap itself
+	# without AP-mode acceleration.
+	modprobe br_netfilter 2>/dev/null
+	if ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-filter-vlan-tagged 2>/dev/null ||
+	   ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-pass-vlan-input-dev 2>/dev/null; then
+		echo '{"error":"failed - bridge module may not be loaded"}'
+		return
+	fi
+	{
+		echo "net.bridge.bridge-nf-filter-vlan-tagged=$enabled"
+		echo "net.bridge.bridge-nf-pass-vlan-input-dev=$enabled"
+	} > /etc/sysctl.d/14-vlan-offload.conf
+	printf '{"result":"ok","enabled":%d}' "$enabled"
+}
+
+get_pppoe_offload() {
+	local val
+	# Use bridge-nf-filter-pppoe-tagged sysctl.
+	val=$(cat /proc/sys/net/bridge/bridge-nf-filter-pppoe-tagged 2>/dev/null)
+	printf '{"enabled":%d}' "${val:-0}"
+}
+
+set_pppoe_offload() {
+	airoha_bridge_offload_supported || {
+		echo '{"error":"Bridge offload is not supported on this device"}'
+		return
+	}
+	local enabled
+	enabled=$(echo "$1" | jsonfilter -e "@.enabled" 2>/dev/null)
+	[ -z "$enabled" ] && enabled="0"
+	if [ "$enabled" != "0" ] && [ "$enabled" != "1" ]; then
+		echo '{"error":"enabled must be 0 or 1"}'
+		return
+	fi
+	if [ "$enabled" = "1" ] && _bridge_offload_blocked; then
+		_bridge_offload_block_error
+		return
+	fi
+	# Load bridge module if needed and set sysctl.
+	if [ "$enabled" = "1" ]; then
+		modprobe bridge 2>/dev/null
+	fi
+	if ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-filter-pppoe-tagged 2>/dev/null; then
+		echo '{"error":"failed - bridge module may not be loaded"}'
+		return
+	fi
+	echo "net.bridge.bridge-nf-filter-pppoe-tagged=$enabled" > /etc/sysctl.d/13-pppoe-offload.conf
+	# Also load PPTP conntrack helper for PPPoE offload support
+	if [ "$enabled" = "1" ]; then
+		modprobe nf_conntrack_pptp 2>/dev/null
+		modprobe nf_nat_pptp 2>/dev/null
+	fi
+	printf '{"result":"ok","enabled":%d}' "$enabled"
+}
+
+get_flow_offload() {
+	# Check the persisted UCI configuration.
+	local fo foh
+	fo=$(uci get firewall.@defaults[0].flow_offloading 2>/dev/null)
+	foh=$(uci get firewall.@defaults[0].flow_offloading_hw 2>/dev/null)
+	if [ "$fo" = "1" ] && [ "$foh" = "1" ]; then
+		printf '{"enabled":1}'
+	else
+		printf '{"enabled":0}'
+	fi
+}
+
+set_flow_offload() {
+	local enabled
+	enabled=$(echo "$1" | jsonfilter -e "@.enabled" 2>/dev/null)
+	[ -z "$enabled" ] && enabled="0"
+	if [ "$enabled" != "0" ] && [ "$enabled" != "1" ]; then
+		echo '{"error":"enabled must be 0 or 1"}'
+		return
+	fi
+	# Set both flow_offloading and flow_offloading_hw.
+	uci set firewall.@defaults[0].flow_offloading="$enabled" 2>/dev/null
+	uci set firewall.@defaults[0].flow_offloading_hw="$enabled" 2>/dev/null
+	uci commit firewall 2>/dev/null
+	# Restart firewall to apply changes
+	/etc/init.d/firewall restart 2>/dev/null &
+	printf '{"result":"ok","enabled":%d}' "$enabled"
+}
+
+get_apmode_offload() {
+	airoha_bridge_offload_supported || {
+		echo '{"supported":false,"enabled":0}'
+		return
+	}
+	local ipt ip6t arp filter_pppoe_tagged
+
+	# Mirrors set_apmode_offload(). Keep these four keys synchronized:
+	#   bridge-nf-call-iptables, bridge-nf-call-ip6tables,
+	#   bridge-nf-call-arptables, bridge-nf-filter-pppoe-tagged
+	# Mirrors set_apmode_offload() exactly. The VLAN passthrough pair is NOT
+	# part of this verdict - it is owned by set/get_vlan_offload, and its
+	# state must never influence the AP-mode readout (a stale or disabled VLAN
+	# pair would otherwise drag the AP-mode switch down with it).
+	ipt=$(cat /proc/sys/net/bridge/bridge-nf-call-iptables 2>/dev/null)
+	ip6t=$(cat /proc/sys/net/bridge/bridge-nf-call-ip6tables 2>/dev/null)
+	arp=$(cat /proc/sys/net/bridge/bridge-nf-call-arptables 2>/dev/null)
+	filter_pppoe_tagged=$(cat /proc/sys/net/bridge/bridge-nf-filter-pppoe-tagged 2>/dev/null)
+
+	if [ "$ipt" = "1" ] && [ "$ip6t" = "1" ] && [ "$arp" = "1" ] && \
+	   [ "$filter_pppoe_tagged" = "1" ]; then
+		printf '{"enabled":1}'
+	else
+		printf '{"enabled":0}'
+	fi
+}
+
+set_apmode_offload() {
+	airoha_bridge_offload_supported || {
+		echo '{"error":"AP mode acceleration is not supported on this device"}'
+		return
+	}
+	local enabled
+
+	enabled=$(echo "$1" | jsonfilter -e "@.enabled" 2>/dev/null)
+	[ -z "$enabled" ] && enabled="0"
+	if [ "$enabled" != "0" ] && [ "$enabled" != "1" ]; then
+		echo '{"error":"enabled must be 0 or 1"}'
+		return
+	fi
+	if [ "$enabled" = "1" ] && _bridge_offload_blocked; then
+		_bridge_offload_block_error
+		return
+	fi
+
+	modprobe br_netfilter 2>/dev/null
+
+	# AP-mode acceleration owns exactly FOUR unconditional keys: the three
+	# bridge-nf-call-* passthroughs plus PPPoE passthrough, all written from
+	# "$enabled". VLAN passthrough deliberately is NOT here: VLAN filtering can
+	# be enabled after this switch, and a vlan_options snapshot taken now would
+	# go stale (=0) on the next reboot. The VLAN pair belongs to
+	# set_vlan_offload instead.
+	if ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-call-iptables 2>/dev/null ||
+	   ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-call-ip6tables 2>/dev/null ||
+	   ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-call-arptables 2>/dev/null ||
+	   ! echo "$enabled" > /proc/sys/net/bridge/bridge-nf-filter-pppoe-tagged 2>/dev/null; then
+		echo '{"error":"failed to configure bridge netfilter"}'
+		return
+	fi
+
+	if [ "$enabled" = "1" ]; then
+		modprobe nf_conntrack_pptp 2>/dev/null
+		modprobe nf_nat_pptp 2>/dev/null
+		{
+			echo 'net.bridge.bridge-nf-call-iptables=1'
+			echo 'net.bridge.bridge-nf-call-ip6tables=1'
+			echo 'net.bridge.bridge-nf-call-arptables=1'
+			echo "net.bridge.bridge-nf-filter-pppoe-tagged=$enabled"
+		} > /etc/sysctl.d/12-apmode-offload.conf
+	else
+		rm -f /etc/sysctl.d/12-apmode-offload.conf 2>/dev/null
+	fi
+
+	printf '{"result":"ok","enabled":%d}' "$enabled"
+}
+
+# One rpcd child gathers the whole status page. Every probe retains its own
+# fallback semantics; the explicit empty-object guard prevents one silent
+# helper failure from corrupting the enclosing JSON document.
+#
+# Optional argument: the raw ubus request object. The view asks for the PPE
+# flow table only every few polls - on the PON ONU a single snapshot+parse
+# costs ~2 s, far more than everything else on this page combined - by sending
+# {"ppe":0}. That means "skip PPE entirely": no debugfs copy, no awk, and no
+# TTL-cache lookup either. The result carries deferred:true so the caller can
+# tell "PPE unavailable" apart from "PPE not requested this round, keep the
+# table you already have". A missing/empty/non-zero ppe keeps the old
+# behaviour, so an older view that never sends it is unaffected.
+get_dashboard() {
+	local request="${1:-}"
+	local want_ppe=1
+	local status topology ppe token wifi frame_engine
+	local flow_offload apmode_offload vlan_offload device_mode
+	local dir
+
+	# jsonfilter prints nothing when the key is absent, and exits non-zero on
+	# malformed input; both must fall through to "fetch PPE" (the default),
+	# never to the skip branch - a lost parameter may cost time, but a
+	# mis-parsed one must never leave the flow table permanently empty.
+	if [ -n "$request" ]; then
+		case "$(printf '%s' "$request" | jsonfilter -e "@.ppe" 2>/dev/null)" in
+			0) want_ppe=0 ;;
+		esac
+	fi
+
+	# One rpcd child, ten independent probes. Running them back to back ADDS
+	# their waits: measured on the WiFi board, that made the first paint slower
+	# than the ten concurrent XHRs this call replaced. So they are fanned out
+	# into background subshells and their waits overlap. The browser cannot do
+	# the same - HTTP/1.1 caps it at about six in flight - which is the whole
+	# reason the parallelism lives here.
+	dir=$(mktemp -d /tmp/luci-airoha-npu.dash.XXXXXX 2>/dev/null)
+	if [ -n "$dir" ] && [ -d "$dir" ]; then
+		# Every job owns its stdout: a child that inherited rpcd's stdout would
+		# interleave a segment into the middle of the reply.
+		# AIROHA_PPE_DEFERRED is sampled when this job forks, so it has to be 1
+		# before the `&` and can go back to 0 right after - that is what makes
+		# the status probe reuse the published counts, while every other job,
+		# forked later, still reads live. A round that did ask for PPE must
+		# NOT reuse them: its table is fresh, so its totals have to be too.
+		[ "$want_ppe" = 0 ] && AIROHA_PPE_DEFERRED=1
+		{ get_status >"$dir/status" 2>/dev/null; } &
+		AIROHA_PPE_DEFERRED=0
+		{ airoha_port_topology_json >"$dir/topology" 2>/dev/null; } &
+		if [ "$want_ppe" = 0 ]; then
+			# Nothing to launch: the deferred marker is a constant, so this
+			# round costs no debugfs copy, no awk and no cache lookup at all.
+			printf '%s' '{"available":false,"entries":[],"total":0,"deferred":true}' > "$dir/ppe"
+		else
+			{ get_ppe_entries >"$dir/ppe" 2>/dev/null; } &
+		fi
+		{ get_token_info >"$dir/token" 2>/dev/null; } &
+		{ airoha_wifi_stats_json >"$dir/wifi" 2>/dev/null; } &
+		{ get_frame_engine >"$dir/frame_engine" 2>/dev/null; } &
+		{ get_flow_offload >"$dir/flow_offload" 2>/dev/null; } &
+		{ get_apmode_offload >"$dir/apmode_offload" 2>/dev/null; } &
+		{ get_vlan_offload >"$dir/vlan_offload" 2>/dev/null; } &
+		{ get_device_mode >"$dir/device_mode" 2>/dev/null; } &
+		wait
+
+		# Ten $(cat) to collect the segments, ~7 cs all together: deliberate,
+		# and paid for many times over by the ~100 cs the overlap saves. Each
+		# segment keeps its own empty -> {} guard, so a probe that printed
+		# nothing still cannot corrupt the document.
+		status=$(cat "$dir/status" 2>/dev/null)
+		[ -n "$status" ] || status='{}'
+		topology=$(cat "$dir/topology" 2>/dev/null)
+		[ -n "$topology" ] || topology='{}'
+		ppe=$(cat "$dir/ppe" 2>/dev/null)
+		[ -n "$ppe" ] || ppe='{}'
+		token=$(cat "$dir/token" 2>/dev/null)
+		[ -n "$token" ] || token='{}'
+		wifi=$(cat "$dir/wifi" 2>/dev/null)
+		[ -n "$wifi" ] || wifi='{}'
+		frame_engine=$(cat "$dir/frame_engine" 2>/dev/null)
+		[ -n "$frame_engine" ] || frame_engine='{}'
+		flow_offload=$(cat "$dir/flow_offload" 2>/dev/null)
+		[ -n "$flow_offload" ] || flow_offload='{}'
+		apmode_offload=$(cat "$dir/apmode_offload" 2>/dev/null)
+		[ -n "$apmode_offload" ] || apmode_offload='{}'
+		vlan_offload=$(cat "$dir/vlan_offload" 2>/dev/null)
+		[ -n "$vlan_offload" ] || vlan_offload='{}'
+		device_mode=$(cat "$dir/device_mode" 2>/dev/null)
+		[ -n "$device_mode" ] || device_mode='{}'
+
+		# Only this call's directory, never a /tmp/luci-airoha-npu.dash.* sweep:
+		# concurrent dashboards each own a distinct one, so a glob would delete
+		# a live call's files, while an orphan from a killed call is harmless on
+		# tmpfs.
+		rm -rf "$dir"
+
+		printf '{"status":%s,"topology":%s,"ppe":%s,"token":%s,"wifi":%s,"frame_engine":%s,"flow_offload":%s,"apmode_offload":%s,"vlan_offload":%s,"device_mode":%s}' \
+			"$status" "$topology" "$ppe" "$token" "$wifi" "$frame_engine" \
+			"$flow_offload" "$apmode_offload" "$vlan_offload" "$device_mode"
+		return
+	fi
+
+	# No mktemp -d (or it failed): fall back to the serial shape, unchanged.
+	# The deferred round has no fresh parse behind it, but it still wants the
+	# flow-table totals in the status block: point get_status() at the last
+	# published counts instead of the debugfs files. Reset immediately - the
+	# flag must not leak into the standalone getStatus RPC, which has to read
+	# live, nor into any later dashboard round that did ask for PPE.
+	if [ "$want_ppe" = 0 ]; then
+		AIROHA_PPE_DEFERRED=1
+		status=$(get_status)
+		AIROHA_PPE_DEFERRED=0
+	else
+		status=$(get_status)
+	fi
+	[ -n "$status" ] || status='{}'
+	topology=$(airoha_port_topology_json)
+	[ -n "$topology" ] || topology='{}'
+	if [ "$want_ppe" = 0 ]; then
+		ppe='{"available":false,"entries":[],"total":0,"deferred":true}'
+	else
+		ppe=$(get_ppe_entries)
+		[ -n "$ppe" ] || ppe='{}'
+	fi
+	token=$(get_token_info)
+	[ -n "$token" ] || token='{}'
+	wifi=$(airoha_wifi_stats_json)
+	[ -n "$wifi" ] || wifi='{}'
+	frame_engine=$(get_frame_engine)
+	[ -n "$frame_engine" ] || frame_engine='{}'
+	flow_offload=$(get_flow_offload)
+	[ -n "$flow_offload" ] || flow_offload='{}'
+	apmode_offload=$(get_apmode_offload)
+	[ -n "$apmode_offload" ] || apmode_offload='{}'
+	vlan_offload=$(get_vlan_offload)
+	[ -n "$vlan_offload" ] || vlan_offload='{}'
+	device_mode=$(get_device_mode)
+	[ -n "$device_mode" ] || device_mode='{}'
+
+	printf '{"status":%s,"topology":%s,"ppe":%s,"token":%s,"wifi":%s,"frame_engine":%s,"flow_offload":%s,"apmode_offload":%s,"vlan_offload":%s,"device_mode":%s}' \
+		"$status" "$topology" "$ppe" "$token" "$wifi" "$frame_engine" \
+		"$flow_offload" "$apmode_offload" "$vlan_offload" "$device_mode"
+}
+
+case "$1" in
+	list)
+		echo '{"getStatus":{},"getDashboard":{"ppe":"int"},"getTopology":{},"getPpeEntries":{},"getTokenInfo":{},"getFrameEngine":{},"getCryptoInfo":{},"getWifiStats":{},"getVlanOffload":{},"setVlanOffload":{"enabled":"int"},"getPppoeOffload":{},"setPppoeOffload":{"enabled":"int"},"getFlowOffload":{},"setFlowOffload":{"enabled":"int"},"getApModeOffload":{},"setApModeOffload":{"enabled":"int"},"getDeviceMode":{}}'
+		;;
+	call)
+		case "$2" in
+			getStatus)
+				get_status
+				;;
+			# Same shape as the other parameterised methods. An absent stdin
+			# (or a closed pipe) must not abort the call: an empty request
+			# still falls through to the full dashboard. Note the missing
+			# `|| input=""`: `read` fills the variable even when rpcd's
+			# request carries no trailing newline and only then reports EOF,
+			# so the naive form would discard the very flag we need. Pre-seeding
+			# covers both cases without a second assignment.
+			getDashboard)
+				input=""
+				read input
+				get_dashboard "$input"
+				;;
+			getTopology)
+				get_topology
+				;;
+			getDeviceMode)
+				get_device_mode
+				;;
+			getPpeEntries)
+				get_ppe_entries
+				;;
+			getTokenInfo)
+				get_token_info
+				;;
+			getFrameEngine)
+				get_frame_engine
+				;;
+			getCryptoInfo)
+				get_crypto_info
+				;;
+			getWifiStats)
+				airoha_wifi_stats_json
+				;;
+			getVlanOffload)
+				get_vlan_offload
+				;;
+			setVlanOffload)
+				read input
+				set_vlan_offload "$input"
+				;;
+			getPppoeOffload)
+				get_pppoe_offload
+				;;
+			setPppoeOffload)
+				read input
+				set_pppoe_offload "$input"
+				;;
+			getFlowOffload)
+				get_flow_offload
+				;;
+			setFlowOffload)
+				read input
+				set_flow_offload "$input"
+				;;
+			getApModeOffload)
+				get_apmode_offload
+				;;
+			setApModeOffload)
+				read input
+				set_apmode_offload "$input"
+				;;
+			*)
+				echo '{"error":"Invalid method"}'
+				;;
+		esac
+		;;
+esac

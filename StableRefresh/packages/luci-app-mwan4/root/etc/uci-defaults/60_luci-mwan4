@@ -1,0 +1,5 @@
+#!/bin/sh
+# Complete legacy migration belongs to backend 90-mwan4.
+rm -f /tmp/luci-indexcache.*.json
+[ ! -x /etc/init.d/rpcd ] || /etc/init.d/rpcd reload
+exit 0

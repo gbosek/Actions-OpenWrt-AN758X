@@ -1,0 +1,140 @@
+{
+	"luci-app-mwan4-status": {
+		"description": "Grant access for luci-app-mwan4 status information",
+		"read": {
+			"ubus": {
+				"mwan4": [
+					"connections",
+					"link_history",
+					"status"
+				]
+			}
+		}
+	},
+	"luci-app-mwan4": {
+		"description": "Grant access for luci-app-mwan4 configuration",
+		"read": {
+			"file": {
+				"/usr/bin/httping": [
+					"list"
+				],
+				"/usr/bin/nping": [
+					"list"
+				],
+				"/usr/bin/arping": [
+					"list"
+				],
+				"/usr/bin/nslookup": [
+					"list"
+				]
+			},
+			"ubus": {
+				"mwan4": [
+					"capabilities",
+					"connections",
+					"diagnostics",
+					"link_history",
+					"status",
+					"validate"
+				]
+			},
+			"uci": [
+				"mwan4",
+				"network"
+			]
+		},
+		"write": {
+			"ubus": {
+				"mwan4": [
+					"pbr_import"
+				]
+			},
+			"uci": [
+				"mwan4",
+				"network"
+			]
+		}
+	},
+	"luci-app-mwan4-advanced": {
+		"description": "Grant access for luci-app-mwan4 advanced integrations",
+		"read": {
+			"file": {
+				"/usr/bin/httping": [
+					"list"
+				],
+				"/usr/bin/nping": [
+					"list"
+				],
+				"/usr/bin/arping": [
+					"list"
+				],
+				"/usr/bin/nslookup": [
+					"list"
+				]
+			},
+			"ubus": {
+				"mwan4": [
+					"capabilities",
+					"connections",
+					"diagnostics",
+					"link_history",
+					"status",
+					"validate"
+				]
+			},
+			"uci": [
+				"frr",
+				"ipsec",
+				"mwan4",
+				"network",
+				"openvpn",
+				"pbr"
+			]
+		},
+		"write": {
+			"ubus": {
+				"mwan4": [
+					"advanced_control"
+				]
+			},
+			"uci": [
+				"frr",
+				"ipsec",
+				"mwan4",
+				"network",
+				"openvpn",
+				"pbr"
+			]
+		}
+	},
+	"luci-app-mwan4-operator": {
+		"description": "Grant access for luci-app-mwan4 runtime controls",
+		"read": {
+			"ubus": {
+				"mwan4": [
+					"capabilities",
+					"status"
+				]
+			}
+		},
+		"write": {
+			"ubus": {
+				"mwan4": [
+					"control"
+				]
+			}
+		}
+	},
+	"luci-app-mwan4-diagnostics": {
+		"description": "Grant access for luci-app-mwan4 diagnostics",
+		"read": {
+			"ubus": {
+				"mwan4": [
+					"capabilities",
+					"connections",
+					"diagnostics"
+				]
+			}
+		}
+	}
+}

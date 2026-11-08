@@ -1,0 +1,32 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright 2026 MOSSDeF, Stan Grishin (stangri@melmac.ca).
+# Based on original mwan3 by Florian Eckert <fe@dev.tdt.de>
+
+case "$ACTION" in
+	ifup|ifdown|connected|disconnected|released|quality) ;;
+	*) exit 1 ;;
+esac
+[ -n "$INTERFACE" ] || exit 2
+[ "$MWAN4_SHUTDOWN" = "1" ] && exit 0
+
+if { [ "$ACTION" = "ifup" ] || [ "$ACTION" = "connected" ] ; } && [ -z "$DEVICE" ]; then
+	logger -t 'mwan4-hotplug' -p notice "$ACTION called on $INTERFACE with no device set"
+	exit 3
+fi
+
+initscript=/etc/init.d/mwan4
+. /lib/functions/procd.sh
+
+[ "$MWAN4_STARTUP" = "init" ] || procd_lock
+
+/etc/init.d/mwan4 running || {
+	[ "$MWAN4_STARTUP" = "init" ] || procd_unlock
+	logger -t 'mwan4-hotplug' -p notice "mwan4 hotplug $ACTION on $INTERFACE not called because globally disabled"
+	exit 0
+}
+
+ACTION="$ACTION" INTERFACE="$INTERFACE" DEVICE="$DEVICE" MWAN4_STARTUP="$MWAN4_STARTUP" FIRSTCONNECT="$FIRSTCONNECT" \
+	ucode -S -L /lib/mwan4 /lib/mwan4/hotplug_iface.uc
+
+exit 0

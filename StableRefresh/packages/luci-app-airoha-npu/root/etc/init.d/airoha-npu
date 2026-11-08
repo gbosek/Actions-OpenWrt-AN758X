@@ -1,0 +1,37 @@
+#!/bin/sh /etc/rc.common
+#
+# Airoha NPU — make sure the rpcd backend is registered at boot.
+#
+# rpcd scans /usr/libexec/rpcd only once at startup and silently skips scripts
+# that are not executable. A first boot after flashing has been observed with
+# luci.airoha_npu missing from `ubus list`, which makes every call from the
+# status page fail with "Not found" until rpcd is restarted by hand. Reuse the
+# existing rpcd reload path once if the object is absent; it is a no-op when
+# registration succeeded, and reload does re-scan the directory.
+#
+# This script used to also re-apply a persisted CPU governor / max_freq on
+# every boot. That control surface is gone - the boards this app ships on are
+# fixed-clock, and the three tuning RPCs that wrote it were removed - so there
+# is nothing to re-apply and nothing to read from UCI.
+
+START=89
+
+log_warn() { logger -t airoha-npu -p user.warn "$@"; }
+
+ensure_rpcd_backend() {
+	local i
+
+	ubus list luci.airoha_npu >/dev/null 2>&1 && return 0
+	log_warn "luci.airoha_npu is not registered with rpcd; reloading rpcd"
+	/etc/init.d/rpcd reload 2>/dev/null
+	for i in $(seq 1 10); do
+		ubus list luci.airoha_npu >/dev/null 2>&1 && return 0
+		sleep 1
+	done
+	log_warn "luci.airoha_npu still not registered after rpcd reload"
+	return 1
+}
+
+start() {
+	ensure_rpcd_backend
+}

@@ -1,0 +1,23 @@
+#!/bin/sh
+# Install the already-working LAN routing mechanism, without account data.
+uci set firewall.lan_fakeip_no_flow=include
+uci set firewall.lan_fakeip_no_flow.type='nftables'
+uci set firewall.lan_fakeip_no_flow.path='/etc/firewall.lan-fakeip.nft'
+uci set firewall.lan_fakeip_no_flow.position='ruleset-post'
+uci set firewall.lan_fakeip_no_flow.enabled='1'
+uci commit firewall
+uci -q delete airoha_npu.@cpu[0]
+uci -q commit airoha_npu
+uci -q get cpufreq.cpufreq >/dev/null || uci set cpufreq.cpufreq=cpufreq
+uci set cpufreq.cpufreq.governor0=ondemand
+uci set cpufreq.cpufreq.minfreq0=500000
+uci set cpufreq.cpufreq.maxfreq0=1200000
+uci commit cpufreq
+uci set luci.main.mediaurlbase='/luci-static/argon'
+uci commit luci
+for path in /etc/firewall.lan-fakeip.nft /usr/sbin/xg-cn-split-setup /etc/hotplug.d/iface/90-xg-cn-split /usr/share/nftables.d/ruleset-post/20-cn-split.nft /usr/share/nftables.d/ruleset-post/25-cn-split-snat.nft /usr/share/nftables.d/chain-post/mangle_forward/30-xg-wan-mss.nft; do
+ grep -Fqx "$path" /etc/sysupgrade.conf 2>/dev/null || echo "$path" >> /etc/sysupgrade.conf
+done
+[ ! -x /etc/init.d/mwan4 ] || /etc/init.d/mwan4 enable
+rm -f /var/run/mwan4-rule-guard.stopped
+exit 0

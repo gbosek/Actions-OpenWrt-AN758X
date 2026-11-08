@@ -1,0 +1,430 @@
+#!/usr/bin/env node
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+
+const jsFiles = [
+	'htdocs/luci-static/resources/mwan4/common.js',
+	'htdocs/luci-static/resources/mwan4/connections.js',
+	'htdocs/luci-static/resources/mwan4/advanced.js',
+	'htdocs/luci-static/resources/mwan4/diagnostics.js',
+	'htdocs/luci-static/resources/mwan4/explain.js',
+	'htdocs/luci-static/resources/mwan4/fields.js',
+	'htdocs/luci-static/resources/mwan4/guide.js',
+	'htdocs/luci-static/resources/mwan4/linkhistory.js',
+	'htdocs/luci-static/resources/mwan4/overview.js',
+	'htdocs/luci-static/resources/mwan4/routetest.js',
+	'htdocs/luci-static/resources/mwan4/rulecheck.js',
+	'htdocs/luci-static/resources/mwan4/rules.js',
+	'htdocs/luci-static/resources/mwan4/rulesui.js',
+	'htdocs/luci-static/resources/mwan4/stability.js',
+	'htdocs/luci-static/resources/mwan4/summary.js',
+	'htdocs/luci-static/resources/mwan4/templates.js',
+	'htdocs/luci-static/resources/mwan4/wanform.js',
+	'htdocs/luci-static/resources/view/mwan4/network/globals.js',
+	'htdocs/luci-static/resources/view/mwan4/network/advanced.js',
+	'htdocs/luci-static/resources/view/mwan4/network/interfaces.js',
+	'htdocs/luci-static/resources/view/mwan4/network/overview.js',
+	'htdocs/luci-static/resources/view/mwan4/network/routes.js',
+	'htdocs/luci-static/resources/view/mwan4/network/rules.js',
+	'htdocs/luci-static/resources/view/mwan4/network/strategies.js',
+	'htdocs/luci-static/resources/view/mwan4/status/diagnostics.js',
+	'htdocs/luci-static/resources/view/mwan4/status/mptcp.js',
+	'htdocs/luci-static/resources/view/mwan4/status/overview.js'
+];
+
+function read(file) {
+	return fs.readFileSync(path.join(root, file), 'utf8');
+}
+
+function assertContains(source, needle, message) {
+	assert.ok(source.includes(needle), message || `expected copy: ${needle}`);
+}
+
+const menu = read('root/usr/share/luci/menu.d/luci-app-mwan4.json');
+const pot = read('po/templates/mwan4.pot');
+const combined = jsFiles.map(read).join('\n') + '\n' + menu;
+
+for (const needle of [
+	'WAN link',
+	'WAN Links',
+	'Health check',
+	'health check',
+	'WAN links',
+	'DNS lookup',
+	'Probe helper availability',
+	'Health profile',
+	'Fine tuning (optional)',
+	'Check every (seconds)',
+	'Failed checks before the link is marked down',
+	'Good checks before it is used again',
+	'Targets that must answer',
+	'Advanced options',
+	'Extra matching',
+	'Behaviour',
+	'SLA',
+	'PBR',
+	'MPTCP',
+	'MPTCP workflow',
+	'MPTCP endpoint management',
+	'MPTCP kernel/sysctl state',
+	'Per-WAN MPTCP endpoint roles',
+	'Quality',
+	'Route explain',
+	'Route explain tuple',
+	'Explain tuple',
+	'Requested tuple',
+	'Destination address',
+	'Probe and BFD visibility',
+	'VRF visibility',
+	'PBR harmony',
+	'Provision WAN',
+	'Configure tunnel',
+	'Configure PBR',
+	'Configure VRF',
+	'Configure BFD',
+	'Package readiness',
+	'Packages',
+	'Generate WireGuard key',
+	'Apply endpoint exemptions',
+	'Apply FRR/BFD',
+	'PBR validation',
+	'VRF live validation',
+	'Endpoint exemptions',
+	'Feature package map',
+	'Configured BFD peers',
+	'WireGuard public key',
+	'Enable MPTCP configuration',
+	'Reset nft counters',
+	'Metadata and integration writes',
+	'Path target helper',
+	'Supported-interface helper',
+	'Generated paths replaced',
+	'Custom paths preserved',
+	'Ingress interface',
+	'DNS or nft set',
+	'Path override',
+	'WAN link diagnostics',
+	'Route table snapshot',
+	'Routing rule lookups',
+	'nftables runtime',
+	'Service state',
+	'Generated nftables files',
+	'Tracker instances',
+	'Tunnel diagnostics',
+	'MPTCP source-route alignment',
+	'Ownership and cleanup',
+	'Run Ownership',
+	'Grouped counters',
+	'Counter references',
+	'MPTCP route alignment',
+	'Quality edge states',
+	'Probe failures',
+	'PBR interface coverage',
+	'PBR policy targets',
+	'Recursion warnings',
+	'Ownership object inventory',
+	'Ownership conflicts',
+	'Error output',
+	'Backend reported this section as failed',
+	'l3mdev routing rules',
+	'Stop the traffic (rejected)',
+	'Block the traffic (dropped silently)',
+	'Normal routing (main table)',
+	'Pause links that keep flipping',
+	'Wait before reusing a recovered link (seconds)',
+	'Go to the overview',
+	'Terms',
+	'Routing rules',
+	'Import from PBR',
+	'Dry-run preview',
+	'1. What traffic?',
+	'2. Who?',
+	'3. Which WAN links?',
+	'Domains and addresses',
+	'Add a known device',
+	'Everything else',
+	'Include router traffic',
+	'Goes through',
+	'Stops if unavailable',
+	'Uses normal routing if unavailable',
+	'Needs attention',
+	'Test traffic',
+	'Where does this traffic go?',
+	'Use a template',
+	'Show all options',
+	'Test this rule',
+	'Change default routing',
+	'Duplicate',
+	'Rule name (optional)',
+	'Existing paths',
+	'Quick presets',
+	'Open rule "%s"',
+	'Rules checked, in order',
+	'Link history: %s',
+	'Pause an unstable link for (seconds)',
+	'Keep connections of a downed link for (seconds)',
+	'Quality limits: %s',
+	'Link stability defaults',
+	'Single health check target',
+	'held: %s',
+	'degraded (%d)'
+])
+	assertContains(combined, needle);
+
+const tabTitles = Object.fromEntries(Object.entries(JSON.parse(menu)).map(([ route, entry ]) => [ route.split('/').pop(), entry.title ]));
+
+assert.deepEqual([ 'overview', 'interfaces', 'routes', 'strategies', 'rules', 'globals', 'advanced', 'mptcp', 'diagnostics' ].map(tab => tabTitles[tab]), [
+	'Overview', 'WAN Links', 'Link priorities', 'Paths', 'Routing rules', 'Global settings', 'Advanced', 'MPTCP', 'Diagnostics'
+], 'tab titles follow the vocabulary of USABILITY.md');
+
+for (const needle of [
+	"_('MultiWAN 4 - Interfaces')",
+	"_('MultiWAN 4 - Routes')",
+	"_('MultiWAN 4 - Rules')",
+	"_('MultiWAN 4 - Path Members')",
+	"_('MultiWAN 4 - Strategies')",
+	"_('MultiWAN 4 - Traffic Policies')",
+	"_('MultiWAN 4 - Global Settings')",
+	"_('Traffic rules')",
+	"_('No policy rules yet.')",
+	"_('Add policy rule')",
+	"_('Policy rule: %s')",
+	"_('Reject traffic')",
+	"_('Drop traffic')",
+	"_('No tracking targets')",
+	"_('Tracking targets')",
+	"_('Tracking method')",
+	"_('Live health')",
+	"_('WAN links and SLA')",
+	"_('Live WAN health and SLA')",
+	"_('Advanced health tuning')",
+	"_('Advanced match and logging')",
+	"_('Extra match and logging')",
+	"_('3. Via which WAN links?')",
+	"_('Prefer %s, fall back to others')",
+	"_('Only %s, never leak')",
+	"_('Give the rule a name.')",
+	"_('Existing strategies')",
+	"_('Interface %s')",
+	"_('Strategies to create:')",
+	"_('Fail closed (reject traffic)')",
+	"_('Fail closed (drop traffic)')",
+	"_('Use main routing table')",
+	"_('Policy path: %s')",
+	"_('ICMP ping')",
+	"_('HTTP probe')",
+	"_('Flap damping')",
+	"_('Back to overview.')",
+	"_('Via')",
+	"_('Match')",
+	"_('Traffic exceptions')",
+	"_('Add exception')",
+	"_('Traffic exception builder')",
+	"_('Traffic exception summary')",
+	"_('Probe / SLA')",
+	"_('WAN health matrix')",
+	"_('WAN workspace')",
+	"_('unmeasured')",
+	"_(' / netifd up')",
+	"_('Open Advanced')",
+	"_('Routing mode')",
+	"_('Health tuning')",
+	"_('Use latency/loss SLA thresholds')",
+	'Each card combines saved WAN/SLA settings'
+])
+	assert.equal(combined.includes(needle), false, `stale or ambiguous copy remains: ${needle}`);
+
+for (const needle of [
+	'MPTCP workflow',
+	'PBR harmony',
+	'Tunnel diagnostics',
+	'Run MPTCP',
+	'Run PBR'
+])
+	assert.equal(read('htdocs/luci-static/resources/view/mwan4/network/overview.js').includes(needle), false,
+		`advanced diagnostic shortcut leaked into overview: ${needle}`);
+
+for (const pattern of [
+	/policy rules/i,
+	/traffic rules/i,
+	/traffic polic(y|ies)/i,
+	/fail(s|ed)?[ -]closed/i,
+	/terminal action/i,
+	// the glossary explains "normal routing" as the router default route (USABILITY.md)
+	/(?<!router )default route/i,
+	/mwan4 interfaces/i,
+	/no active route/i
+])
+	assert.doesNotMatch(combined, pattern, `non-canonical terminology matched ${pattern}`);
+
+for (const pattern of [
+	/E\('li', \[ v \]\)/,
+	/\[object Object\]/
+])
+	assert.doesNotMatch(combined, pattern, `unsafe raw object output matched ${pattern}`);
+
+for (const needle of [
+	'msgid "WAN link"',
+	'msgid "WAN links"',
+	'msgid "DNS lookup"',
+	'msgid "Probe helper availability"',
+	'msgid "Health profile"',
+	'msgid "Fine tuning (optional)"',
+	'msgid "Check every (seconds)"',
+	'msgid "Failed checks before the link is marked down"',
+	'msgid "Good checks before it is used again"',
+	'msgid "Targets that must answer"',
+	'msgid "Advanced options"',
+	'msgid "Extra matching"',
+	'msgid "Behaviour"',
+	'msgid "PBR"',
+	'msgid "MPTCP"',
+	'msgid "MPTCP workflow"',
+	'msgid "MPTCP endpoint management"',
+	'msgid "MPTCP kernel/sysctl state"',
+	'msgid "Per-WAN MPTCP endpoint roles"',
+	'msgid "Quality"',
+	'msgid "Route explain"',
+	'msgid "Route explain tuple"',
+	'msgid "Explain tuple"',
+	'msgid "Requested tuple"',
+	'msgid "Destination address"',
+	'msgid "Probe and BFD visibility"',
+	'msgid "VRF visibility"',
+	'msgid "PBR harmony"',
+	'msgid "Provision WAN"',
+	'msgid "Configure tunnel"',
+	'msgid "Configure PBR"',
+	'msgid "Configure VRF"',
+	'msgid "Configure BFD"',
+	'msgid "Package readiness"',
+	'msgid "Packages"',
+	'msgid "Generate WireGuard key"',
+	'msgid "Apply endpoint exemptions"',
+	'msgid "Apply FRR/BFD"',
+	'msgid "PBR validation"',
+	'msgid "VRF live validation"',
+	'msgid "Endpoint exemptions"',
+	'msgid "Feature package map"',
+	'msgid "Configured BFD peers"',
+	'msgid "WireGuard public key"',
+	'msgid "Enable MPTCP configuration"',
+	'msgid "Reset nft counters"',
+	'msgid "Metadata and integration writes"',
+	'msgid "Generated paths replaced"',
+	'msgid "Custom paths preserved"',
+	'msgid "Ingress interface"',
+	'msgid "DNS or nft set"',
+	'msgid "Path override"',
+	'msgid "WAN link diagnostics"',
+	'msgid "Route table snapshot"',
+	'msgid "Routing rule lookups"',
+	'msgid "nftables runtime"',
+	'msgid "Service state"',
+	'msgid "Generated nftables files"',
+	'msgid "Tracker instances"',
+	'msgid "Tunnel diagnostics"',
+	'msgid "MPTCP source-route alignment"',
+	'msgid "Ownership and cleanup"',
+	'msgid "Run Ownership"',
+	'msgid "Grouped counters"',
+	'msgid "Counter references"',
+	'msgid "MPTCP route alignment"',
+	'msgid "Quality edge states"',
+	'msgid "Probe failures"',
+	'msgid "PBR interface coverage"',
+	'msgid "PBR policy targets"',
+	'msgid "Recursion warnings"',
+	'msgid "Ownership object inventory"',
+	'msgid "Ownership conflicts"',
+	'msgid "Error output"',
+	'msgid "Backend reported this section as failed"',
+	'msgid "l3mdev routing rules"',
+	'msgid "Stop the traffic (rejected)"',
+	'msgid "Normal routing (main table)"',
+	'msgid "Routing rules"',
+	'msgid "Import from PBR"',
+	'msgid "Dry-run preview"',
+	'msgid "1. What traffic?"',
+	'msgid "2. Who?"',
+	'msgid "3. Which WAN links?"',
+	'msgid "Domains and addresses"',
+	'msgid "Add a known device"',
+	'msgid "Everything else"',
+	'msgid "Include router traffic"',
+	'msgid "Goes through"',
+	'msgid "Stops if unavailable"',
+	'msgid "Uses normal routing if unavailable"',
+	'msgid "Needs attention"',
+	'msgid "Test traffic"',
+	'msgid "Where does this traffic go?"',
+	'msgid "Use a template"',
+	'msgid "Show all options"',
+	'msgid "Test this rule"',
+	'msgid "Change default routing"',
+	'msgid "Duplicate"',
+	'msgid "Rule name (optional)"',
+	'msgid "Existing paths"',
+	'msgid "Quick presets"',
+	'msgid "Open rule \\"%s\\""',
+	'msgid "Rules checked, in order"',
+	'msgid "Sends %s from %s"',
+	'msgid "Custom rule"',
+	'msgid "Fill in the fields below to see what this rule does."',
+	'msgid "Connections"',
+	'msgid "Active connections"',
+	'msgid "View connections"',
+	'msgid "No connections match these filters."',
+	'msgid "Showing the first %d of %d connections. Narrow the filters or show more."',
+	'msgid "Rule ID"',
+	'msgid "Link history: %s"',
+	'msgid "Pause links that keep flipping"',
+	'msgid "Pause an unstable link for (seconds)"',
+	'msgid "Wait before reusing a recovered link (seconds)"',
+	'msgid "Keep connections of a downed link for (seconds)"',
+	'msgid "Go to the overview"',
+	'msgid "Terms"',
+	'msgid "Quality limits: %s"',
+	'msgid "Link stability defaults"',
+	'msgid "held: %s"',
+	'msgid "degraded (%d)"',
+	'msgid "Maximum latency (ms)"',
+	'msgid "Maximum packet loss (%)"',
+	'msgid "No state transitions recorded yet."'
+])
+	assertContains(pot, needle, `POT is missing ${needle}`);
+
+const potIds = [ ...pot.matchAll(/^msgid ((?:"(?:[^"\\]|\\.)*"\n)+)msgstr/gm) ].map(match => match[1].trim().split('\n').map(part => part.slice(1, -1)).join(''));
+const unescape = text => text.replace(/\\(.)/g, (all, char) => char == 'n' ? '\n' : char);
+
+assert.deepEqual(potIds.filter((id, index) => id && potIds.indexOf(id) != index), [], 'the POT has no duplicate msgids');
+
+for (const file of jsFiles.map(file => file.replace('htdocs/luci-static/resources/', '')))
+	for (const match of read('htdocs/luci-static/resources/' + file).matchAll(/(?<![\w$.])_\('((?:[^'\\]|\\.)*)'\)/g))
+		assert.ok(potIds.map(unescape).includes(unescape(match[1])), `POT is missing "${match[1]}" used in ${file}`);
+
+// every resource file is covered by this test, so a new file cannot slip past the POT check
+const onDisk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true })
+	.flatMap(entry => entry.isDirectory() ? onDisk(path.join(dir, entry.name)) : entry.name.endsWith('.js') ? [ path.join(dir, entry.name) ] : []);
+
+assert.deepEqual(onDisk('htdocs/luci-static/resources').sort(), [ ...jsFiles ].sort(), 'jsFiles lists every JavaScript resource');
+
+// no msgid stays in the POT once no resource uses it: only strings that come from resources or the menu are checked, ACL texts are not
+const used = new Set([ ...combined.matchAll(/(?<![\w$.])_\('((?:[^'\\]|\\.)*)'\)/g) ].map(match => unescape(match[1])).concat(Object.values(JSON.parse(menu)).map(entry => entry.title)));
+
+for (const block of pot.split(/\n\n+/)) {
+	const refs = block.split('\n').filter(line => line.startsWith('#:'));
+	const id = (block.match(/^msgid ((?:"(?:[^"\\]|\\.)*"\n)*"(?:[^"\\]|\\.)*")/m) || [])[1];
+
+	if (!id || !refs.length || !refs.every(ref => /htdocs\/luci-static|menu\.d\//.test(ref)))
+		continue;
+
+	assert.ok(used.has(unescape(id.split('\n').map(part => part.slice(1, -1)).join(''))), `the POT keeps a string no resource uses: ${id}`);
+}
+
+console.log('i18n and copy expectations passed');

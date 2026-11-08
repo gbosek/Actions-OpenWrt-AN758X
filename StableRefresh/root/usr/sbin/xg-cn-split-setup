@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+ip link show br-lan >/dev/null 2>&1 || exit 0
+ip -4 route replace default via 192.168.10.2 dev br-lan table 100
+ip -6 route replace default via fe80::62be:b4ff:fe1a:4b5a dev br-lan table 100
+ip -4 rule show | grep -F -q 'fwmark 0x400000/0x400000 lookup 100' || ip -4 rule add fwmark 0x400000/0x400000 lookup 100 pref 1000
+ip -6 rule show | grep -F -q 'fwmark 0x400000/0x400000 lookup 100' || ip -6 rule add fwmark 0x400000/0x400000 lookup 100 pref 1000
+ip -4 rule show | grep -F -q 'to 198.18.0.0/15 iif lo lookup 100' || ip -4 rule add pref 900 iif lo to 198.18.0.0/15 lookup 100

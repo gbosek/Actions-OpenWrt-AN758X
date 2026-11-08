@@ -1,0 +1,6 @@
+# All LAN clients: keep Fake-IP proxy flows out of the main router flowtable.
+# Router and proxy uplink are excluded; established return traffic only.
+insert rule inet fw4 forward ip saddr 192.168.10.0/24 ip saddr != { 192.168.10.1, 192.168.10.2 } ip daddr 198.18.0.0/15 ct state { new, established, related } counter accept comment "lan-fakeip-no-flow-out"
+insert rule inet fw4 forward ip saddr 198.18.0.0/15 ip daddr 192.168.10.0/24 ip daddr != { 192.168.10.1, 192.168.10.2 } ct state { established, related } counter accept comment "lan-fakeip-no-flow-return"
+# Avoid flow offload for LAN traffic policy-routed back to the bypass router.
+insert rule inet fw4 forward iifname "br-lan" oifname "br-lan" meta mark & 0x400000 != 0 ct state { new, established, related } counter accept comment "bypass-mark-no-flow"

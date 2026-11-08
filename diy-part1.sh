@@ -115,8 +115,8 @@ if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
   fi
   echo "✅ 已启用 AN7581 Airoha PPE flow stats，以使用补丁中的 NPU 拒绝回退逻辑"
 
-  clone_at https://github.com/gbosek/mwan4 c3cc7f50b4658d881fd33452056363fdaf2cc08c "$PKG_DIR/mwan4" || exit 1
-  clone_at https://github.com/gbosek/luci-app-mwan4 281aa575c2cd12c364817f25082cc40088a3e1b0 "$PKG_DIR/luci-app-mwan4" || exit 1
+  cp -a "$GITHUB_WORKSPACE/StableRefresh/packages/mwan4" "$PKG_DIR/mwan4"
+  cp -a "$GITHUB_WORKSPACE/StableRefresh/packages/luci-app-mwan4" "$PKG_DIR/luci-app-mwan4"
   mkdir -p files/usr/share/xg2010g
   cp "$PKG_DIR/mwan4/files/etc/config/mwan4" files/usr/share/xg2010g/mwan4-stock.config
   mkdir -p files/etc
@@ -185,7 +185,7 @@ if [ "$ADD_LUCI_APP" = "true" ]; then
   LUCI_APP_URL="https://github.com/qwe3017/luci-app"
   LUCI_APP_TMP="$(mktemp -d)/luci-app"
 
-  if ! clone "$LUCI_APP_URL" "$LUCI_APP_TMP" main; then
+  if ! clone_at "$LUCI_APP_URL" 2609164ff608ee4e6ac7e63fd5896176805bd9ed "$LUCI_APP_TMP"; then
     echo "::error::qwe3017/luci-app 拉取失败，natmode / pon-status 会被 defconfig 剔除"
     exit 1
   fi
@@ -396,7 +396,7 @@ fi
 echo "🎉 diy-part1.sh 执行完毕"
 
 if [ "$ADD_XG2010G_EXTRAS" = "true" ]; then
-  python3 "$GITHUB_WORKSPACE/scripts/apply-compatible-boost.py" . || exit 1
+  : # Native CPU OPPs only; compatible-boost injection removed.
 fi
 
 if [ "${PROFILE:-}" = gemtek_xg2010g ]; then

@@ -1,0 +1,147 @@
+#!/usr/bin/env ucode
+'use strict';
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright 2026 MOSSDeF, Stan Grishin (stangri@melmac.ca).
+// Based on original mwan3 by Florian Eckert <fe@dev.tdt.de>
+
+import m from '/lib/mwan4/mwan4.uc';
+import importer from '/lib/mwan4/pbr_import.uc';
+
+m.set_scriptname('rpcd-mwan4');
+m.load(); // Status reads must not create runtime directories or start services.
+
+function rpc_args(request) {
+	return request?.args || {};
+}
+
+// rpcd keeps this script loaded, so every call must re-read UCI.
+function fresh(handler) {
+	return request => {
+		m.reload();
+		return handler(request);
+	};
+}
+
+function status_call(request) {
+	return m.get_status(rpc_args(request));
+}
+
+function counters_call(request) {
+	return m.get_status({ 'section': 'counters' });
+}
+
+function connections_call(request) {
+	return m.get_connections(rpc_args(request));
+}
+
+function link_history_call(request) {
+	return m.get_link_history(rpc_args(request));
+}
+
+function capabilities_call(request) {
+	return m.get_capabilities();
+}
+
+function validate_call(request) {
+	return m.validate_config(rpc_args(request));
+}
+
+function diagnostics_call(request) {
+	return m.get_diagnostics(rpc_args(request));
+}
+
+function control_call(request) {
+	return m.control(rpc_args(request));
+}
+
+function advanced_control_call(request) {
+	return m.advanced_control(rpc_args(request));
+}
+
+function pbr_import_call(request) {
+	return importer.pbr_import(rpc_args(request));
+}
+
+const methods = {
+	status:       {
+		args: {
+			section:   'section',
+			interface: 'interface',
+		},
+		call: fresh(status_call),
+	},
+	counters:     {
+		args: {},
+		call: fresh(counters_call),
+	},
+	connections:  {
+		args: {
+			rule:      'rule',
+			interface: 'interface',
+			strategy:  'strategy',
+			family:    'family',
+			proto:     'proto',
+			search:    'search',
+			limit:     0,
+			offset:    0,
+		},
+		call: fresh(connections_call),
+	},
+	link_history: {
+		args: {
+			interface: 'interface',
+			since:     0,
+			limit:     0,
+		},
+		call: fresh(link_history_call),
+	},
+	capabilities: {
+		args: {},
+		call: fresh(capabilities_call),
+	},
+	validate:     {
+		args: {
+			section: 'section',
+		},
+		call: fresh(validate_call),
+	},
+	diagnostics:  {
+		args: {
+			section:   'section',
+			interface: 'interface',
+			family:    'family',
+			src_ip:    'src_ip',
+			dest_ip:   'dest_ip',
+			proto:     'proto',
+			src_port:  'src_port',
+			dest_port: 'dest_port',
+			src_iface: 'src_iface',
+			ipset:     'ipset',
+			strategy:  'strategy',
+		},
+		call: fresh(diagnostics_call),
+	},
+	control:      {
+		args: {
+			action:    'action',
+			interface: 'interface',
+		},
+		call: fresh(control_call),
+	},
+	advanced_control: {
+		args: {
+			action:    'action',
+			interface: 'interface',
+			feature:   'feature',
+		},
+		call: fresh(advanced_control_call),
+	},
+	pbr_import:   {
+		args: {
+			apply: false,
+		},
+		call: fresh(pbr_import_call),
+	},
+};
+
+return { 'mwan4': methods };

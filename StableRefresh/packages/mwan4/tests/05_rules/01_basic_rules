@@ -1,0 +1,82 @@
+Testing set_user_rules() with default rules (https sticky + default_rule_v4 + default_rule_v6).
+
+-- Testcase --
+import m from 'mwan4';
+m.set_scriptname('test');
+m.init();
+m.update_iface_to_table();
+m.nft_file('create', 'rules');
+m.set_user_rules();
+m.nft_file('install', 'rules');
+print(global.mocklib.read_captured('/usr/share/nftables.d/ruleset-post/11-mwan4-rules.nft'));
+-- End --
+
+-- Expect stdout --
+table inet fw4 {
+	map mwan4_rule_ipv4_https {
+		typeof ip saddr : meta mark
+		flags timeout
+		timeout 600s
+	}
+	map mwan4_rule_ipv6_https {
+		typeof ip6 saddr : meta mark
+		flags timeout
+		timeout 600s
+	}
+
+	counter mwan4_counter_rule_https_ipv4 {
+	}
+
+	counter mwan4_counter_conn_https_ipv4 {
+	}
+
+	counter mwan4_counter_rule_default_rule_v4_ipv4 {
+	}
+
+	counter mwan4_counter_conn_default_rule_v4_ipv4 {
+	}
+
+	counter mwan4_counter_rule_https_ipv6 {
+	}
+
+	counter mwan4_counter_conn_https_ipv6 {
+	}
+
+	counter mwan4_counter_rule_default_rule_v6_ipv6 {
+	}
+
+	counter mwan4_counter_conn_default_rule_v6_ipv6 {
+	}
+	chain mwan4_rule_https_ipv4 {
+		meta mark & 0x3f00 == 0 meta mark set ip saddr map @mwan4_rule_ipv4_https
+		meta mark & 0x3f00 == 0 jump mwan4_strategy_balanced_ipv4
+		meta mark & 0x3f00 != 0 meta mark & 0x3f00 != 0x3f00 meta mark & 0x3f00 != 0x3d00 meta mark & 0x3f00 != 0x3e00 update @mwan4_rule_ipv4_https { ip saddr : meta mark }
+	}
+	chain mwan4_rules_ipv4 {
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_https_ipv4
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff | 0x40000
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_https_ipv4 jump mwan4_rule_https_ipv4 comment "https"
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_default_rule_v4_ipv4
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_default_rule_v4_ipv4 jump mwan4_strategy_balanced_ipv4 comment "default_rule_v4"
+	}
+	chain mwan4_rules_out_ipv4 {
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_default_rule_v4_ipv4
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff
+		ip daddr 0.0.0.0/0 meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_default_rule_v4_ipv4 jump mwan4_strategy_balanced_ipv4 comment "default_rule_v4"
+	}
+	chain mwan4_rules_ipv6 {
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_https_ipv6
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff | 0x40000
+		meta l4proto tcp tcp dport { 443 } meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_https_ipv6 jump mwan4_strategy_balanced_ipv6 comment "https"
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_default_rule_v6_ipv6
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_default_rule_v6_ipv6 jump mwan4_strategy_balanced_ipv6 comment "default_rule_v6"
+	}
+	chain mwan4_rules_out_ipv6 {
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 ct state new counter name mwan4_counter_conn_default_rule_v6_ipv6
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 ct mark set ct mark & 0xff03ffff
+		ip6 daddr ::/0 meta mark & 0x3f00 == 0 counter name mwan4_counter_rule_default_rule_v6_ipv6 jump mwan4_strategy_balanced_ipv6 comment "default_rule_v6"
+	}
+}
+-- End --

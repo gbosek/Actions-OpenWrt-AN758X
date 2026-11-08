@@ -1,0 +1,14 @@
+{
+  "basis": "Latest default-branch commits at the successful runtime-led build start, 2026-10-18T09:18:33Z. LuCI 17f97c0 is also confirmed by the delivered manifest. This is a compatibility snapshot, not a claim that all original transient checkout timestamps were recorded.",
+  "baseline_run": 39114820029,
+  "feeds": {
+    "packages": {"url": "https://github.com/immortalwrt/packages.git", "commit": "3d6229131a40fc3417ad2d8bd9d4050458c4fd95"},
+    "luci": {"url": "https://github.com/immortalwrt/luci.git", "commit": "17f97c0bec190e18d4884ab8204f63c64981edd7"},
+    "routing": {"url": "https://github.com/openwrt/routing.git", "commit": "4b9891b9136259f93294a424507ed24c5e8c1cbd"},
+    "telephony": {"url": "https://github.com/openwrt/telephony.git", "commit": "5d68d53c160a325ea9d03fce393e051573bcc736"},
+    "video": {"url": "https://github.com/openwrt/video.git", "commit": "6917907d4d6c670cf85be525d23216595655061d"},
+    "pon_drivers": {"url": "https://github.com/pbs05/openwrt-pon-drivers.git", "commit": "e5194d2dfd169eef8f4a944fdc3f929e0287b680"},
+    "pon_userspace": {"url": "https://github.com/pbs05/openwrt-pon-userspace.git", "commit": "cce9d756742487b378749c606b30e13ee9b0f093"}
+  },
+  "naoki_onu_override": {"url": "https://github.com/naoki66/OpenWrt_ONU_CONFIG.git", "commit": "35e2d676c31f2ff510960fb03a403599d292a535"}
+}

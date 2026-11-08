@@ -1,0 +1,4 @@
+#!/bin/sh
+# Compatibility entry point for retained MWAN4 init scripts.
+# Configure interfaces and policies after flashing; never change user UCI here.
+exit 0
