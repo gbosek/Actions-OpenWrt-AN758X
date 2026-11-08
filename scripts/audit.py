@@ -45,8 +45,6 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  assert not (root/'usr/sbin/xg-dns-log-limit').exists()
  assert (root/'www/luci-static/argon').is_dir()
  assert (root/'etc/uci-defaults/99-xg2010g-baseline').is_file()
- assert not (root/'etc/hotplug.d/iface/95-xg-ra-refresh').exists()
- assert '/etc/init.d/omcproxy disable' in (root/'etc/uci-defaults/99-xg2010g-baseline').read_text()
  # Audit the actual FIT DTB as well as the prepared source.
  dtb=O/'board.dtb';dtb.write_bytes(blobs['flat_dt'])
  dtstext=subprocess.check_output(['dtc','-I','dtb','-O','dts',str(dtb)],text=True,stderr=subprocess.DEVNULL)

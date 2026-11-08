@@ -57,8 +57,5 @@
     "release_url": "https://github.com/jerrykuku/luci-theme-argon/releases/tag/v3.1.3"
   },
   "cpu_policy": "Native operating points only, maximum 1200 MHz; no PLL/turbo/overclock patches or persisted CPU tuning",
-  "disabled_services": [
-    "omcproxy",
-    "95-xg-ra-refresh"
-  ]
+  "service_disable_policy": "No automatic omcproxy or RA hotplug disabling in firmware; user will disable manually after flashing"
 }

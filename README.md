@@ -35,6 +35,6 @@ NAOKI66 Airoha r903 主视图已与上述上游逐字节核实一致。r904 仅�
 - Airoha 固定 9263b4a，用户 fork gbosek/luci-app-airoha 已快进同步。
 - Argon 仅使用正式发布 v3.1.3，prerelease=false，提交 6bdb62e6f9839f0faf69c86b2a0c0506e66359b6。
 - 原生 CPU OPP 最高 1200 MHz；无 1250/1300/1350/1400 MHz OPP、PLL 超频补丁；最新上游移除了调频写接口。
-- 首次启动禁用 omcproxy；若保留旧配置带回 95-xg-ra-refresh，则移出 Hotplug。保留 odhcpd/IPv6 RA、PON、MWAN4 与已有分流脚本。其他仅讨论过的停用建议不自动执行。
+- 用户确认：omcproxy 与 95-xg-ra-refresh 的停用操作不写入固件，刷机后再手动执行；不自动改变这两项服务/脚本状态。
 - 不继承旧补丁集合，不加入 DNS 日志定时脚本，不写入网络凭据，不自动刷机。必要内核适配和适用 RTL826x 修正继续保留。
 - 编译及离线成品审查不等于设备长期稳定性验证。
