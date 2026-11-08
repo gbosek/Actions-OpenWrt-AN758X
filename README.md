@@ -10,7 +10,7 @@
 
 ## 新构建范围
 
-1. NAOKI66 `luci-app-airoha` 固定提交 `0b1d8a0a250cb2e4a218b1fad5df2b923a0b0e00`。
+1. NAOKI66 `luci-app-airoha` 固定提交 `9263b4a64c5a76e51e9cafc88b5df432feec5ed4`。
 2. NAOKI66 `OpenWrt_ONU_CONFIG` 的 PON 状态卡片固定提交 `3cb13560459f1d51136dac662baa1f399028b2b4`。不因此整套替换原始 PON 内核驱动。
 3. MWAN4 后端 r30 与 LuCI r18 固定到 `components.json` 中核实的上游提交；仅对状态 RPC 添加 `nobatch: true` 以兼容固定的 LuCI，不复制旧后端适配、guard 或路由预设。
 4. RTL8261BE 仅评估适用的上游 `76da1ee259c5804e105c3f044fcf94833608b227`：型号匹配、禁用多速率 EEE、软复位后等待 150ms。当前上游固件包仍是 `0cd4abe2` r4。未合并的 PR25926 不自动加入。
@@ -27,3 +27,14 @@ NAOKI66 Airoha r903 主视图已与上述上游逐字节核实一致。r904 仅�
 随后 192.168.10.1 的 HTTP 标题变为 `TL-7DR7299`。用户已要求不要再改实机，本构建不访问设备，不自动安装或刷机。
 
 驱动更新未安装，未热卸载，未刷机、重启或重拨。
+
+## 2026-11-08 续编译
+
+上次完整编译通过，成品审查因 unsquashfs 路径不存在失败；现支持 unsquashfs4 和系统 squashfs-tools，不跳过实际 ITB 审查。
+
+- Airoha 固定 9263b4a，用户 fork gbosek/luci-app-airoha 已快进同步。
+- Argon 仅使用正式发布 v3.1.3，prerelease=false，提交 6bdb62e6f9839f0faf69c86b2a0c0506e66359b6。
+- 原生 CPU OPP 最高 1200 MHz；无 1250/1300/1350/1400 MHz OPP、PLL 超频补丁；最新上游移除了调频写接口。
+- 首次启动禁用 omcproxy；若保留旧配置带回 95-xg-ra-refresh，则移出 Hotplug。保留 odhcpd/IPv6 RA、PON、MWAN4 与已有分流脚本。其他仅讨论过的停用建议不自动执行。
+- 不继承旧补丁集合，不加入 DNS 日志定时脚本，不写入网络凭据，不自动刷机。必要内核适配和适用 RTL826x 修正继续保留。
+- 编译及离线成品审查不等于设备长期稳定性验证。
