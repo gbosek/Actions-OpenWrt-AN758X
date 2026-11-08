@@ -74,4 +74,5 @@ jobs:
             prepared-source.json
             /workdir/openwrt/.config
             /workdir/openwrt/logs/
+            /workdir/openwrt/bin/targets/airoha/an7581/*gemtek_xg2010g*
           if-no-files-found: warn
