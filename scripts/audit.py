@@ -36,11 +36,23 @@ assert b'Linux version 6.18.55 ' in kernel
 sq=O/'rootfs.squashfs';sq.write_bytes(blobs['filesystem'])
 with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  root=Path(folder)/'root'
- subprocess.run([str(S/'staging_dir/host/bin/unsquashfs'),'-no-progress','-d',str(root),str(sq)],check=True,stdout=subprocess.DEVNULL)
+ unpack=next((str(x) for x in [S/'staging_dir/host/bin/unsquashfs',S/'staging_dir/host/bin/unsquashfs4'] if x.is_file()),None) or shutil.which('unsquashfs')
+ assert unpack,'Install squashfs-tools or build unsquashfs4 before auditing'
+ subprocess.run([unpack,'-no-progress','-d',str(root),str(sq)],check=True,stdout=subprocess.DEVNULL)
  required=['usr/libexec/rpcd/luci.airoha_npu','www/luci-static/resources/view/airoha_npu/status.js','www/luci-static/resources/view/status/include/29a_pon.js','etc/init.d/mwan4','lib/mwan4/mwan4.uc','lib/firmware/rtl8261n.bin','lib/modules/6.18.55/realtek.ko','etc/clean-build-source.json']
  hashes={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in required}
  view=(root/required[1]).read_text();assert 'require view' in view;assert "if (eth === '00:00:00:00:00:00->00:00:00:00:00:00')" not in view
  assert not (root/'usr/sbin/xg-dns-log-limit').exists()
+ assert (root/'www/luci-static/argon').is_dir()
+ assert (root/'etc/uci-defaults/99-xg2010g-baseline').is_file()
+ assert not (root/'etc/hotplug.d/iface/95-xg-ra-refresh').exists()
+ assert '/etc/init.d/omcproxy disable' in (root/'etc/uci-defaults/99-xg2010g-baseline').read_text()
+ # Audit the actual FIT DTB as well as the prepared source.
+ dtb=O/'board.dtb';dtb.write_bytes(blobs['flat_dt'])
+ dtstext=subprocess.check_output(['dtc','-I','dtb','-O','dts',str(dtb)],text=True,stderr=subprocess.DEVNULL)
+ hz=[(int(hi,16)<<32)|int(lo,16) for hi,lo in re.findall(r'opp-hz = <0x([0-9a-f]+) 0x([0-9a-f]+)>',dtstext)]
+ assert hz and max(hz)<=1200000000,hz
+ dtb.unlink()
  assert not (root/'www/luci-static/resources/view/status/include/15_xg2010g_pon.js').exists()
  for rel in ['usr/libexec/rpcd/luci.airoha_npu','etc/init.d/airoha-npu']:assert (root/rel).stat().st_mode&0o111,rel
  firmware_hash=hashlib.sha256((root/'lib/firmware/rtl8261n.bin').read_bytes()).hexdigest();assert firmware_hash=='ae1963b2a84a17eaa2fb9052591bdb5152838feda045d7313f45a8608b918533'

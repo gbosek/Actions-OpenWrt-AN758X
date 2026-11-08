@@ -1,0 +1,14 @@
+#!/bin/sh
+# Match the services explicitly disabled in the reviewed chat history.
+# Leave IPv6 RA, odhcpd, PON, mwan4 and split routing enabled.
+[ ! -x /etc/init.d/omcproxy ] || /etc/init.d/omcproxy disable
+if [ -f /etc/hotplug.d/iface/95-xg-ra-refresh ]; then
+ mv /etc/hotplug.d/iface/95-xg-ra-refresh /etc/95-xg-ra-refresh.disabled
+fi
+# Drop obsolete tuning values retained by a configuration-preserving upgrade.
+# Native cpufreq/OPPs remain available, with no added overclock points.
+uci -q delete airoha_npu.@cpu[0]
+uci -q commit airoha_npu
+uci set luci.main.mediaurlbase='/luci-static/argon'
+uci commit luci
+exit 0
