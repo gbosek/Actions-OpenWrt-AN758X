@@ -7,7 +7,7 @@ for service in npu-jitter xg2010g-rps wpad; do
         /etc/init.d/"$service" disable
     fi
 done
-rm -f /etc/init.d/npu-jitter /usr/libexec/npu-jitter-daemon /etc/coremark.sh \
+rm -f /etc/coremark.sh \
     /etc/init.d/xg2010g-rps /usr/bin/rps-watch.sh /usr/bin/rps-guard.sh \
     /etc/hotplug.d/iface/99-rps-guard /etc/uci-defaults/96-wifi-5g-cn
 # Delete only known owned boot calls and cron commands, preserving user jobs.

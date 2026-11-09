@@ -25,9 +25,19 @@ def install(root, project):
         assert fix['kernel'] == baseline['kernel'], 'Unreviewed native kernel fix'
         assert not list(destination.glob(fix['replaces_patch_prefix'] + '-*.patch')), \
             'Fix is native in this kernel base; duplicate patch rejected: ' + fix_id
-    assert set(baseline['apply']) == {patch['file'] for patch in metadata['patches']}, \
+    selected = [patch for patch in metadata['patches']
+                if project in patch.get('projects', metadata['baselines'])]
+    assert set(baseline['apply']) == {patch['file'] for patch in selected}, \
         'Unreviewed backport selection'
-    for patch in metadata['patches']:
+    if project == 'pon':
+        for folder in [root / 'target/linux/generic/pending-6.18', destination]:
+            for queued in folder.glob('*.patch'):
+                if queued.name == '939-net-phy-realtek-harden-rtl826x-reset.patch':
+                    continue
+                assert not re.search(r'^\+\s*#define\s+RTL826X_VEND1_PKG_MODEL_8261\b',
+                                     queued.read_text(), re.M), \
+                    'Duplicate RTL826x hardening already queued: ' + str(queued)
+    for patch in selected:
         origin = repo / 'kernel-patches/airoha' / patch['file']
         assert hashlib.sha256(origin.read_bytes()).hexdigest() == patch['sha256'], 'Upstream patch hash mismatch'
         existing = list(destination.glob(patch['file'][:3] + '-*.patch'))
@@ -38,6 +48,9 @@ def install(root, project):
     path = root / 'files/etc/an7581-driver-fixes.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n')
+    if project == 'pon':
+        (path.parent / 'phy-rtl826x-source.json').write_bytes(
+            (repo / metadata['rtl826x_source']).read_bytes())
     print(project + ': upstream driver fixes installed; native watchdog/RX31 fixes retained')
 
 

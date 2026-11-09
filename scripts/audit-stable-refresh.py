@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  # Keep check=True: other extraction errors must still fail the audit.
  subprocess.run([unpack,'-no-progress','-d',str(root),'-excludes',str(sq),'dev'],check=True,stdout=subprocess.DEVNULL)
  required=['usr/libexec/rpcd/luci.airoha_npu','www/luci-static/resources/view/airoha_npu/status.js','www/luci-static/resources/view/status/include/29a_pon.js','etc/init.d/mwan4','lib/mwan4/mwan4.uc','lib/firmware/rtl8261n.bin','lib/modules/6.18.55/realtek.ko','etc/stable-refresh-source.json']
- required += ['etc/uci-defaults/99-stable-refresh']
+ required += ['etc/uci-defaults/99-stable-refresh','etc/phy-rtl826x-source.json']
  hashes={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in required}
  assert json.loads((root/'etc/stable-refresh-source.json').read_text())==json.loads((P/'StableRefresh/source.json').read_text()),'Image component pins differ from expected build source'
  baseline=(root/'etc/uci-defaults/99-stable-refresh').read_text()
@@ -62,22 +62,31 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  for rel in ['usr/libexec/rpcd/luci.airoha_npu','etc/init.d/airoha-npu']:assert (root/rel).stat().st_mode&0o111,rel
  firmware_hash=hashlib.sha256((root/'lib/firmware/rtl8261n.bin').read_bytes()).hexdigest();assert firmware_hash=='ae1963b2a84a17eaa2fb9052591bdb5152838feda045d7313f45a8608b918533'
  module=(root/'lib/modules/6.18.55/realtek.ko').read_bytes();assert b'vermagic=6.18.55 ' in module
+ phy_meta=json.loads((root/'etc/phy-rtl826x-source.json').read_text())
+ assert phy_meta==json.loads((P/'PHY-RTL826X-SOURCE.json').read_text()),'PHY provenance differs from requested patch inputs'
+ if not a.recovered_image:
+  phy_report=json.loads((image.parent/'RTL826X-VERIFICATION.json').read_text())
+  assert phy_report['staged_module_sha256']==hashlib.sha256(module).hexdigest(),'Shipped PHY module differs from tested staged module'
  tools=list((S/'staging_dir').glob('toolchain-aarch64*/bin/aarch64-openwrt-linux-musl-objdump'))
  objdump=str(tools[0]) if tools else shutil.which('aarch64-linux-gnu-objdump') or shutil.which('llvm-objdump')
  assert objdump,'AArch64-capable objdump is required'
  args=[objdump,'-dr']+(['--print-imm-hex'] if 'llvm' in objdump else [])
  asm=subprocess.check_output(args+[str(root/'lib/modules/6.18.55/realtek.ko')],text=True)
  fn=asm.split('<rtl826x_config_init>:',1)[1].split('\n\n',1)[0]
- assert re.search(r'mov\s+w0, #0x1e',fn), 'Actual RTL826x module does not contain baseline 30ms delay'
+ assert re.search(r'mov\s+w0, #0x96',fn), 'Actual RTL826x module does not contain the requested 150ms delay'
  (O/'rtl826x-config-init.asm').write_text(fn)
  if not a.recovered_image:
   source=(next((S/'build_dir').glob('target-*/linux-airoha_an7581/linux-6.18.55'))/'drivers/net/phy/realtek/realtek_main.c').read_text()
   assert 'rtl826x_config_init' in source
- result={'build_commit':a.build_commit,'recovered_image':a.recovered_image,'max_cpu_opp_hz':max(hz),'image':image.name,'image_sha256':hashlib.sha256(d).hexdigest(),'bytes':len(d),'kernel':'6.18.55','fit_regions':regions,'files_sha256':hashes,'rtl826x_delay_ms':30,'previous_local_feature_patch_sets_inherited':True,'baseline_build_commit':'a6440d4412a7de08d003afbba1501f0a2e28e980','hardware_tested':False,'scope':'Actual FIT hash, kernel banner, extracted SquashFS files and module disassembly; no flash or device stability claim'}
+ result={'build_commit':a.build_commit,'recovered_image':a.recovered_image,'max_cpu_opp_hz':max(hz),'image':image.name,'image_sha256':hashlib.sha256(d).hexdigest(),'bytes':len(d),'kernel':'6.18.55','fit_regions':regions,'files_sha256':hashes,'rtl826x_delay_ms':150,'previous_local_feature_patch_sets_inherited':True,'baseline_build_commit':'a6440d4412a7de08d003afbba1501f0a2e28e980','hardware_tested':False,'scope':'Actual FIT hash, kernel banner, extracted SquashFS files and module disassembly; no flash or device stability claim'}
  (O/'verification.json').write_text(json.dumps(result,indent=2)+'\n')
 sq.unlink();shutil.copy2(image,O/image.name)
 for f in image.parent.glob('*gemtek_xg2010g.manifest'):shutil.copy2(f,O/f.name)
 shutil.copy2(P/'StableRefresh/source.json',O/'stable-refresh-source.json')
 shutil.copy2(P/'StableRefresh/feed-pins.json',O/'feed-pins.json')
+shutil.copy2(P/'StableRefresh/kernel-patches.json',O/'kernel-patches.json')
+shutil.copy2(P/'StableRefresh/current-installed.manifest',O/'current-installed.manifest')
 if (S/'.config').is_file():shutil.copy2(S/'.config',O/'build.config')
+for_report=image.parent/'RTL826X-VERIFICATION.json'
+if for_report.is_file():shutil.copy2(for_report,O/for_report.name)
 print(json.dumps(result,indent=2))

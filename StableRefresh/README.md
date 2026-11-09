@@ -24,6 +24,12 @@ Do not add a daily DNS-log checker. Do not bake automatic disabling of `omcproxy
 
 Feed pins are a historical compatibility snapshot. LuCI's commit is confirmed by the old delivered manifest, but not all original transient feed checkout timestamps were recorded; this is not a claim of bit-for-bit reconstruction. Package closure, native CPU policy and effective live code are checked locally before starting CI. The workflow additionally audits actual FIT region hashes, kernel banner, extracted files, module disassembly and image manifest. An offline audit is not a flash test or a device stability test.
 
-The LuCI firmware description includes `2026.11.09-refresh2` and the actual build date/time. Identify delivered images by build commit, Actions artifact identity and SHA256, not by file size or filename alone.
+The LuCI firmware description includes `2026.11.09-refresh3` and the actual build date/time. Identify delivered images by build commit, Actions artifact identity and SHA256, not by file size or filename alone.
 
 The first refresh compiled successfully but failed the release audit because LuCI assigned version `0` to the vendored MWAN4 translation package. Set its explicit `PKG_PO_VERSION` to the matching app release and check that generated package metadata before compilation; do not relax the final manifest assertion to accept an unversioned translation.
+
+## Refresh3 PHY and live-package completion
+
+Reconcile the 272 packages installed on the live router in `current-installed.manifest` with the full original baseline. Validate the actual APK database in rootfs, including hidden per-device packages such as `fit-check-sign` and `fitblk`. Those two packages were already present in refresh2 despite their omission from the global build manifest. The Argon integrated-settings replacement remains explicit.
+
+Include 939 RTL826x model/EEE/150ms hardening and 959 reset release before model matching. Keep the existing board GPIO timing, PHY layout and firmware. Pin both patch hashes and all six prepared PHY source hashes. The 959 change comes from the reviewed open PR25926, head e8c8eb16013c22d28b96bbabdb7a118371f04cd2. Host fixtures exercise actual prepared reset and matching functions, including deferred-probe reset. CI checks compiled AArch64 PHY objects, the staged module and the shipped module hash, then disassembles the actual image module for the 150ms delay.

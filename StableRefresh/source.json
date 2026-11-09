@@ -103,5 +103,19 @@
     "path": "net/rtp2httpd",
     "version": "3.16.0-r1",
     "reason": "restore installed baseline package absent from pinned feed"
-  }
+  },
+  "rtl826x": {
+    "provenance": "PHY-RTL826X-SOURCE.json",
+    "patches": [
+      "939-net-phy-realtek-harden-rtl826x-reset.patch",
+      "959-net-phy-realtek-release-reset-before-matching.patch"
+    ],
+    "reset_settle_ms": 150,
+    "gpio_reset_before_model_match": true,
+    "959_upstream_status_at_review": "PR25926 open, head e8c8eb16013c22d28b96bbabdb7a118371f04cd2",
+    "hardware_tested": false
+  },
+  "current_installed_manifest_sha256": "a90eca635c79b5ba6d61c4aa45586a85c60686680597827c676fcdef1fdbfc24",
+  "kernel_patch_manifest_sha256": "730593f3cc2f824aae4a861aa3b79f49ff49d1777183f9bf8f1d1df243980056",
+  "kernel_patch_count": 619
 }

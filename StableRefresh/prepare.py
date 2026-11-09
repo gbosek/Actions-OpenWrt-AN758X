@@ -46,7 +46,8 @@ elif a.phase=='finish':
  for f in (P/'root').rglob('*'):
   if f.is_file() and f.read_bytes().startswith(b'#!/'): (S/'files'/f.relative_to(P/'root')).chmod(0o755)
  # Carry all baseline package selections, not the earlier minimal selection.
- names=[l.split(' - ',1)[0] for l in (P/'baseline.manifest').read_text().splitlines() if ' - ' in l]
+ manifests=(P/'baseline.manifest').read_text()+(P/'current-installed.manifest').read_text()
+ names=sorted({line.split(' - ',1)[0] for line in manifests.splitlines() if ' - ' in line})
  # Argon 3.1 includes the settings previously supplied by argon-config.
  omit={'kernel','luci-app-argon-config'}
  f=S/'.config';t=f.read_text()
@@ -59,7 +60,7 @@ elif a.phase=='finish':
  t+='\n# CONFIG_PACKAGE_luci-app-argon-config is not set\nCONFIG_PACKAGE_wget-ssl=y\nCONFIG_PACKAGE_coreutils=y\nCONFIG_PACKAGE_coreutils-timeout=y\nCONFIG_PACKAGE_ucode-mod-math=y\n'
  for key in ['IMAGEOPT','VERSIONOPT','VERSION_NUMBER','VERSION_DIST']:
   t=re.sub(r'^(?:CONFIG_'+key+r'=.*|# CONFIG_'+key+r' is not set)\n?','',t,flags=re.M)
- t+='CONFIG_IMAGEOPT=y\nCONFIG_VERSIONOPT=y\nCONFIG_VERSION_DIST="PonWrt"\nCONFIG_VERSION_NUMBER="2026.11.09-refresh2"\n'
+ t+='CONFIG_IMAGEOPT=y\nCONFIG_VERSIONOPT=y\nCONFIG_VERSION_DIST="PonWrt"\nCONFIG_VERSION_NUMBER="2026.11.09-refresh3"\n'
  f.write_text(t)
  out=S/'files/etc/stable-refresh-source.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(meta,indent=2)+'\n')
  mwan_meta={k:v for k,v in meta['mwan4'].items() if k!='files'}
@@ -68,16 +69,28 @@ elif a.phase=='finish':
  (S/'files/etc/pon-status-layout.json').write_text(json.dumps({'upstream':'naoki66/OpenWrt_ONU_CONFIG','commit':meta['pon_card_commit'],'version':'0.1.0-r13'},indent=2)+'\n')
 elif a.phase=='check':
  cfg=(S/'.config').read_text();selected=set(re.findall(r'^CONFIG_PACKAGE_([^=]+)=y$',cfg,re.M))
+ # Hidden profile packages are built as modules, then included per device.
+ if 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' in cfg:
+  profile_packages=set(re.findall(r'^CONFIG_MODULE_DEFAULT_([^=]+)=y$',cfg,re.M))
+  modules=set(re.findall(r'^CONFIG_PACKAGE_([^=]+)=m$',cfg,re.M))
+  selected.update(profile_packages & modules)
  symbols=package_symbols()
- baseline={symbols.get(l.split(' - ',1)[0],l.split(' - ',1)[0]) for l in (P/'baseline.manifest').read_text().splitlines() if ' - ' in l}-{'kernel','luci-app-argon-config'}
+ manifests=(P/'baseline.manifest').read_text()+(P/'current-installed.manifest').read_text()
+ baseline={symbols.get(line.split(' - ',1)[0],line.split(' - ',1)[0]) for line in manifests.splitlines() if ' - ' in line}-{'kernel','luci-app-argon-config'}
  assert not baseline-selected,'Unexpected missing baseline packages: '+str(sorted(baseline-selected))
- assert 'CONFIG_VERSION_NUMBER="2026.11.09-refresh2"' in cfg,'Dated version was not retained by Kconfig'
+ assert 'CONFIG_VERSION_NUMBER="2026.11.09-refresh3"' in cfg,'Dated version was not retained by Kconfig'
  info=(S/'tmp/.packageinfo').read_text()
  assert re.search(r'^Package: luci-i18n-mwan4-zh-cn\n(?:(?!Package:).)*?^Version: 1\.0\.0-r19$',info,re.M|re.S),'Vendored MWAN4 translation version is missing'
  assert 'LINUX_VERSION-6.18 = .55' in (S/'target/linux/generic/kernel-6.18').read_text()
  dts=(S/'target/linux/airoha/dts/an7581.dtsi').read_text();hz=[int(x) for x in re.findall(r'opp-hz\s*=\s*/bits/\s*64\s*<\s*(\d+)',dts)]
  assert hz and max(hz)==1200000000,hz
  assert not list((S/'target/linux/airoha/patches-6.18').glob('*overclock*'))
+ for name in meta['rtl826x']['patches']:
+  assert (S/'target/linux/airoha/patches-6.18'/name).read_bytes()==(P.parent/'kernel-patches/airoha'/name).read_bytes(),name
+ patch_manifest=P/'kernel-patches.json'
+ assert hashlib.sha256(patch_manifest.read_bytes()).hexdigest()==meta['kernel_patch_manifest_sha256']
+ for row in json.loads(patch_manifest.read_text()):
+  assert hashlib.sha256((S/row['path']).read_bytes()).hexdigest()==row['sha256'],'Kernel patch changed or missing: '+row['path']
  for rel in ['etc/firewall.lan-fakeip.nft','usr/sbin/xg-cn-split-setup','usr/bin/mwan4-rule-guard.sh','usr/share/nftables.d/ruleset-post/20-cn-split.nft']:
   assert (S/'files'/rel).read_bytes()==(P/'root'/rel).read_bytes(),rel
  f=S/'files/etc/uci-defaults/99-stable-refresh';t=f.read_text();assert 'omcproxy disable' not in t and 'ra-refresh' not in t

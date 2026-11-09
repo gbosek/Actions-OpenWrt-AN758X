@@ -35,7 +35,6 @@ var E = mwan4Common.element;
 /* global mwan4Wanform */
 
 const callStatus = rpc.declare({
-	nobatch: true,
 	// Keep status and counters in independent HTTP replies on this LuCI build.
 	nobatch: true,
 	object: 'mwan4',

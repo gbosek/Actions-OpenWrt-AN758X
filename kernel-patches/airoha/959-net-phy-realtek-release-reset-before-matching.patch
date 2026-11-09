@@ -1,0 +1,76 @@
+From: XG2010G integration
+Subject: net: phy: realtek: release reset before RTL826x package matching
+
+Based on OpenWrt PR #25926, generic match-reset commit a2ed191e4f046276ec95b6330db9f2210351ed39,
+at reviewed PR head e8c8eb16013c22d28b96bbabdb7a118371f04cd2 (not merged).
+Use the exact package-model helper and five call-site replacements.
+Retain the separate PHY drivers, strict package IDs, 150ms soft-reset delay,
+board GPIO timing, SerDes recovery, firmware blobs and all XG2010G LEDs.
+Do not import the unrelated MT7988 LED or other target offset changes.
+A failed probe may reassert reset before driver matching; deassert it before
+reading package identification so the intended PHY driver can match again.
+
+--- a/drivers/net/phy/realtek/realtek_main.c
++++ b/drivers/net/phy/realtek/realtek_main.c
+@@ -2807,6 +2807,16 @@
+ 	return rtlgen_is_c45_match(phydev, RTL_8251B, true);
+ }
+ 
++static int rtl826x_read_pkg_model(struct phy_device *phydev)
++{
++	/* A failed probe may have asserted reset. Release it before
++	 * reading the package identification registers.
++	 */
++	phy_device_reset(phydev, 0);
++
++	return phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++}
++
+ static int rtl8251l_match_phy_device(struct phy_device *phydev,
+ 				     const struct phy_driver *phydrv)
+ {
+@@ -2818,7 +2828,7 @@
+ 	if (!phydev->mdio.bus->read_c45)
+ 		return 0;
+ 
+-	data = phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++	data = rtl826x_read_pkg_model(phydev);
+ 	if (data < 0)
+ 		return 0;
+ 
+@@ -2839,7 +2849,7 @@
+ 	if (!phydev->mdio.bus->read_c45)
+ 		return 0;
+ 
+-	data = phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++	data = rtl826x_read_pkg_model(phydev);
+ 	if (data < 0)
+ 		return 0;
+ 
+@@ -2860,7 +2870,7 @@
+ 	if (!phydev->mdio.bus->read_c45)
+ 		return 0;
+ 
+-	data = phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++	data = rtl826x_read_pkg_model(phydev);
+ 	if (data < 0)
+ 		return 0;
+ 
+@@ -2888,7 +2898,7 @@
+ 	if (!phydev->mdio.bus->read_c45)
+ 		return 0;
+ 
+-	data = phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++	data = rtl826x_read_pkg_model(phydev);
+ 	if (data < 0)
+ 		return 0;
+ 
+@@ -2916,7 +2926,7 @@
+ 	if (!phydev->mdio.bus->read_c45)
+ 		return 0;
+ 
+-	data = phy_read_mmd(phydev, MDIO_MMD_VEND1, RTL826X_VEND1_PKG_MODEL);
++	data = rtl826x_read_pkg_model(phydev);
+ 	if (data < 0)
+ 		return 0;
+ 
