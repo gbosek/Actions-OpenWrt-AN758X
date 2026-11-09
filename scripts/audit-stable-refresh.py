@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Audit the shipped FIT/SquashFS, rather than only the build staging tree."""
 from pathlib import Path
-import argparse,struct,hashlib,json,subprocess,gzip,lzma,shutil,zlib,tempfile,re,os
+import argparse,struct,hashlib,json,subprocess,gzip,lzma,shutil,zlib,tempfile,re,os,sys
 p=argparse.ArgumentParser();p.add_argument('source',type=Path);p.add_argument('output',type=Path);p.add_argument('--recovered-image',action='store_true');p.add_argument('--build-commit',default=os.environ.get('GITHUB_SHA'));a=p.parse_args();S=a.source.resolve();O=a.output.resolve();O.mkdir(parents=True,exist_ok=True);P=Path(__file__).resolve().parents[1]
 images=list((S/'bin/targets/airoha/an7581').glob('*gemtek_xg2010g*squashfs-sysupgrade.itb'));assert len(images)==1,images
 image=images[0];d=image.read_bytes();h=struct.unpack('>10I',d[:40]);assert h[0]==0xd00dfeed
@@ -42,6 +42,7 @@ with tempfile.TemporaryDirectory(prefix='clean-ponwrt-audit-') as folder:
  # requires privileges unavailable on an ordinary GitHub-hosted runner.
  # Keep check=True: other extraction errors must still fail the audit.
  subprocess.run([unpack,'-no-progress','-d',str(root),'-excludes',str(sq),'dev'],check=True,stdout=subprocess.DEVNULL)
+ subprocess.run([sys.executable,str(P/'StableRefresh/check-image.py'),str(S),'--root',str(root)],check=True)
  required=['usr/libexec/rpcd/luci.airoha_npu','www/luci-static/resources/view/airoha_npu/status.js','www/luci-static/resources/view/status/include/29a_pon.js','etc/init.d/mwan4','lib/mwan4/mwan4.uc','lib/firmware/rtl8261n.bin','lib/modules/6.18.55/realtek.ko','etc/stable-refresh-source.json']
  required += ['etc/uci-defaults/99-stable-refresh','etc/phy-rtl826x-source.json']
  hashes={n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in required}

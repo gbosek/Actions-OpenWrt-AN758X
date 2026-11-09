@@ -68,7 +68,6 @@ jobs:
           make -j2 V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
       - name: Audit actual complete firmware
         run: |
-          python3 StableRefresh/check-image.py /workdir/openwrt
           python3 scripts/check-ppe-build.py --manifest-dir /workdir/openwrt/bin/targets/airoha/an7581 --build-dir /workdir/openwrt/build_dir
           python3 scripts/check-pon-build.py /workdir/openwrt --variant naoki
           python3 scripts/check-driver-fixes.py --build-dir /workdir/openwrt/build_dir --compiled --report /workdir/openwrt/bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json

@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import sys,re,json
-S=Path(sys.argv[1]);P=Path(__file__).resolve().parent
+import argparse,re,json
+parser=argparse.ArgumentParser()
+parser.add_argument('source',type=Path)
+parser.add_argument('--root',type=Path,help='Extracted rootfs from the final FIT image')
+args=parser.parse_args();S=args.source;P=Path(__file__).resolve().parent
 manifests=(P/'baseline.manifest').read_text()+(P/'current-installed.manifest').read_text()
 baseline={line.split(' - ',1)[0] for line in manifests.splitlines() if ' - ' in line}-{'kernel','luci-app-argon-config'}
 manifests=list((S/'bin/targets/airoha/an7581').glob('*gemtek_xg2010g.manifest'));assert len(manifests)==1
-roots=list((S/'build_dir').glob('target-*/root-airoha'));assert len(roots)==1;root=roots[0]
+if args.root is not None:
+ root=args.root
+else:
+ roots=list((S/'build_dir').glob('target-*/linux-airoha_an7581/target-dir-*'))
+ assert len(roots)==1,'Pass --root for the final extracted image when a unique device rootfs is unavailable'
+ root=roots[0]
 # Per-device hidden packages may be omitted from the global build manifest.
 packages={}
 for block in (root/'lib/apk/db/installed').read_text().split('\n\n'):
