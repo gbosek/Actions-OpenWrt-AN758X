@@ -1,0 +1,78 @@
+#!/bin/sh
+# shellcheck disable=SC2015,SC3037,SC3043
+
+readonly pbrFunctionsFile='/etc/init.d/pbr'
+if [ -s "$pbrFunctionsFile" ]; then
+# shellcheck source=../../etc/init.d/pbr
+	. "$pbrFunctionsFile"
+else
+	printf "%b: pbr init.d file (%s) not found! \n" '\033[0;31mERROR\033[0m' "$pbrFunctionsFile"
+fi
+
+# ── Part 1: Migration from older versions ────────────────────────────
+
+sed -i "s/resolver_ipset/resolver_set/g" /etc/config/pbr
+sed -i "s/'FORWARD'/'forward'/g" /etc/config/pbr
+sed -i "s/'INPUT'/'input'/g" /etc/config/pbr
+sed -i "s/'OUTPUT'/'output'/g" /etc/config/pbr
+sed -i "s/'PREROUTING'/'prerouting'/g" /etc/config/pbr
+sed -i "s/'POSTROUTING'/'postrouting'/g" /etc/config/pbr
+sed -i "s/option fw_mask '0x\(.*\)'/option fw_mask '\1'/g" /etc/config/pbr
+sed -i "s/option wan_mark '0x\(.*\)'/option wan_mark '\1'/g" /etc/config/pbr
+sed -i "/procd_lan_interface/d" /etc/config/pbr
+sed -i "s|procd_lan_device|lan_device|g" /etc/config/pbr
+sed -i "s|procd_wan_interface|uplink_interface|g" /etc/config/pbr
+sed -i "s|procd_wan6_interface|uplink_interface6|g" /etc/config/pbr
+sed -i "s|wan_ip_rules_priority|uplink_ip_rules_priority|g" /etc/config/pbr
+sed -i "s|wan_mark|uplink_mark|g" /etc/config/pbr
+
+# The aws/netflix user files became ucode in 1.2.4 and were renamed; an
+# upgraded /etc/config/pbr still points at the old, now absent, paths.
+# Anchored on the closing quote so re-running cannot produce '.uc.uc'.
+sed -i "s|/usr/share/pbr/pbr\.user\.aws'|/usr/share/pbr/pbr.user.aws.uc'|g" /etc/config/pbr
+sed -i "s|/usr/share/pbr/pbr\.user\.netflix'|/usr/share/pbr/pbr.user.netflix.uc'|g" /etc/config/pbr
+
+# Remove deprecated wg_server_and_client include
+# shellcheck disable=SC2317,SC2329
+_remove_wg_server_client() {
+	local path
+	config_get path "$1" 'path'
+	if [ "$path" = '/usr/share/pbr/pbr.user.wg_server_and_client' ]; then
+		uci_remove pbr "$1"
+	fi
+}
+config_load pbr
+config_foreach _remove_wg_server_client include
+[ -n "$(uci changes pbr)" ] && uci_commit pbr
+
+# Remove deprecated options
+uci -q delete pbr.config.webui_supported_protocol
+uci -q delete pbr.config.webui_show_ignore_target
+uci -q delete pbr.config.rule_create_option
+[ -n "$(uci changes pbr)" ] && uci_commit pbr
+
+# ── Part 2: NFT resolver setup ───────────────────────────────────────
+
+check_dnsmasq_nftset() {
+	[ -z "$dnsmasq_features" ] && dnsmasq_features="$(dnsmasq --version | grep -m1 'Compile time options:' | cut -d: -f2) "
+	[ "${dnsmasq_features#* nftset }" != "$dnsmasq_features" ]
+}
+
+if [ "$(uci_get 'pbr' 'config' 'resolver_set')" != 'dnsmasq.nftset' ]; then
+	if check_dnsmasq_nftset; then
+		echo -n "Setting resolver_set to 'dnsmasq.nftset'... "
+		uci_set 'pbr' 'config' 'resolver_set' 'dnsmasq.nftset' && echo "OK" || echo "FAIL"
+	else
+		echo -n "Setting resolver_set to 'none'... "
+		uci_set 'pbr' 'config' 'resolver_set' 'none' && echo "OK" || echo "FAIL"
+	fi
+	uci_commit 'pbr'
+fi
+
+# ── Part 3: Version tracking ─────────────────────────────────────────
+
+[ -n "$initCompat" ] && uci_set 'pbr' 'config' 'config_compat'  "$initCompat"
+uci_set 'pbr' 'config' 'config_version' "$($_ucode version)"
+uci_commit 'pbr'
+
+exit 0

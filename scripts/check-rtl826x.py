@@ -128,7 +128,7 @@ def check(kernel, compiled=False, require_staged=False):
         result['objects_sha256'] = objects
     if require_staged:
         assert compiled
-        modules = list(kernel.parent.parent.glob('root-*/lib/modules/6.18.55/realtek.ko'))
+        modules = list(kernel.parent.parent.glob('root-*/lib/modules/6.18.60/realtek.ko'))
         assert modules, 'No staged realtek.ko'
         digests = {hashlib.sha256(f.read_bytes()).hexdigest() for f in modules}
         assert len(digests) == 1, 'Conflicting staged PHY modules'

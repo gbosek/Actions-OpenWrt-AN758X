@@ -1,0 +1,24 @@
+{
+  "base_commit": "4ba2d790ffb7d8b9faacb97b9fec93e659dfa267",
+  "kernel": "6.18.60",
+  "cpu_max_mhz": 1200,
+  "openwrt_review_commit": "593608fbdae92beb861b3a29ec41644053240d36",
+  "thermal_patches": [
+    {
+      "path": "target/linux/airoha/patches-6.18/402-08-v7.4-thermal-drivers-airoha-Request-the-EN7581-IRQ-after-zone-registration.patch",
+      "sha256": "bb44e4e27747353ffbc395e73ea5872039fe53aab3cb2d25af3f262e2fee7b2f"
+    }
+  ],
+  "airoha_commit": "9263b4a64c5a76e51e9cafc88b5df432feec5ed4",
+  "pbr": {
+    "pbr": "f6c88015144c429a43d14ce1b51fea3a40ed9cc5",
+    "luci-app-pbr": "e49120a76b18b405bea795cccb1082628183dc02"
+  },
+  "pbr_version": "1.2.4-r2",
+  "variants": [
+    "mwan4",
+    "pbr"
+  ],
+  "hardware_tested": false,
+  "npu_memory": "latest upstream plus retained DT reader and nonempty-only cache, local release901"
+}

@@ -1,0 +1,281 @@
+#!/bin/sh /etc/rc.common
+# Copyright 2017-2026 MOSSDeF, Stan Grishin (stangri@melmac.ca)
+# shellcheck disable=SC3043
+
+# shellcheck disable=SC2034
+START=20
+# shellcheck disable=SC2034
+USE_PROCD=1
+
+if type extra_command 1>/dev/null 2>&1; then
+	extra_command 'enable_forward' "Enables forwarding from LAN > WAN, can be used if the router is stuck in Disabled state"
+	extra_command 'netifd' "Netifd extensions operations"
+	extra_command 'on_interface_reload' "Run service on indicated interface reload"
+	extra_command 'status' "Displays current routing mode and nft file paths
+		Use '-d' option for detailed diagnostic output"
+	extra_command 'support' "Show diagnostic info and mask sensitive data
+		Use '-p' option to automatically upload data under PBR paste.ee account
+			WARNING: while paste.ee uploads are unlisted, they are still publicly available"
+	extra_command 'version' "Show version information"
+else
+# shellcheck disable=SC2034
+	EXTRA_COMMANDS='help netifd on_interface_reload status version'
+# shellcheck disable=SC2034
+	EXTRA_HELP="
+\tstatus\tDisplays current routing mode and nft file paths
+\t\tUse '-d' option for detailed diagnostic output
+\tsupport\tShow diagnostic info and mask sensitive data
+\t\tUse '-p' option to automatically upload data under PBR paste.ee account
+\t\t\tWARNING: while paste.ee uploads are unlisted, they are still publicly available
+"
+fi
+
+readonly packageName='pbr'
+readonly initCompat='38'
+readonly _ucode="ucode -S -L /lib/${packageName} -L /lib/mwan4 /lib/${packageName}/cli.uc --"
+
+# shellcheck disable=SC1091
+. "${IPKG_INSTROOT}/lib/functions.sh"
+# shellcheck disable=SC1091
+. "${IPKG_INSTROOT}/lib/functions/network.sh"
+# shellcheck disable=SC1091
+. "${IPKG_INSTROOT}/usr/share/libubox/jshn.sh"
+
+stop_forward() { $_ucode stop_forward; }
+enable_forward() { $_ucode enable_forward; }
+
+boot() {
+	local enabled
+	config_load "$packageName"
+	config_get_bool enabled 'config' 'enabled' '0'
+	rm -f /usr/share/nftables.d/ruleset-post/30-pbr.nft
+	[ "$enabled" -gt 0 ] || return 0
+	touch "/var/run/${packageName}.boot"
+	rc_procd start_service 'on_boot'
+	service_started 'on_boot'
+}
+# shellcheck disable=SC2120
+start_service() {
+	local param="${1:-on_start}"
+	[ "$param" = 'on_boot' ] && return 0
+	trap 'enable_forward' EXIT
+	stop_forward
+	local _pbr_svc_defs
+	_pbr_svc_defs="$($_ucode start_service "$param" "$2")"
+	# shellcheck disable=SC2181
+	[ $? -eq 0 ] || return 1
+	if [ -z "$_pbr_svc_defs" ]; then
+		# ucode bailed out entirely (e.g. config load failure);
+		# treat as boot-mode: schedule interface.*.up retry.
+		[ ! -s "/var/run/${packageName}.lock" ] && touch "/var/run/${packageName}.boot"
+		return 0
+	fi
+	# ucode emits these top-level variable assignments:
+	#   _pbr_ifaces_triggers — space-separated iface list, consumed by service_triggers()
+	#   _pbr_svc_data        — json_add_* command block, eval'd by service_data() (empty on degraded start)
+	#   _pbr_deferred_to_boot — '1' when ucode bailed due to uplink-not-ready
+	# All must be set BEFORE procd invokes service_triggers / service_data
+	# so the trigger registration and data block see them.
+	eval "$_pbr_svc_defs"
+	if [ -n "$_pbr_deferred_to_boot" ]; then
+		[ ! -s "/var/run/${packageName}.lock" ] && touch "/var/run/${packageName}.boot"
+	fi
+	# Degraded start: drop the service_data hook so procd's _procd_close_service
+	# skips the per-instance data block entirely. Without this, an empty
+	# data block would be emitted and procd would replace the existing
+	# per-instance data with {}, wiping the gateway / status info.
+	if [ -z "$_pbr_svc_data" ]; then
+		unset -f service_data
+	fi
+}
+service_data() { eval "$_pbr_svc_data"; }
+stop_service() { $_ucode stop_service; }
+reload_service() { rc_procd start_service 'on_reload'; }
+restart() {
+	trap 'enable_forward' EXIT
+	stop_forward
+	stop
+	# it takes time before routes are cleaned up, if started immediately a leak can occur
+	[ "$(cat /proc/sys/net/ipv4/ip_forward)" = "0" ] && sleep 2
+	start
+}
+status_service() { $_ucode status_service "$@"; }
+service_started() {
+	[ "$1" = 'on_boot' ] && return 0
+	enable_forward
+	trap - EXIT
+	$_ucode service_started "$1" "$_pbr_deferred_to_boot"
+}
+service_triggers() {
+	local procd_boot_trigger_delay procd_reload_delay n boot_mode=
+	config_load "$packageName"
+	config_get procd_boot_trigger_delay 'config' 'procd_boot_trigger_delay' '5000'
+	config_get procd_reload_delay       'config' 'procd_reload_delay'       '0'
+
+	[ -f "/var/run/${packageName}.boot" ] && { boot_mode=1; rm -f "/var/run/${packageName}.boot"; }
+
+	# Always register the validators + config/interface triggers. procd
+	# replaces s->trigger on every service set/add that includes a
+	# triggers field, so emitting fewer triggers in any branch silently
+	# wipes the rest. Registering the full set in every start path keeps
+	# interface triggers alive across WAN-down transitions; the boot
+	# retry below is only an additional safety net.
+	PROCD_RELOAD_DELAY=$(( ${procd_reload_delay:-0} * 1000 ))
+	procd_open_validate
+		load_validate_config
+		load_validate_policy
+		load_validate_include
+	procd_close_validate
+	procd_open_trigger
+		procd_add_config_trigger "config.change" 'openvpn' "/etc/init.d/${packageName}" reload 'on_openvpn_change'
+		procd_add_config_trigger "config.change" "${packageName}" "/etc/init.d/${packageName}" reload
+		procd_add_config_trigger "config.change" "network" "/etc/init.d/${packageName}" reload
+		for n in $_pbr_ifaces_triggers; do
+			procd_add_interface_trigger "interface.*" "$n" "/etc/init.d/${packageName}" on_interface_reload "$n"
+		done
+		if [ -n "$boot_mode" ]; then
+			printf 'Setting trigger (on_boot) '
+			if procd_add_raw_trigger "interface.*.up" "${procd_boot_trigger_delay}" "/etc/init.d/${packageName}" start; then
+				printf '\033[0;32m\xe2\x9c\x93\033[0m\n'
+			else
+				printf '\033[0;31m\xe2\x9c\x97\033[0m\n'
+			fi
+		fi
+	procd_close_trigger
+}
+netifd()  { $_ucode netifd "$@"; }
+on_interface_reload() {
+	[ -e "/var/run/${packageName}.lock" ] || return 1
+	# Skip DHCPv6-renew reloads of the IPv6 uplink when the gateway is
+	# unchanged. Checked before rc_procd/stop_forward so an unchanged renew
+	# causes no forwarding churn or interface reprocessing.
+	if $_ucode should_skip_reload "$1"; then
+		return 0
+	fi
+	rc_procd start_service 'on_interface_reload' "$1"
+	service_started 'on_interface_reload'
+}
+support() {
+	local _paste=0
+	for _arg in "$@"; do [ "$_arg" = "-p" ] && _paste=1; done
+	local _tmpfile="/var/${packageName}-support"
+	$_ucode support 2>&1 | tee "$_tmpfile"
+	if [ "$_paste" = "1" ]; then
+		printf "Uploading to paste.ee... "
+		if command -v curl >/dev/null 2>&1; then
+			json_init
+			json_add_string "description" "${packageName}-support"
+			json_add_array "sections"
+			json_add_object '0'
+			json_add_string "name" "$(uci -q get system.@system[0].hostname)"
+			json_add_string "contents" "$(cat "$_tmpfile")"
+			json_close_object
+			json_close_array
+			local _payload _out _id _success
+			_payload="$(json_dump)"
+			_out="$(curl -s -k 'https://api.paste.ee/v1/pastes' \
+				-X POST \
+				-H 'Content-Type: application/json' \
+				-H 'X-Auth-Token:uVOJt6pNqjcEWu7qiuUuuxWQafpHhwMvNEBviRV2B' \
+				-d "$_payload")"
+			json_load "$_out"
+			json_get_var _id id
+			json_get_var _success success
+			if [ "$_success" = "1" ]; then
+				printf "https://paste.ee/p/%s \033[0;32m[✓]\033[0m\n" "$_id"
+			else
+				printf "\033[0;31m[✗]\033[0m\n"
+			fi
+		else
+			printf "\033[0;31m[✗]\033[0m\n"
+			printf "\033[0;31mERROR:\033[0m curl not found. Run 'opkg update; opkg install curl ca-bundle' to install.\n"
+		fi
+		rm -f "$_tmpfile"
+	else
+		printf "Support details logged to '%s'.\n" "$_tmpfile"
+	fi
+}
+version() { $_ucode version "$@"; }
+
+# shellcheck disable=SC2120
+load_validate_config() {
+	uci_load_validate "$packageName" "$packageName" "$1" "${2}${3:+ ${3}}" \
+		'enabled:bool:0' \
+		'strict_enforcement:bool:1' \
+		'ipv6_enabled:bool:0' \
+		'resolver_set:or("", "none", "dnsmasq.nftset")' \
+		'resolver_instance:list(or(integer, string)):*' \
+		'verbosity:range(0,2):2' \
+		'uplink_mark:regex("[A-Fa-f0-9]{8}"):00010000' \
+		'uplink_ip_rules_priority:range(99,32765):30000' \
+		'fw_mask:regex("[A-Fa-f0-9]{8}"):00ff0000' \
+		'icmp_interface:or("", tor, uci("network", "@interface"))' \
+		'ignored_interface:list(or(tor, uci("network", "@interface")))' \
+		'supported_interface:list(or(ignore, tor, regex("xray_.*"), uci("network", "@interface")))' \
+		'procd_boot_trigger_delay:range(1000,10000):5000' \
+		'prefixlength:uinteger:1' \
+		'lan_device:list(or(network)):br-lan' \
+		'procd_reload_delay:uinteger:0' \
+		'uplink_interface:network:wan' \
+		'uplink_interface6:network:wan6' \
+		'debug_performance:bool:0'\
+		'nft_rule_counter:bool:0'\
+		'nft_set_auto_merge:bool:1'\
+		'nft_set_counter:bool:0'\
+		'nft_set_flags_interval:bool:1'\
+		'nft_set_flags_timeout:bool:0'\
+		'nft_set_gc_interval:or("", string)'\
+		'nft_set_policy:or("", memory, performance):performance'\
+		'nft_set_timeout:or("", string)' \
+	;
+}
+
+# shellcheck disable=SC2120
+load_validate_dns_policy() {
+	local name
+	local enabled
+	local src_addr
+	local dest_dns
+	local dest_dns_port
+	uci_load_validate "$packageName" 'dns_policy' "$1" "${2}${3:+ ${3}}" \
+		'name:string:Untitled' \
+		'enabled:bool:1' \
+		'src_addr:list(neg(or(host,network,macaddr,string)))' \
+		'dest_dns:list(or(host,network,string))' \
+		'dest_dns_port:port:53' \
+	;
+}
+
+# shellcheck disable=SC2120
+load_validate_policy() {
+	local name
+	local enabled
+	local interface
+	local proto
+	local chain
+	local src_addr
+	local src_port
+	local dest_addr
+	local dest_port
+	uci_load_validate "$packageName" 'policy' "$1" "${2}${3:+ ${3}}" \
+		'name:string:Untitled' \
+		'enabled:bool:1' \
+		'interface:or("ignore", "tor", regex("xray_.*"), uci("network", "@interface")):wan' \
+		'proto:or(string)' \
+		'chain:or("", "forward", "output", "prerouting"):prerouting' \
+		'src_addr:list(neg(or(host,network,macaddr,string)))' \
+		'src_port:list(neg(or(portrange,string)))' \
+		'dest_addr:list(neg(or(host,network,string)))' \
+		'dest_port:list(neg(or(portrange,string)))' \
+	;
+}
+
+# shellcheck disable=SC2120
+load_validate_include() {
+	local path=
+	local enabled=
+	uci_load_validate "$packageName" 'include' "$1" "${2}${3:+ ${3}}" \
+		'path:file' \
+		'enabled:bool:0' \
+	;
+}

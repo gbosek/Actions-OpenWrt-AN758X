@@ -1,0 +1,24 @@
+{
+  "workflow_matrix": "passed",
+  "javascript_syntax_files": 33,
+  "arm64_objects": {
+    "drivers/net/ethernet/airoha/airoha_eth.o": "042532923367c866f7cde53fe9fba30b9c0af8ecce2b72e0fd9cbb83752506f5",
+    "drivers/net/ethernet/airoha/airoha_ppe.o": "8d188afe86f9f9d84e4c296434ba81904014de2dfdf5406731971959e051dd95",
+    "drivers/net/ethernet/airoha/airoha_npu.o": "39b753bd05ab428f66bcdb7f4aaad33ac47b8c4b9b591ff68a82df3ef9de0af8",
+    "drivers/net/phy/realtek/realtek_main.o": "d9917ef0a5e4ca72f0d1e539d78bd05dcf207ab8fcdd845d7ba1dcad2fa93d3b",
+    "drivers/thermal/airoha_thermal.o": "6654478acd42d4014cb2cce87462a9daf2c2fea3ae94be6e02247945d5aacbe0",
+    "net/netfilter/nft_flow_offload.o": "7e36d91ccc2010d729e12c57b46451847e2f0048d95cd2c42250d1e76aa14688",
+    "net/netfilter/nf_flow_table_core.o": "9b34cfe7a8db6670da0282b5f901a74db3d3451d1b55441c76d8e1b9d59bca52",
+    "net/bridge/br.o": "45ddaeda48ad0908d59467fe33695ccaad761a749d5a078413e7bbe5237c5984",
+    "net/bridge/br_fdb.o": "ff1acb1700ba4312ca4030eb52bdb121d716810bcb932430288f7b56e156b1e6",
+    "net/netfilter/nf_flow_table_ip.o": "ab55875aa16c19a3f881e4dc2ec54b4d338f6c12bd774cf9fd2b56166c572c85",
+    "net/netfilter/nf_flow_table_offload.o": "79c23c54496551c6764568776027250b9112873e55a82a0fae0eba952f9b9a8c",
+    "drivers/leds/trigger/ledtrig-netdev.o": "cc231cb7c12f2f42e8c99f4ff4d46ce22a9456e90829fcb0a77fb028c98f3981"
+  },
+  "pbr_other_plugin_file_collisions": [],
+  "package_inputs_pinned": {
+    "mwan4": 230,
+    "pbr": 160
+  },
+  "hardware_tested": false
+}

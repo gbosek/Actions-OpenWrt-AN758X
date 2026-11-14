@@ -1,0 +1,26 @@
+{
+  "native_ucode_modules_compiled": {
+    "pbr": 10,
+    "mwan4": 16
+  },
+  "mwan4_host_import_boundary": "uci/ubus host extensions unavailable; import-only stubs used for syntax, not runtime API validation",
+  "pbr_frontend_backend_rpc_compat": 38,
+  "pbr_package_versions": [
+    "1.2.4-r2",
+    "1.2.4-r2"
+  ],
+  "shell_syntax_files": 10,
+  "mwan4": {
+    "package_closure": "passed",
+    "native_cpu_mhz": 1200,
+    "personal_routing_presets": false
+  },
+  "pbr": {
+    "package_closure": "passed",
+    "native_cpu_mhz": 1200,
+    "personal_routing_presets": false
+  },
+  "npu_memory_fixture_test": "PASS actual NPU parser/RPC cache: phandle ownership, 1/2 cells, >4GiB, malformed/zero, multiple tuples, old-empty-cache recovery, retry after failed discovery, no boot log",
+  "hardware_tested": false,
+  "local_full_package_build": "not completed: prepared-source tree lacks host tool installation; CI installs prerequisites and builds full packages"
+}

@@ -1,0 +1,13 @@
+{
+  "kernel": "linux-6.18.60",
+  "trtcm_cases": 7,
+  "rx31_irq": true,
+  "watchdog_cleanup_order": true,
+  "compiled_arm64": true,
+  "source_sha256": {
+    "airoha_eth.c": "c9f4a05c862fbbcb43f9fe9369ca62ddd066005fcf109295b33d4e4581f21c05",
+    "airoha_eth.h": "522d50ad66b82ff6e7721ba008b017c6fb4533a2aacc411ca59021d6aeef403f",
+    "airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+  },
+  "scope": "Actual TRTCM function with host bus/readback fixtures; source and ARM64 object checks; hardware stability requires device testing"
+}

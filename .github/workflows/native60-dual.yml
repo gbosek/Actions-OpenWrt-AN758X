@@ -1,0 +1,107 @@
+name: XG2010G native 6.18.60 MWAN4 and PBR
+run-name: XG2010G 6.18.60 - native CPU - MWAN4 and PBR 1.2.4
+on:
+  push:
+    branches: [work/xg2010g-native60-dual-20261114]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  TZ: Asia/Shanghai
+  FORCE_UNSAFE_CONFIGURE: 1
+  NPU_VARIANT: naoki
+  PROFILE: gemtek_xg2010g
+  SOC: an7581
+  FW_AUTHOR: qwe
+jobs:
+  build:
+    name: XG2010G 6.18.60 - ${{ matrix.routing }}
+    strategy:
+      fail-fast: false
+      matrix:
+        routing: [mwan4, pbr]
+    env:
+      ROUTING_VARIANT: ${{ matrix.routing }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gettext git libncurses-dev libssl-dev python3-setuptools python3-pyelftools rsync swig unzip zlib1g-dev file wget curl libelf-dev libgnutls28-dev device-tree-compiler zstd jq libfuse-dev autoconf automake pkgconf help2man gperf libtool-bin texinfo gcc-multilib g++-multilib squashfs-tools
+          sudo mkdir -p /workdir
+          sudo chown "$USER:$USER" /workdir
+      - name: Restore full stable source and feed baseline
+        run: |
+          git init -q /workdir/openwrt
+          git -C /workdir/openwrt fetch --depth=1 https://github.com/pbs05/ponwrt.git a57faf93c6c3638ba3651690228aabaa51d3f235
+          git -C /workdir/openwrt checkout --detach FETCH_HEAD
+          python3 StableRefresh/prepare.py /workdir/openwrt --phase feeds
+          python3 scripts/select-pon.py /workdir/openwrt --variant naoki --phase feed
+          cd /workdir/openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+      - name: Apply full baseline, effective live updates, and native CPU policy
+        run: |
+          cd /workdir/openwrt
+          bash "$GITHUB_WORKSPACE/diy-part1.sh"
+          mkdir -p files
+          cp -a "$GITHUB_WORKSPACE/files/." files/
+          cp configs/an7581.config .config
+          cat "$GITHUB_WORKSPACE/configs/gemtek_xg2010g.config" >> .config
+          python3 "$GITHUB_WORKSPACE/scripts/select-pon.py" . --variant naoki --phase config
+          python3 "$GITHUB_WORKSPACE/scripts/apply-lan-ip.py" .
+          bash "$GITHUB_WORKSPACE/diy-part2.sh"
+          python3 "$GITHUB_WORKSPACE/StableRefresh/prepare.py" . --phase finish
+          ./scripts/feeds install wget-ssl coreutils coreutils-timeout ucode-mod-math
+          python3 "$GITHUB_WORKSPACE/Native60/prepare.py" . --variant "$ROUTING_VARIANT"
+          make defconfig
+          python3 "$GITHUB_WORKSPACE/Native60/prepare.py" . --variant "$ROUTING_VARIANT" --check
+          python3 "$GITHUB_WORKSPACE/scripts/check-pon-build.py" . --variant naoki --config-only
+      - name: Strict forward patch replay and ARM64 headers
+        run: |
+          mkdir -p /workdir/openwrt/dl
+          curl --fail --location --retry 3 https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.60.tar.xz -o /workdir/openwrt/dl/linux-6.18.60.tar.xz
+          python3 Native60/replay.py /workdir/openwrt /workdir/patch-review
+      - uses: actions/cache@v4
+        with:
+          path: /workdir/openwrt/dl
+          key: stable-refresh-dl-${{ hashFiles('Native60/source.json', 'Native60/patch-manifest.json', 'StableRefresh/feed-pins.json') }}
+          restore-keys: |
+            stable-refresh-dl-
+            clean-ponwrt-a57faf9-dl-
+            ponwrt-dl-pbs05/ponwrt-master-
+      - name: Download and compile full firmware
+        run: |
+          cd /workdir/openwrt
+          make download -j8
+          set -o pipefail
+          make -j2 V=s 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Audit actual complete firmware
+        run: |
+          python3 Native60/check-prepared.py /workdir/openwrt
+          python3 scripts/check-ppe-build.py --manifest-dir /workdir/openwrt/bin/targets/airoha/an7581 --build-dir /workdir/openwrt/build_dir
+          python3 scripts/check-pon-build.py /workdir/openwrt --variant naoki
+          python3 scripts/check-driver-fixes.py --build-dir /workdir/openwrt/build_dir --compiled --report /workdir/openwrt/bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json
+          python3 scripts/check-rtl826x.py --build-dir /workdir/openwrt/build_dir --compiled --require-staged --report /workdir/openwrt/bin/targets/airoha/an7581/RTL826X-VERIFICATION.json
+          python3 scripts/audit-native60.py /workdir/openwrt artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XG2010G-6.18.60-${{ matrix.routing }}-20261114-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+      - name: Preserve build evidence and unverified output on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native60-${{ matrix.routing }}-diagnostics-${{ github.sha }}
+          include-hidden-files: true
+          path: |
+            build.log
+            /workdir/patch-review/verification.json
+            /workdir/patch-review/replay.log
+            /workdir/openwrt/.config
+            /workdir/openwrt/logs/
+            /workdir/openwrt/bin/targets/airoha/an7581/*gemtek_xg2010g*

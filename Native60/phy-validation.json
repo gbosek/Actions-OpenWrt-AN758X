@@ -1,0 +1,36 @@
+{
+  "reset_cases": 8,
+  "match_cases": 15,
+  "deferred_probe_reset_cases": 2,
+  "unsupported_bus_kept_in_reset": true,
+  "failures": 0,
+  "source_sha256": {
+    "drivers/net/phy/realtek/phy_patch_rtl826x.h": "89a2a4e16998e7fbe33f47038a6480bf02dc188d89b0010588ea0f631ae77ac8",
+    "drivers/net/phy/realtek/phy_patch_rtl826x.c": "a5379a20460d6b4aad91f065b8aefa096bf379898abcb49732e832f99eec8c3c",
+    "drivers/net/phy/realtek/realtek.h": "301e47b668f99b2da7c0e9384142b76d9ed4501655680ce2710b12e0944641c7",
+    "drivers/net/phy/realtek/phy_patch.h": "4e4c9c13eae369c472b10eabfef9f833533ecdac3fde6bb76be1da542856d91a",
+    "drivers/net/phy/realtek/phy_patch.c": "7cd57d10e94cce41b1cda6e4ae7c05921bad50376973b92e33e40500dd1ea961",
+    "drivers/net/phy/realtek/realtek_main.c": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391"
+  },
+  "compiled_arm64": true,
+  "upstream_commit": "76da1ee259c5804e105c3f044fcf94833608b227",
+  "match_reset_release": {
+    "upstream_pr": "https://github.com/openwrt/openwrt/pull/25926",
+    "upstream_commit": "a2ed191e4f046276ec95b6330db9f2210351ed39",
+    "pr_head": "e8c8eb16013c22d28b96bbabdb7a118371f04cd2",
+    "merged_upstream": false,
+    "patch": "959-net-phy-realtek-release-reset-before-matching.patch",
+    "patch_sha256": "2ee9ffd6c0acd7a7db13fceafc72c81d276717ae03d797e9d1e66154c4bb2e36",
+    "previous_prepared_sha256": "942bdadbdb52224f52f31e904e5b616f2a4fa4937f2c51799e5d79d602a541ab",
+    "prepared_sha256": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
+    "scope": "Exact helper and five match call sites; no PHY driver collapse, DT/GPIO/LED/firmware or bind-rate changes",
+    "hardware_tested": false
+  },
+  "hardware_tested": false,
+  "objects_sha256": {
+    "realtek_main.o": "d9917ef0a5e4ca72f0d1e539d78bd05dcf207ab8fcdd845d7ba1dcad2fa93d3b",
+    "phy_patch.o": "2dae5abbd29d2c9c0929a9c6273dbdece01f9c83bac7de5eac2752960f8bfb10",
+    "phy_patch_rtl826x.o": "02108ef972db7176baaa6f98045e262cc87a9019c5462acd457d428b4c7180d0",
+    "realtek.o": "4a70215f765bea0da91897f349c90387b34f6391aa5e5aabe485b59cc27aa77c"
+  }
+}

@@ -1,0 +1,25 @@
+{
+	"luci-app-pbr": {
+		"description": "Grant UCI and file access for luci-app-pbr",
+		"read": {
+			"ubus": {
+				"luci.pbr": [
+					"getInitStatus"
+				]
+			},
+			"uci": [
+				"pbr"
+			]
+		},
+		"write": {
+			"uci": [
+				"pbr"
+			],
+			"ubus": {
+				"luci.pbr": [
+					"setInitAction"
+				]
+			}
+		}
+	}
+}

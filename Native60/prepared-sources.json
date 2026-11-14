@@ -1,0 +1,10 @@
+{
+  "drivers/net/ethernet/airoha/airoha_eth.c": "c9f4a05c862fbbcb43f9fe9369ca62ddd066005fcf109295b33d4e4581f21c05",
+  "drivers/net/ethernet/airoha/airoha_ppe.c": "0d8f2e476c4be207297d53f39504d915978cf7fe46ab74c16cea2bfef411e306",
+  "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6",
+  "drivers/net/phy/realtek/realtek_main.c": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
+  "drivers/thermal/airoha_thermal.c": "92742c64292dcba5568bf4bc25b249a26641ce51dd7814d2e41ef563ef822bea",
+  "net/netfilter/nft_flow_offload.c": "1d954fa8827d2afeda676157baf4834a4117be29b38d28699a156ef80480eee3",
+  "net/netfilter/nf_flow_table_core.c": "bd067cb4e398279258e0d5a71cb8186080e357b46fbaf79ae93652664dc57191",
+  "net/bridge/br.c": "07e3c04e545f3ca1ee8ec546262e4faec25276cd26acce4e1608431cdb9db0ea"
+}
