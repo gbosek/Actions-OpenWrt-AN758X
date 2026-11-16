@@ -1,0 +1,108 @@
+From: XG2010G maintainers
+Subject: [PATCH] net: airoha: complete PPPoE uplinks using their actual session path
+
+Adapt the PPPoE uplink idea from naoki66 9996. Never scan all PON
+ports or substitute the first matching GEM table. Verify the live SID,
+peer MAC and complete VLAN path; let entry_prepare validate this GDM
+and the existing R68 GEM/T-CONT mapping. Retain software fallback for
+unsupported topology; do not enable parentless bridge binding.
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include <linux/airoha-eth.h>
++#include <linux/if_arp.h>
+ #include <linux/ip.h>
+ #include <linux/ipv6.h>
+ #include <linux/of_platform.h>
+@@ -1302,6 +1303,57 @@
+ 	return airoha_ppe_get_entry_idle_time(ppe, e->data.ib1);
+ }
+ 
++/* Adapt naoki66's PPP uplink completion without searching unrelated PONs.
++ * Resolve only this live PPPoE session, with identical SID, peer and tags.
++ * Unsupported/bridged/ambiguous paths keep their software forwarding path.
++ * The returned device holds a reference which the caller must release.
++ */
++static struct net_device *
++airoha_ppe_pppoe_lower_dev(struct net_device *ppp,
++			   const struct airoha_flow_data *data)
++{
++	struct net_device_path_stack stack;
++	struct net_device *dev = ERR_PTR(-EOPNOTSUPP);
++	unsigned int vlans = 0;
++	int i;
++
++	if (data->pppoe.num != 1 || !data->pppoe.sid)
++		return dev;
++
++	rcu_read_lock();
++	if (dev_fill_forward_path(ppp, data->eth.h_dest, &stack) ||
++	    stack.num_paths < 2)
++		goto out;
++	if (stack.path[0].type != DEV_PATH_PPPOE ||
++	    stack.path[0].dev != ppp ||
++	    stack.path[0].encap.id != data->pppoe.sid ||
++	    !ether_addr_equal(stack.path[0].encap.h_dest, data->eth.h_dest))
++		goto out;
++
++	for (i = 1; i < stack.num_paths; i++) {
++		const struct net_device_path *path = &stack.path[i];
++
++		if (path->type == DEV_PATH_VLAN) {
++			if (vlans >= data->vlan.num ||
++			    path->encap.id != data->vlan.hdr[vlans].id ||
++			    path->encap.proto != data->vlan.hdr[vlans].proto)
++				goto out;
++			vlans++;
++			continue;
++		}
++		if (path->type != DEV_PATH_ETHERNET ||
++		    i != stack.num_paths - 1 || !path->dev ||
++		    vlans != data->vlan.num)
++			goto out;
++
++		dev = (struct net_device *)path->dev;
++		dev_hold(dev);
++	}
++out:
++	rcu_read_unlock();
++	return dev;
++}
++
+ static int airoha_ppe_flow_offload_replace(struct airoha_eth *eth,
+ 					   struct flow_cls_offload *f)
+ {
+@@ -1309,7 +1361,7 @@
+ 	struct airoha_flow_table_entry *e;
+ 	struct airoha_gdm_dev *egress_dev;
+ 	struct airoha_flow_data data = {};
+-	struct net_device *odev = NULL;
++	struct net_device *odev = NULL, *pppoe_lower = NULL;
+ 	struct flow_action_entry *act;
+ 	struct airoha_foe_entry hwe;
+ 	u8 dsfield = 0, l4proto = 0;
+@@ -1415,9 +1467,21 @@
+ 	    !is_valid_ether_addr(data.eth.h_dest))
+ 		return -EINVAL;
+ 
++	if (odev && odev->type == ARPHRD_PPP) {
++		pppoe_lower = airoha_ppe_pppoe_lower_dev(odev, &data);
++		if (IS_ERR(pppoe_lower)) {
++			NL_SET_ERR_MSG_MOD(f->common.extack,
++					   "PPPoE session/peer/VLAN has no exact lower device");
++			return PTR_ERR(pppoe_lower);
++		}
++		odev = pppoe_lower;
++	}
++
+ 	err = airoha_ppe_foe_entry_prepare(eth, &hwe, odev, offload_type,
+ 					   &data, l4proto, dsfield,
+ 					   &egress_dev);
++	if (pppoe_lower)
++		dev_put(pppoe_lower);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP && egress_dev &&
+ 		    egress_dev->flags & AIROHA_PRIV_F_PON)

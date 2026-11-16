@@ -1,0 +1,40 @@
+From: XG2010G maintainers
+Subject: [PATCH] net: airoha: guard accounting redirection with the mapped stats window
+
+Defence in depth from naoki66 9999-14. Keep our existing flow_stats_cap
+failure handling and add a local guard before CDM3 redirection/reset/read.
+This is not a new claim that the baseline lacked all stats protection.
+No UI, packet-counter reset, binding threshold or ageing changes.
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -761,6 +761,9 @@
+ 						 struct airoha_npu *npu,
+ 						 int index)
+ {
++	if (!npu->stats)
++		return;
++
+ 	memset_io(&npu->stats[index], 0, sizeof(*npu->stats));
+ 	memset(&ppe->foe_stats[index], 0, sizeof(*ppe->foe_stats));
+ }
+@@ -790,6 +793,10 @@
+ 
+ 	/* No verified NPU counter layout for native AN7581 L2B entries. */
+ 	if (airoha_is_7581(ppe->eth) && type == PPE_PKT_TYPE_BRIDGE)
++		return;
++
++	/* Do not divert data to the accounting queue without its consumer. */
++	if (!npu->stats)
+ 		return;
+ 
+ 	ppe_num_stats_entries = airoha_ppe_get_total_num_stats_entries(ppe);
+@@ -1628,7 +1635,7 @@
+ 	rcu_read_lock();
+ 
+ 	npu = rcu_dereference(eth->npu);
+-	if (npu) {
++	if (npu && npu->stats) {
+ 		u64 packets = ppe->foe_stats[index].packets;
+ 		u64 bytes = ppe->foe_stats[index].bytes;
+ 		struct airoha_foe_stats npu_stats;

@@ -1,8 +1,8 @@
-name: XG2010G native 6.18.60 MWAN4 and PBR
-run-name: XG2010G 6.18.60 - native CPU - MWAN4 and PBR 1.2.4
+name: XG2010G native60 selective NPU
+run-name: XG2010G 6.18.60 - selective NAOKI NPU - original platform and R68
 on:
   push:
-    branches: [work/xg2010g-native60-dual-20261114]
+    branches: [work/xg2010g-native60-npu-only-20261116]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        routing: [mwan4, pbr]
+        routing: [mwan4]
     env:
       ROUTING_VARIANT: ${{ matrix.routing }}
     runs-on: ubuntu-24.04
@@ -65,6 +65,7 @@ jobs:
           mkdir -p /workdir/openwrt/dl
           curl --fail --location --retry 3 https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.60.tar.xz -o /workdir/openwrt/dl/linux-6.18.60.tar.xz
           python3 Native60/replay.py /workdir/openwrt /workdir/patch-review
+          python3 Native60/tests/npu-selective-test.py /workdir/patch-review/linux-6.18.60 --report /workdir/patch-review/npu-helper-tests.json
       - uses: actions/cache@v4
         with:
           path: /workdir/openwrt/dl
@@ -82,6 +83,7 @@ jobs:
       - name: Audit actual complete firmware
         run: |
           python3 Native60/check-prepared.py /workdir/openwrt
+          python3 Native60/check-npu-selective.py /workdir/openwrt
           python3 scripts/check-ppe-build.py --manifest-dir /workdir/openwrt/bin/targets/airoha/an7581 --build-dir /workdir/openwrt/build_dir
           python3 scripts/check-pon-build.py /workdir/openwrt --variant naoki
           python3 scripts/check-driver-fixes.py --build-dir /workdir/openwrt/build_dir --compiled --report /workdir/openwrt/bin/targets/airoha/an7581/AN7581-DRIVER-FIXES-VERIFICATION.json
@@ -89,7 +91,7 @@ jobs:
           python3 scripts/audit-native60.py /workdir/openwrt artifacts
       - uses: actions/upload-artifact@v4
         with:
-          name: XG2010G-6.18.60-${{ matrix.routing }}-20261114-${{ github.sha }}
+          name: XG2010G-6.18.60-${{ matrix.routing }}-npu-20261116-${{ github.sha }}
           path: artifacts/
           if-no-files-found: error
       - name: Preserve build evidence and unverified output on failure
@@ -102,6 +104,7 @@ jobs:
             build.log
             /workdir/patch-review/verification.json
             /workdir/patch-review/replay.log
+            /workdir/patch-review/npu-helper-tests.json
             /workdir/openwrt/.config
             /workdir/openwrt/logs/
             /workdir/openwrt/bin/targets/airoha/an7581/*gemtek_xg2010g*

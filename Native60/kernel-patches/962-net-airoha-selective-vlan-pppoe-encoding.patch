@@ -1,0 +1,71 @@
+From: XG2010G maintainers
+Subject: [PATCH] net: airoha: encode VLAN TPID independently of tag count
+
+Selectively adapted from naoki66 9995 complete-ppe-offload. Keep the
+existing outer-last PON GEM lookup, PCP policy, bind rate and ageing.
+Reject inner S-tags rather than silently transmitting a different TPID.
+This does not raise the generic flowtable two-encapsulation limit.
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -430,6 +430,32 @@
+ 	return 0;
+ }
+ 
++/* VLAN_PUSH actions follow the logical device down to the wire: the
++ * last VLAN is outermost. VPM selects its TPID, not the tag count.
++ * The inner tag, when present, is always 802.1Q on this PPE.
++ */
++static u32 airoha_ppe_vlan_vpm(const struct airoha_flow_data *data)
++{
++	if (!data->vlan.num)
++		return 0;
++
++	return data->vlan.hdr[data->vlan.num - 1].proto ==
++	       htons(ETH_P_8021AD) ? 2 : 1;
++}
++
++static bool airoha_ppe_vlan_push_ok(const struct airoha_flow_data *data,
++				   __be16 proto)
++{
++	if (data->vlan.num >= ARRAY_SIZE(data->vlan.hdr))
++		return false;
++	if (proto != htons(ETH_P_8021Q) && proto != htons(ETH_P_8021AD))
++		return false;
++	if (data->vlan.num && data->vlan.hdr[0].proto != htons(ETH_P_8021Q))
++		return false;
++
++	return true;
++}
++
+ static int airoha_ppe_foe_entry_prepare(struct airoha_eth *eth,
+ 					struct airoha_foe_entry *hwe,
+ 					struct net_device *netdev, int type,
+@@ -450,7 +476,7 @@
+ 	      FIELD_PREP(AIROHA_FOE_IB1_BIND_PACKET_TYPE, type) |
+ 	      FIELD_PREP(AIROHA_FOE_IB1_BIND_UDP, l4proto == IPPROTO_UDP) |
+ 	      FIELD_PREP(AIROHA_FOE_IB1_BIND_VLAN_LAYER, data->vlan.num) |
+-	      FIELD_PREP(AIROHA_FOE_IB1_BIND_VPM, data->vlan.num) |
++	      FIELD_PREP(AIROHA_FOE_IB1_BIND_VPM, airoha_ppe_vlan_vpm(data)) |
+ 	      FIELD_PREP(AIROHA_FOE_IB1_BIND_PPPOE, data->pppoe.num) |
+ 	      AIROHA_FOE_IB1_BIND_TTL;
+ 	hwe->ib1 = val;
+@@ -1364,8 +1390,7 @@
+ 		case FLOW_ACTION_CSUM:
+ 			break;
+ 		case FLOW_ACTION_VLAN_PUSH:
+-			if (data.vlan.num == 2 ||
+-			    act->vlan.proto != htons(ETH_P_8021Q))
++			if (!airoha_ppe_vlan_push_ok(&data, act->vlan.proto))
+ 				return -EOPNOTSUPP;
+ 
+ 			data.vlan.hdr[data.vlan.num].id = act->vlan.vid;
+@@ -1375,7 +1400,7 @@
+ 		case FLOW_ACTION_VLAN_POP:
+ 			break;
+ 		case FLOW_ACTION_PPPOE_PUSH:
+-			if (data.pppoe.num == 1 || data.vlan.num == 2)
++			if (data.pppoe.num == 1)
+ 				return -EOPNOTSUPP;
+ 
+ 			data.pppoe.sid = act->pppoe.sid;

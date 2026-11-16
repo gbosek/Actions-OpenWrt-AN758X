@@ -1,6 +1,6 @@
 {
   "drivers/net/ethernet/airoha/airoha_eth.c": "c9f4a05c862fbbcb43f9fe9369ca62ddd066005fcf109295b33d4e4581f21c05",
-  "drivers/net/ethernet/airoha/airoha_ppe.c": "0d8f2e476c4be207297d53f39504d915978cf7fe46ab74c16cea2bfef411e306",
+  "drivers/net/ethernet/airoha/airoha_ppe.c": "6d293655ae13cc6012b23660767f9597d8a478edb0ebc77e598a17b714dfdb21",
   "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6",
   "drivers/net/phy/realtek/realtek_main.c": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
   "drivers/thermal/airoha_thermal.c": "92742c64292dcba5568bf4bc25b249a26641ce51dd7814d2e41ef563ef822bea",

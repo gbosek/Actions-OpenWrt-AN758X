@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "strict_replay": {
+    "status": "passed",
+    "kernel": "6.18.60",
+    "patches": 633,
+    "strict_forward": true,
+    "fuzz": 0,
+    "sources": {
+      "drivers/net/ethernet/airoha/airoha_eth.c": "c9f4a05c862fbbcb43f9fe9369ca62ddd066005fcf109295b33d4e4581f21c05",
+      "drivers/net/ethernet/airoha/airoha_ppe.c": "6d293655ae13cc6012b23660767f9597d8a478edb0ebc77e598a17b714dfdb21",
+      "drivers/net/ethernet/airoha/airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6",
+      "drivers/net/phy/realtek/realtek_main.c": "092738b7942adb98eb5bc629ef4d600847c1f87e936d1334d21dd2cb56c66391",
+      "drivers/thermal/airoha_thermal.c": "92742c64292dcba5568bf4bc25b249a26641ce51dd7814d2e41ef563ef822bea",
+      "net/netfilter/nft_flow_offload.c": "1d954fa8827d2afeda676157baf4834a4117be29b38d28699a156ef80480eee3",
+      "net/netfilter/nf_flow_table_core.c": "bd067cb4e398279258e0d5a71cb8186080e357b46fbaf79ae93652664dc57191",
+      "net/bridge/br.c": "07e3c04e545f3ca1ee8ec546262e4faec25276cd26acce4e1608431cdb9db0ea"
+    }
+  },
+  "actual_helper_regressions": {
+    "status": "passed",
+    "cases": 32,
+    "source_sha256": "6d293655ae13cc6012b23660767f9597d8a478edb0ebc77e598a17b714dfdb21",
+    "scope": "Actual helper bodies, mocked kernel path discovery; not network/hardware/runtime race validation"
+  },
+  "baseline_ppe_cases": 16,
+  "inherited_driver_regressions": {
+    "kernel": "kernel-work",
+    "trtcm_cases": 7,
+    "rx31_irq": true,
+    "watchdog_cleanup_order": true,
+    "compiled_arm64": true,
+    "source_sha256": {
+      "airoha_eth.c": "c9f4a05c862fbbcb43f9fe9369ca62ddd066005fcf109295b33d4e4581f21c05",
+      "airoha_eth.h": "522d50ad66b82ff6e7721ba008b017c6fb4533a2aacc411ca59021d6aeef403f",
+      "airoha_npu.c": "df6c47316321266c5042e446468f09f16fce1be057e02b146b2dc134506b58b6"
+    },
+    "scope": "Actual TRTCM function with host bus/readback fixtures; source and ARM64 object checks; hardware stability requires device testing"
+  },
+  "source_files_compared": 336,
+  "changed_driver_files": [
+    "drivers/net/ethernet/airoha/airoha_ppe.c"
+  ],
+  "arm64_ppe_object_sha256": "30343001270000117e7c331ee1276a1bb7e4355a5d92d5274a95f652bfd9b890",
+  "kernel_prepared_source_sha256": "6d293655ae13cc6012b23660767f9597d8a478edb0ebc77e598a17b714dfdb21",
+  "original_patch_count": 630,
+  "added_patches": 3,
+  "package_closure": "passed unchanged Native60 package input pins",
+  "hardware_tested": false,
+  "full_firmware_build": "not yet completed"
+}

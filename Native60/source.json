@@ -16,9 +16,61 @@
   },
   "pbr_version": "1.2.4-r2",
   "variants": [
-    "mwan4",
-    "pbr"
+    "mwan4"
   ],
   "hardware_tested": false,
-  "npu_memory": "latest upstream plus retained DT reader and nonempty-only cache, local release901"
+  "npu_memory": "latest upstream plus retained DT reader and nonempty-only cache, local release901",
+  "npu_selective": {
+    "base_commit": "910fa39f41fe4bbafb756b18fa99613dfb447d8c",
+    "upstream_repository": "naoki66/ImmortalWrt-for-Gemtek-brightspeed",
+    "upstream_commit": "9a70b25731dc64822dcb24cf9a7dbe7a84ed1ba1",
+    "upstream_inputs": {
+      "9995-net-airoha-complete-ppe-offload.patch": "b6d4098a070746a355691af330660717d367a28ba2bf2f859cfc21b21f16273f",
+      "9996-net-airoha-pppoe-uplink-offload-and-debugfs.patch": "978f83688e4bb2522f364e8169a5373815cf0fc5d97c8183926af78f8d377af5",
+      "9999-14-net-airoha-ppe-tolerate-unsupported-flow-stats.patch": "7fba0f4c15090435cc238a8472ebccc214396e7a6d927a99b96c288c978f9f69"
+    },
+    "selected_patches": [
+      {
+        "path": "962-net-airoha-selective-vlan-pppoe-encoding.patch",
+        "sha256": "1285971c108661adec5df9d834ea01d89254746e509896b6a1ef0497694dc447",
+        "preimage": "0d8f2e476c4be207297d53f39504d915978cf7fe46ab74c16cea2bfef411e306",
+        "postimage": "e2dc51d410e63e5018364018e5410744e81642adb526ca1c1ff024ba6a3e6c98"
+      },
+      {
+        "path": "963-net-airoha-resolve-exact-pppoe-lower-device.patch",
+        "sha256": "88f6e0e530726ca52565ed29eaf268890244c2a962729dcd2ba2116baff0d4e3",
+        "preimage": "e2dc51d410e63e5018364018e5410744e81642adb526ca1c1ff024ba6a3e6c98",
+        "postimage": "f42ff4e5471763e00423aac86233b242ad6f6475c780ca1c60162644871737b9"
+      },
+      {
+        "path": "964-net-airoha-guard-unmapped-accounting-queue.patch",
+        "sha256": "a25d5b4008ff8bd203f6749a8a27e51bca02805a0455da264ad86e21c909e603",
+        "preimage": "f42ff4e5471763e00423aac86233b242ad6f6475c780ca1c60162644871737b9",
+        "postimage": "6d293655ae13cc6012b23660767f9597d8a478edb0ebc77e598a17b714dfdb21"
+      }
+    ],
+    "changed_driver_files": [
+      "drivers/net/ethernet/airoha/airoha_ppe.c"
+    ],
+    "preserved": [
+      "pbs05 R68",
+      "native CPU 500-1200MHz",
+      "board/DTS/PHY/SerDes",
+      "NPU1456 microcode",
+      "MWAN4 r30 + Chinese UI r19",
+      "existing policy/ageing/bind thresholds"
+    ],
+    "excluded": [
+      "parentless bridge fallback",
+      "PON P-bit admission relaxation",
+      "ageing/bind register changes",
+      "NPU microcode replacement",
+      "bridger",
+      "naoki PON recovery",
+      "ONU backend replacement",
+      "WiFi/fan/OTA/feed/userland replacement"
+    ],
+    "hardware_tested": false
+  },
+  "firmware_version_prefix": "2026.11.16-native60-npu"
 }

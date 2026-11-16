@@ -92,4 +92,8 @@ for_report=image.parent/'RTL826X-VERIFICATION.json'
 if for_report.is_file():shutil.copy2(for_report,O/for_report.name)
 shutil.copy2(P/'Native60/source.json',O/'native60-source.json')
 shutil.copy2(P/'Native60/patch-manifest.json',O/'native60-patches.json')
+shutil.copy2(P/'Native60/npu-selective-source.json',O/'npu-selective-source.json')
+npu_report=image.parent/'NPU-SELECTIVE-VERIFICATION.json'
+assert npu_report.is_file(),'Missing actual compiled PPE selective-port report'
+shutil.copy2(npu_report,O/npu_report.name)
 print(json.dumps(result,indent=2))

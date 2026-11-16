@@ -59,7 +59,7 @@ if not a.check:
  cfg=S/'.config';t=cfg.read_text()
  for n in ['mwan4','luci-app-mwan4','luci-i18n-mwan4-zh-cn','pbr','luci-app-pbr','luci-i18n-pbr-zh-cn','mwan3','luci-app-mwan3','vpn-policy-routing','luci-app-vpn-policy-routing']:t=disable(t,n)
  for n in (['mwan4','luci-app-mwan4','luci-i18n-mwan4-zh-cn'] if a.variant=='mwan4' else ['pbr','luci-app-pbr','luci-i18n-pbr-zh-cn']):t+='CONFIG_PACKAGE_'+n+'=y\n'
- t=re.sub(r'^CONFIG_VERSION_NUMBER=.*$', 'CONFIG_VERSION_NUMBER="2026.11.14-native60-'+a.variant+'"',t,flags=re.M);cfg.write_text(t)
+ t=re.sub(r'^CONFIG_VERSION_NUMBER=.*$', 'CONFIG_VERSION_NUMBER="2026.11.16-native60-npu-'+a.variant+'"',t,flags=re.M);cfg.write_text(t)
  (S/'files/etc/native60-source.json').write_text(json.dumps(meta|{'variant':a.variant},indent=2)+'\n')
 else:
  cfg=(S/'.config').read_text();selected=set(re.findall(r'^CONFIG_PACKAGE_([^=]+)=y$',cfg,re.M))

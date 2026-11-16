@@ -26,7 +26,7 @@ staged=list((S/'build_dir').glob('target-*/root-airoha/'+rel))
 assert len(staged)==1 and staged[0].read_bytes()==(root/rel).read_bytes(),rel
 assert (root/'usr/libexec/airoha-npu-memory').stat().st_mode&0o111
 assert json.loads((root/'etc/native60-source.json').read_text())==json.loads((P/'source.json').read_text())|{'variant':v}
-assert '2026.11.14-native60-'+v in (root/'etc/openwrt_release').read_text()
+assert '2026.11.16-native60-npu-'+v in (root/'etc/openwrt_release').read_text()
 for name in ['npu-jitter','airoha-npu']:assert (root/'etc/init.d'/name).stat().st_mode&0o111
 if v=='pbr':assert (root/'usr/lib/lua/luci/i18n/pbr.zh-cn.lmo').is_file()
 print('PASS actual FIT rootfs: full baseline, exclusive '+v+', correct versions, latest Airoha plus DT memory fix, no overclock or personal routing presets')

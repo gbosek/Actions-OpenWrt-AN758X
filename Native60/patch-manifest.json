@@ -2518,5 +2518,17 @@
   {
     "path": "target/linux/airoha/patches-6.18/961-netfilter-validate-forward-path-and-vlan-keys.patch",
     "sha256": "70660148586258faf4b25fe9e72c231864c205b716c40c982a2d0101445c4367"
+  },
+  {
+    "path": "target/linux/airoha/patches-6.18/962-net-airoha-selective-vlan-pppoe-encoding.patch",
+    "sha256": "1285971c108661adec5df9d834ea01d89254746e509896b6a1ef0497694dc447"
+  },
+  {
+    "path": "target/linux/airoha/patches-6.18/963-net-airoha-resolve-exact-pppoe-lower-device.patch",
+    "sha256": "88f6e0e530726ca52565ed29eaf268890244c2a962729dcd2ba2116baff0d4e3"
+  },
+  {
+    "path": "target/linux/airoha/patches-6.18/964-net-airoha-guard-unmapped-accounting-queue.patch",
+    "sha256": "a25d5b4008ff8bd203f6749a8a27e51bca02805a0455da264ad86e21c909e603"
   }
 ]
